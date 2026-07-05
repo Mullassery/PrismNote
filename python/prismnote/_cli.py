@@ -185,9 +185,23 @@ def main():
     try:
         binary_path = download_binary()
 
-        # Open browser automatically
+        print("\n✨ Starting PrismNote...")
+        print("🌐 Opening http://localhost:8000 in your browser...\n")
+
+        # Fork a process to open browser after server starts
         import webbrowser
-        webbrowser.open("http://localhost:8000")
+        import threading
+
+        def open_browser_later():
+            import time
+            time.sleep(2)  # Wait for server to be ready
+            try:
+                webbrowser.open("http://localhost:8000")
+            except Exception:
+                pass  # Silent fail if browser can't open
+
+        thread = threading.Thread(target=open_browser_later, daemon=True)
+        thread.start()
 
         # Exec the binary (this replaces the Python process)
         os.execv(str(binary_path), [str(binary_path)])
