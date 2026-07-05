@@ -39,11 +39,11 @@ and **AI-native** (local via Ollama, or Claude/OpenAI).
 
 ## Quickstart
 
-Install with **pip** _or_ **uv** _or_ **brew** _or_ **curl** — pick one:
+Install with **pip** _or_ **uv** _or_ **brew** _or_ **curl** — pick one. The browser opens automatically.
 
 ```bash
 # ── pip ──
-pip install prismnote && prismnote
+pip install prismnote
 ```
 
 — OR —
@@ -51,7 +51,7 @@ pip install prismnote && prismnote
 ```bash
 # ── uv ──  run instantly (no install), or install as a tool
 uvx prismnote
-#   or:  uv tool install prismnote && prismnote
+#   or:  uv tool install prismnote
 ```
 
 — OR —
@@ -59,7 +59,7 @@ uvx prismnote
 ```bash
 # ── Homebrew (macOS / Linux) ──
 brew tap Mullassery/prismnote
-brew install prismnote && prismnote
+brew install prismnote
 ```
 
 — OR —
@@ -70,7 +70,7 @@ curl -fsSL https://raw.githubusercontent.com/Mullassery/prismnote/main/install.s
 prismnote
 ```
 
-Then open **http://localhost:8000** and click **Open Data Explorer** (`⌘E`) or **New Notebook**.
+Your browser opens to **http://localhost:8000** automatically. Click **Open Data Explorer** (`⌘E`) or **New Notebook** to get started.
 
 > **No Docker required.** PrismNote runs as a single native binary — Docker is **not**
 > needed to install or run it. (Docker is only used by the optional *Deploy to Cloud*
