@@ -21,6 +21,7 @@ mod kernel;
 mod library_advisor;
 mod models;
 mod platform;
+mod query_validator;
 mod rbac;
 mod realtime_collab;
 mod scheduler;

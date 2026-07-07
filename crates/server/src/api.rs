@@ -325,18 +325,29 @@ pub async fn execute_cell(
 
             let result = match magic {
                 Magic::Sql => {
-                    // Run SQL in-process via DuckDB inside the shared Python kernel.
-                    // DuckDB can query pandas DataFrames defined in other cells by
-                    // name, so `%sql SELECT * FROM my_df` just works. Result is a
-                    // DataFrame -> renders as an HTML table (chartable downstream).
-                    let q = serde_json::to_string(&body).unwrap_or_else(|_| "\"\"".to_string());
-                    let py = format!(
-                        "try:\n    import duckdb as _ddb\nexcept ImportError:\n    raise ImportError('%sql needs DuckDB — install it: pip install duckdb')\n_ddb.sql({}).df()",
-                        q
-                    );
-                    match k.execute(&py).await {
-                        Ok((_s, o)) => Ok(o),
-                        Err(e) => Err(e),
+                    // SECURITY: Validate SQL query before execution to prevent injection
+                    if let Err(e) = crate::query_validator::QueryValidator::validate(&body) {
+                        let error_msg = format!("SQL query validation failed: {}", e);
+                        Ok(vec![serde_json::json!({
+                            "output_type": "error",
+                            "ename": "ValidationError",
+                            "evalue": error_msg,
+                            "traceback": []
+                        })])
+                    } else {
+                        // Run SQL in-process via DuckDB inside the shared Python kernel.
+                        // DuckDB can query pandas DataFrames defined in other cells by
+                        // name, so `%sql SELECT * FROM my_df` just works. Result is a
+                        // DataFrame -> renders as an HTML table (chartable downstream).
+                        let q = serde_json::to_string(&body).unwrap_or_else(|_| "\"\"".to_string());
+                        let py = format!(
+                            "try:\n    import duckdb as _ddb\nexcept ImportError:\n    raise ImportError('%sql needs DuckDB — install it: pip install duckdb')\n_ddb.sql({}).df()",
+                            q
+                        );
+                        match k.execute(&py).await {
+                            Ok((_s, o)) => Ok(o),
+                            Err(e) => Err(e),
+                        }
                     }
                 }
                 Magic::Shell => run_shell_cell(&body).await,

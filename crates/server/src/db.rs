@@ -71,6 +71,10 @@ impl DatabaseManager {
         conn: &DatabaseConnection,
         query: &str,
     ) -> Result<QueryResult> {
+        // SECURITY: Validate query before execution (basic injection prevention)
+        // This is defense-in-depth; real protection requires parameterized queries
+        crate::query_validator::QueryValidator::validate(query)?;
+
         let start = std::time::Instant::now();
 
         let result = match conn.db_type.as_str() {

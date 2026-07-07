@@ -1,0 +1,282 @@
+use anyhow::{anyhow, Result};
+use regex::Regex;
+
+// SECURITY: SQL Injection prevention via query validation
+// This is NOT a complete protection; use parameterized queries for actual execution.
+// This layer provides defense-in-depth for obvious/common injection attempts.
+
+const MAX_QUERY_LENGTH: usize = 100 * 1024; // 100KB limit
+const MAX_QUERY_NESTING: usize = 10; // Prevent deeply nested queries
+
+/// SQL keywords allowed in user queries (read-only operations)
+const ALLOWED_KEYWORDS: &[&str] = &[
+    "SELECT", "FROM", "WHERE", "JOIN", "LEFT", "INNER", "OUTER", "RIGHT", "CROSS",
+    "ON", "AND", "OR", "NOT", "IN", "LIKE", "BETWEEN", "IS", "NULL", "TRUE", "FALSE",
+    "ORDER", "BY", "GROUP", "HAVING", "LIMIT", "OFFSET", "DISTINCT", "AS", "WITH",
+    "UNION", "ALL", "CASE", "WHEN", "THEN", "ELSE", "END", "CAST", "INTERVAL",
+    "EXTRACT", "DATE", "TIME", "TIMESTAMP", "CURRENT", "LOCAL", "ZONE",
+    "COLLATE", "ILIKE", "GLOB", "REGEXP", "SIMILAR", "CONTAINS", "JSONB",
+];
+
+/// SQL keywords NEVER allowed (dangerous operations)
+const BLOCKED_KEYWORDS: &[&str] = &[
+    "CREATE", "DROP", "ALTER", "DELETE", "INSERT", "UPDATE", "TRUNCATE",
+    "EXEC", "EXECUTE", "CALL", "DECLARE", "SET", "GO",
+    "GRANT", "REVOKE", "DENY",
+    // SQL Server stored procedure prefixes
+    "xp_", "sp_",
+    // Dangerous functions
+    "COPY", "INTO", "OUTFILE", "LOAD_FILE", "INTO_OUTFILE",
+];
+
+pub struct QueryValidator;
+
+impl QueryValidator {
+    /// Validate a SQL query for obvious injection attempts.
+    /// Returns Ok(()) if query appears safe; Err with details if dangerous.
+    pub fn validate(query: &str) -> Result<()> {
+        // Check length
+        if query.len() > MAX_QUERY_LENGTH {
+            return Err(anyhow!(
+                "Query exceeds maximum length: {} > {}",
+                query.len(),
+                MAX_QUERY_LENGTH
+            ));
+        }
+
+        // Check for empty/whitespace-only queries
+        let trimmed = query.trim();
+        if trimmed.is_empty() {
+            return Err(anyhow!("Query is empty"));
+        }
+
+        // Strip comments to prevent bypass (-- and /* */)
+        let stripped = Self::strip_comments(trimmed);
+
+        // Check nesting depth (parentheses)
+        Self::check_nesting_depth(&stripped)?;
+
+        // Check for blocked keywords
+        Self::check_blocked_keywords(&stripped)?;
+
+        // Check for obvious injection patterns
+        Self::check_injection_patterns(&stripped)?;
+
+        // Check for comment-based injection
+        Self::check_comment_injection(query)?;
+
+        Ok(())
+    }
+
+    /// Strip SQL comments (-- and /* */) from query
+    fn strip_comments(query: &str) -> String {
+        let mut result = String::new();
+        let mut chars = query.chars().peekable();
+        let mut in_string = false;
+        let mut string_char = ' ';
+
+        while let Some(ch) = chars.next() {
+            // Handle string literals (don't strip comments inside strings)
+            if (ch == '\'' || ch == '"') && (result.is_empty() || !result.ends_with('\\')) {
+                if !in_string {
+                    in_string = true;
+                    string_char = ch;
+                } else if ch == string_char {
+                    in_string = false;
+                }
+                result.push(ch);
+                continue;
+            }
+
+            if in_string {
+                result.push(ch);
+                continue;
+            }
+
+            // Handle -- comments (line comments)
+            if ch == '-' && chars.peek() == Some(&'-') {
+                chars.next(); // consume second -
+                // Skip until end of line
+                while let Some(c) = chars.next() {
+                    if c == '\n' {
+                        result.push('\n');
+                        break;
+                    }
+                }
+                continue;
+            }
+
+            // Handle /* */ comments (block comments)
+            if ch == '/' && chars.peek() == Some(&'*') {
+                chars.next(); // consume *
+                let mut prev = ' ';
+                while let Some(c) = chars.next() {
+                    if prev == '*' && c == '/' {
+                        break;
+                    }
+                    prev = c;
+                }
+                continue;
+            }
+
+            result.push(ch);
+        }
+
+        result
+    }
+
+    /// Check parentheses nesting depth to prevent deeply nested queries
+    fn check_nesting_depth(query: &str) -> Result<()> {
+        let mut depth = 0;
+        let mut max_depth = 0;
+
+        for ch in query.chars() {
+            match ch {
+                '(' => {
+                    depth += 1;
+                    max_depth = max_depth.max(depth);
+                }
+                ')' => {
+                    depth = depth.saturating_sub(1);
+                }
+                _ => {}
+            }
+        }
+
+        if max_depth > MAX_QUERY_NESTING {
+            return Err(anyhow!(
+                "Query nesting too deep: {} > {}",
+                max_depth,
+                MAX_QUERY_NESTING
+            ));
+        }
+
+        if depth != 0 {
+            return Err(anyhow!("Unbalanced parentheses in query"));
+        }
+
+        Ok(())
+    }
+
+    /// Check for blocked SQL keywords (create, drop, delete, etc.)
+    fn check_blocked_keywords(query: &str) -> Result<()> {
+        let upper = query.to_uppercase();
+
+        // Check blocked keywords
+        for keyword in BLOCKED_KEYWORDS {
+            if upper.contains(keyword) {
+                // Avoid false positives: check word boundaries
+                let pattern = format!(r"\b{}\b", regex::escape(keyword));
+                if let Ok(re) = Regex::new(&pattern) {
+                    if re.is_match(&upper) {
+                        return Err(anyhow!("Blocked SQL keyword found: {}", keyword));
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Check for common SQL injection patterns
+    fn check_injection_patterns(query: &str) -> Result<()> {
+        // Pattern 1: OR 1=1 (classic injection)
+        if query.to_uppercase().contains("OR 1=1")
+            || query.to_uppercase().contains("OR '1'='1'")
+            || query.to_uppercase().contains("OR TRUE")
+        {
+            return Err(anyhow!("Detected classic OR 1=1 injection pattern"));
+        }
+
+        // Pattern 2: Multiple statements (UNION SELECT)
+        let semicolon_count = query.matches(';').count();
+        if semicolon_count > 1 {
+            return Err(anyhow!(
+                "Detected potential multi-statement injection: {} semicolons",
+                semicolon_count
+            ));
+        }
+
+        // Pattern 3: SLEEP/BENCHMARK (time-based injection)
+        let upper = query.to_uppercase();
+        if upper.contains("SLEEP(") || upper.contains("BENCHMARK(") || upper.contains("WAITFOR") {
+            return Err(anyhow!(
+                "Detected time-based injection attempt (SLEEP/BENCHMARK/WAITFOR)"
+            ));
+        }
+
+        // Pattern 4: Stacked queries ending with comment (comment-out rest of query)
+        if query.trim().ends_with("--") || query.trim().ends_with("/*") {
+            return Err(anyhow!(
+                "Detected query-ending comment (potential injection technique)"
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Check for comment-based injection attempts
+    fn check_comment_injection(query: &str) -> Result<()> {
+        // Look for suspicious patterns like:
+        // ' OR '1'='1'; --
+        // '; DROP TABLE users; --
+        let suspicious_patterns = [
+            r";\s*DROP\s",
+            r";\s*DELETE\s+FROM\s",
+            r";\s*UPDATE\s",
+            r";\s*INSERT\s+INTO\s",
+            r";\s*TRUNCATE\s",
+            r"--\s*DROP",
+            r"--\s*DELETE",
+        ];
+
+        let upper = query.to_uppercase();
+        for pattern in &suspicious_patterns {
+            if let Ok(re) = Regex::new(pattern) {
+                if re.is_match(&upper) {
+                    return Err(anyhow!("Detected suspicious pattern after semicolon: {}", pattern));
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_valid_select_query() {
+        assert!(QueryValidator::validate("SELECT * FROM users WHERE id = 1").is_ok());
+    }
+
+    #[test]
+    fn test_injection_or_1_1() {
+        assert!(QueryValidator::validate("SELECT * FROM users WHERE id = 1 OR 1=1").is_err());
+    }
+
+    #[test]
+    fn test_blocked_keyword_drop() {
+        assert!(QueryValidator::validate("DROP TABLE users").is_err());
+    }
+
+    #[test]
+    fn test_comment_stripping() {
+        let query = "SELECT * FROM users -- this is a comment";
+        let stripped = QueryValidator::strip_comments(query);
+        assert!(!stripped.contains("--"));
+    }
+
+    #[test]
+    fn test_sleep_injection() {
+        assert!(QueryValidator::validate("SELECT SLEEP(5)").is_err());
+    }
+
+    #[test]
+    fn test_max_length() {
+        let huge = "SELECT * FROM users WHERE id = ".repeat(5000);
+        assert!(QueryValidator::validate(&huge).is_err());
+    }
+}

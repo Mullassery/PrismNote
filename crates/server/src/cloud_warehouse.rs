@@ -194,6 +194,10 @@ impl CloudWarehouseManager {
         connection_id: &str,
         query: &str,
     ) -> Result<CloudQueryResult> {
+        // SECURITY: Validate query before execution (basic injection prevention)
+        // This is defense-in-depth; real protection requires parameterized queries
+        crate::query_validator::QueryValidator::validate(query)?;
+
         let conn = self
             .get_connection(connection_id)
             .ok_or_else(|| anyhow::anyhow!("Connection not found: {}", connection_id))?;

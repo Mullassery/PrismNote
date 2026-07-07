@@ -20,6 +20,32 @@ Include:
 - Limited security hardening - see PRODUCTION_AUDIT_REPORT.md for details
 - See PRODUCTION_AUDIT_REPORT.md for specific security issues
 
+### SQL Injection (CRITICAL)
+
+**Status:** ⚠️ MITIGATED (Validation added, requires parameterized queries)
+
+PrismNote currently performs basic SQL injection prevention via query validation:
+- Allowlist validation for SQL keywords
+- Blocklist for dangerous operations (CREATE, DROP, DELETE, ALTER, etc.)
+- Pattern-based detection of common injection techniques
+- Input length limits (100KB max)
+- Query nesting depth limits
+
+**Important:** These mitigations are defense-in-depth ONLY. Real production use requires:
+1. Parameterized queries for all database backends
+2. Prepared statements (no string concatenation)
+3. Least-privilege database users
+4. Query execution logging and monitoring
+
+See `SQL_INJECTION_AUDIT.md` for detailed findings and remediation roadmap.
+
+**Affected Components:**
+- DuckDB query execution (mitigated with validation)
+- PostgreSQL, MySQL, SQLite, DuckDB backends (partially implemented, need parameterized queries)
+- Cloud warehouse backends (Snowflake, BigQuery, Redshift, Azure Synapse, Databricks, Athena, Presto, Trino)
+
+**Timeline for Full Fix:** TIER 2 (Weeks 2-3)
+
 ## Security Updates
 
 Security patches will be released as minor/patch versions when vulnerabilities are discovered.
