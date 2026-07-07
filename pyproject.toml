@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prismnote"
-version = "0.4.5"
+version = "1.0.0"
 description = "Modern data-science notebook with Rust performance. SQL execution, Spark integration, 8 cloud warehouse connectors. Real-time collaboration, global search, VSCode-inspired layout. Jupyter-compatible with AI assistant built-in."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
+maintainers = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
 requires-python = ">=3.8"
 keywords = [
     "jupyter",
@@ -38,7 +39,7 @@ keywords = [
     "ml-development"
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
