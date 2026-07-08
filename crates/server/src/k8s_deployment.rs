@@ -63,16 +63,14 @@ impl KubernetesManager {
     }
 
     pub async fn get_pod_status(&self) -> Result<Vec<PodStatus>, String> {
-        Ok(vec![
-            PodStatus {
-                name: "prismnote-1".to_string(),
-                status: "Running".to_string(),
-                ready: true,
-                restart_count: 0,
-                cpu_usage: "100m".to_string(),
-                memory_usage: "512Mi".to_string(),
-            },
-        ])
+        Ok(vec![PodStatus {
+            name: "prismnote-1".to_string(),
+            status: "Running".to_string(),
+            ready: true,
+            restart_count: 0,
+            cpu_usage: "100m".to_string(),
+            memory_usage: "512Mi".to_string(),
+        }])
     }
 
     pub async fn scale_replicas(&self, count: u32) -> Result<String, String> {

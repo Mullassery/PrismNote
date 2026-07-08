@@ -27,14 +27,12 @@ pub fn from_ipynb(ipynb: Value) -> Result<Notebook> {
                 .map(|out| Output {
                     output_type: out["output_type"].as_str().unwrap_or("stream").to_string(),
                     data: out["data"].as_object().map(|_| out["data"].clone()),
-                    text: out["text"]
-                        .as_array()
-                        .map(|arr| {
-                            arr.iter()
-                                .filter_map(|s| s.as_str())
-                                .map(|s| s.to_string())
-                                .collect()
-                        }),
+                    text: out["text"].as_array().map(|arr| {
+                        arr.iter()
+                            .filter_map(|s| s.as_str())
+                            .map(|s| s.to_string())
+                            .collect()
+                    }),
                     metadata: out["metadata"].as_object().map(|_| out["metadata"].clone()),
                 })
                 .collect();

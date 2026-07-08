@@ -27,11 +27,7 @@ impl CellExecutor {
         }
 
         // Execute with timeout
-        let result = tokio::time::timeout(
-            self.timeout,
-            self.execute_code(code),
-        )
-        .await;
+        let result = tokio::time::timeout(self.timeout, self.execute_code(code)).await;
 
         match result {
             Ok(Ok(output)) => Ok(output),

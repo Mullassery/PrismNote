@@ -5,7 +5,7 @@ use std::collections::HashMap;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SparkConfig {
     pub app_name: String,
-    pub master: String, // "local[*]", "local[4]", "spark://host:7077"
+    pub master: String,          // "local[*]", "local[4]", "spark://host:7077"
     pub executor_memory: String, // "2g", "4g", "8g"
     pub driver_memory: String,
     pub executor_cores: u32,
@@ -145,7 +145,9 @@ impl SparkManager {
                 dataframe_name: df_name.to_string(),
                 row_count: df.row_count,
                 partitions: df.partitions,
-                estimated_data_per_partition_mb: (df.size_bytes / (df.partitions as u64 + 1)) / 1024 / 1024,
+                estimated_data_per_partition_mb: (df.size_bytes / (df.partitions as u64 + 1))
+                    / 1024
+                    / 1024,
                 shuffle_risk: if df.row_count > 1_000_000 && df.partitions < 16 {
                     "high".to_string()
                 } else if df.row_count > 100_000 && df.partitions < 8 {

@@ -110,15 +110,12 @@ impl ExecutionPipeline {
                 if let Some(node) = plan.nodes.get(cell_id) {
                     if node.status == ExecutionStatus::Pending {
                         // Check if all dependencies are completed
-                        let deps_satisfied = node
-                            .depends_on
-                            .iter()
-                            .all(|dep_id| {
-                                plan.nodes
-                                    .get(dep_id)
-                                    .map(|n| n.status == ExecutionStatus::Completed)
-                                    .unwrap_or(false)
-                            });
+                        let deps_satisfied = node.depends_on.iter().all(|dep_id| {
+                            plan.nodes
+                                .get(dep_id)
+                                .map(|n| n.status == ExecutionStatus::Completed)
+                                .unwrap_or(false)
+                        });
 
                         if deps_satisfied {
                             return Some(cell_id.clone());
@@ -182,10 +179,7 @@ impl ExecutionPipeline {
         deps
     }
 
-    fn topological_sort(
-        &self,
-        graph: &HashMap<CellId, Vec<CellId>>,
-    ) -> Result<Vec<CellId>> {
+    fn topological_sort(&self, graph: &HashMap<CellId, Vec<CellId>>) -> Result<Vec<CellId>> {
         let mut sorted = vec![];
         let mut visited = std::collections::HashSet::new();
         let mut visiting = std::collections::HashSet::new();
@@ -215,7 +209,10 @@ impl ExecutionPipeline {
         }
 
         if visiting.contains(node) {
-            return Err(anyhow::anyhow!("Circular dependency detected at {:?}", node));
+            return Err(anyhow::anyhow!(
+                "Circular dependency detected at {:?}",
+                node
+            ));
         }
 
         visiting.insert(node.clone());

@@ -807,8 +807,14 @@ impl KernelManager {
             .spawn()
             .map_err(|e| anyhow!("failed to start python kernel: {}", e))?;
 
-        let stdin = child.stdin.take().ok_or_else(|| anyhow!("no kernel stdin"))?;
-        let stdout = child.stdout.take().ok_or_else(|| anyhow!("no kernel stdout"))?;
+        let stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| anyhow!("no kernel stdin"))?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| anyhow!("no kernel stdout"))?;
         Ok((child, stdin, BufReader::new(stdout)))
     }
 
@@ -819,7 +825,8 @@ impl KernelManager {
             let _ = c.start_kill();
         }
         let (child, stdin, stdout) = Self::spawn_process()?;
-        self.pid.store(child.id().map(|p| p as i32).unwrap_or(0), Ordering::SeqCst);
+        self.pid
+            .store(child.id().map(|p| p as i32).unwrap_or(0), Ordering::SeqCst);
         self.child = Some(child);
         self.stdin = Some(stdin);
         self.stdout = Some(stdout);
@@ -916,7 +923,9 @@ impl KernelManager {
     }
 
     async fn handle_package_install(&self, code: &str) -> Result<(Vec<String>, Vec<Value>)> {
-        let clean_code = code.replace("!pip install", "pip install").replace("!pip", "pip");
+        let clean_code = code
+            .replace("!pip install", "pip install")
+            .replace("!pip", "pip");
 
         let output = Command::new("python")
             .arg("-m")
@@ -947,13 +956,19 @@ impl KernelManager {
     /// Snapshot user variables (for the variable explorer). Does not run user
     /// code or bump the execution counter.
     pub async fn inspect(&mut self) -> Result<Value> {
-        let stdin = self.stdin.as_mut().ok_or_else(|| anyhow!("kernel not running"))?;
+        let stdin = self
+            .stdin
+            .as_mut()
+            .ok_or_else(|| anyhow!("kernel not running"))?;
         let msg = serde_json::to_string("__PRISM_INSPECT__")?;
         stdin.write_all(msg.as_bytes()).await?;
         stdin.write_all(b"\n").await?;
         stdin.flush().await?;
 
-        let reader = self.stdout.as_mut().ok_or_else(|| anyhow!("kernel not running"))?;
+        let reader = self
+            .stdout
+            .as_mut()
+            .ok_or_else(|| anyhow!("kernel not running"))?;
         let mut line = String::new();
         loop {
             line.clear();
@@ -972,14 +987,20 @@ impl KernelManager {
     /// Run a Data Explorer query against the live namespace (schema/page/profile/
     /// aggregate). Like `inspect()`, it does not run user code or bump the counter.
     pub async fn explore(&mut self, req: Value) -> Result<Value> {
-        let stdin = self.stdin.as_mut().ok_or_else(|| anyhow!("kernel not running"))?;
+        let stdin = self
+            .stdin
+            .as_mut()
+            .ok_or_else(|| anyhow!("kernel not running"))?;
         let cmd = json!({ "__prism_cmd__": "explore", "req": req });
         let msg = serde_json::to_string(&cmd)?;
         stdin.write_all(msg.as_bytes()).await?;
         stdin.write_all(b"\n").await?;
         stdin.flush().await?;
 
-        let reader = self.stdout.as_mut().ok_or_else(|| anyhow!("kernel not running"))?;
+        let reader = self
+            .stdout
+            .as_mut()
+            .ok_or_else(|| anyhow!("kernel not running"))?;
         let mut line = String::new();
         loop {
             line.clear();
@@ -989,7 +1010,10 @@ impl KernelManager {
             }
             if let Some(rest) = line.strip_prefix(RESULT_PREFIX) {
                 let res: Value = serde_json::from_str(rest.trim_end())?;
-                return Ok(res.get("explore").cloned().unwrap_or(json!({ "error": "no result" })));
+                return Ok(res
+                    .get("explore")
+                    .cloned()
+                    .unwrap_or(json!({ "error": "no result" })));
             }
             // ignore stray stream frames
         }

@@ -236,10 +236,7 @@ impl CloudStorageManager {
                 client_email,
                 bucket,
             } => {
-                let client = GCSClient {
-                    project_id,
-                    bucket,
-                };
+                let client = GCSClient { project_id, bucket };
                 self.gcs_clients.insert(name.to_string(), client);
                 Ok(())
             }

@@ -73,7 +73,10 @@ impl VersionManager {
         fs::write(&version_path, content)?;
 
         // Update version metadata
-        let metadata_path = format!("{}/.prismnote/versions/{}/.metadata.json", self.versions_dir, self.notebook_id);
+        let metadata_path = format!(
+            "{}/.prismnote/versions/{}/.metadata.json",
+            self.versions_dir, self.notebook_id
+        );
         let mut metadata = self.load_metadata().unwrap_or(VersionMetadata {
             versions: vec![],
             current_version: version_id.clone(),
@@ -134,15 +137,11 @@ impl VersionManager {
         let mut changes = vec![];
 
         // Simple diff: count cells by ID
-        let from_ids: std::collections::HashSet<_> = from_cells
-            .iter()
-            .filter_map(|c| c["id"].as_str())
-            .collect();
+        let from_ids: std::collections::HashSet<_> =
+            from_cells.iter().filter_map(|c| c["id"].as_str()).collect();
 
-        let to_ids: std::collections::HashSet<_> = to_cells
-            .iter()
-            .filter_map(|c| c["id"].as_str())
-            .collect();
+        let to_ids: std::collections::HashSet<_> =
+            to_cells.iter().filter_map(|c| c["id"].as_str()).collect();
 
         // Added cells
         for to_cell in to_cells {
@@ -191,10 +190,9 @@ impl VersionManager {
 
     pub fn create_branch(&self, branch_name: &str) -> Result<()> {
         let mut metadata = self.load_metadata()?;
-        metadata.branches.insert(
-            branch_name.to_string(),
-            metadata.current_version.clone(),
-        );
+        metadata
+            .branches
+            .insert(branch_name.to_string(), metadata.current_version.clone());
 
         let metadata_path = format!("{}/.metadata.json", self.versions_dir);
         let content = serde_json::to_string_pretty(&metadata)?;

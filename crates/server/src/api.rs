@@ -6,11 +6,11 @@ use axum::{
     http::StatusCode,
     Json,
 };
+use chrono;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
-use chrono;
 
 #[derive(Serialize)]
 pub struct NotebookList {
@@ -22,9 +22,7 @@ pub struct CreateNotebookRequest {
     pub name: String,
 }
 
-pub async fn list_notebooks(
-    State(state): State<Arc<AppState>>,
-) -> Json<NotebookList> {
+pub async fn list_notebooks(State(state): State<Arc<AppState>>) -> Json<NotebookList> {
     let dir = &state.notebooks_dir;
     let mut notebooks = Vec::new();
 
@@ -69,7 +67,10 @@ pub async fn create_notebook(
 
     let path = format!("{}/{}.ipynb", state.notebooks_dir, id);
     let ipynb = crate::files::to_ipynb(&notebook);
-    let _ = std::fs::write(&path, serde_json::to_string_pretty(&ipynb).unwrap_or_default());
+    let _ = std::fs::write(
+        &path,
+        serde_json::to_string_pretty(&ipynb).unwrap_or_default(),
+    );
 
     (StatusCode::CREATED, Json(notebook))
 }
@@ -115,7 +116,10 @@ pub async fn update_notebook(
     let path = format!("{}/{}.ipynb", state.notebooks_dir, id);
     let ipynb = crate::files::to_ipynb(&req.notebook);
 
-    match std::fs::write(&path, serde_json::to_string_pretty(&ipynb).unwrap_or_default()) {
+    match std::fs::write(
+        &path,
+        serde_json::to_string_pretty(&ipynb).unwrap_or_default(),
+    ) {
         Ok(_) => (StatusCode::OK, Json(req.notebook)),
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(req.notebook)),
     }
@@ -180,7 +184,8 @@ fn parse_magic(code: &str) -> (Magic, String) {
     } else if let Some(cmd) = first_line.strip_prefix('!') {
         // `!cmd` shell escape (single line)
         (Magic::Shell, cmd.to_string())
-    } else if first_line.eq_ignore_ascii_case("%md") || first_line.eq_ignore_ascii_case("%markdown") {
+    } else if first_line.eq_ignore_ascii_case("%md") || first_line.eq_ignore_ascii_case("%markdown")
+    {
         (Magic::Markdown, rest())
     } else if first_line.eq_ignore_ascii_case("%python") || first_line.eq_ignore_ascii_case("%py") {
         (Magic::Python, rest())
@@ -204,7 +209,11 @@ async fn run_shell_cell(cmd: &str) -> anyhow::Result<Vec<serde_json::Value>> {
         }
         text.push_str(&err);
     }
-    let name = if out.status.success() { "stdout" } else { "stderr" };
+    let name = if out.status.success() {
+        "stdout"
+    } else {
+        "stderr"
+    };
     Ok(vec![serde_json::json!({
         "output_type": "stream",
         "name": name,
@@ -216,9 +225,11 @@ async fn run_shell_cell(cmd: &str) -> anyhow::Result<Vec<serde_json::Value>> {
 /// preserving MIME bundles (`data`) and normalising `text` to a string list.
 fn value_to_output(out: serde_json::Value) -> Output {
     let text = match out.get("text") {
-        Some(serde_json::Value::Array(a)) => {
-            Some(a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
-        }
+        Some(serde_json::Value::Array(a)) => Some(
+            a.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect(),
+        ),
         Some(serde_json::Value::String(s)) => Some(vec![s.clone()]),
         _ => None,
     };
@@ -253,21 +264,30 @@ pub async fn execute_cell(
                     Err(_) => {
                         return (
                             StatusCode::INTERNAL_SERVER_ERROR,
-                            Json(ExecuteCellResponse { execution_count: 0, outputs: vec![] }),
+                            Json(ExecuteCellResponse {
+                                execution_count: 0,
+                                outputs: vec![],
+                            }),
                         )
                     }
                 },
                 Err(_) => {
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(ExecuteCellResponse { execution_count: 0, outputs: vec![] }),
+                        Json(ExecuteCellResponse {
+                            execution_count: 0,
+                            outputs: vec![],
+                        }),
                     )
                 }
             },
             Err(_) => {
                 return (
                     StatusCode::NOT_FOUND,
-                    Json(ExecuteCellResponse { execution_count: 0, outputs: vec![] }),
+                    Json(ExecuteCellResponse {
+                        execution_count: 0,
+                        outputs: vec![],
+                    }),
                 )
             }
         };
@@ -277,7 +297,10 @@ pub async fn execute_cell(
             None => {
                 return (
                     StatusCode::NOT_FOUND,
-                    Json(ExecuteCellResponse { execution_count: 0, outputs: vec![] }),
+                    Json(ExecuteCellResponse {
+                        execution_count: 0,
+                        outputs: vec![],
+                    }),
                 )
             }
         };
@@ -285,7 +308,10 @@ pub async fn execute_cell(
         if cell.cell_type != "code" {
             return (
                 StatusCode::BAD_REQUEST,
-                Json(ExecuteCellResponse { execution_count: 0, outputs: vec![] }),
+                Json(ExecuteCellResponse {
+                    execution_count: 0,
+                    outputs: vec![],
+                }),
             );
         }
 
@@ -391,7 +417,10 @@ pub async fn execute_cell(
                 outputs: vec![Output {
                     output_type: "error".to_string(),
                     data: None,
-                    text: Some(vec!["Kernel not available. Install ipykernel: pip install ipykernel".to_string()]),
+                    text: Some(vec![
+                        "Kernel not available. Install ipykernel: pip install ipykernel"
+                            .to_string(),
+                    ]),
                     metadata: None,
                 }],
             }),
@@ -432,7 +461,10 @@ pub async fn terminal_exec(Json(req): Json<TerminalRequest>) -> Json<serde_json:
     Json(serde_json::json!({ "output": output.trim_end_matches('\n'), "exit_code": code }))
 }
 
-async fn execute_sql_cell(code: &str, _state: &Arc<AppState>) -> anyhow::Result<Vec<serde_json::Value>> {
+async fn execute_sql_cell(
+    code: &str,
+    _state: &Arc<AppState>,
+) -> anyhow::Result<Vec<serde_json::Value>> {
     let sql_code = code
         .trim()
         .strip_prefix("--sql")
@@ -481,8 +513,16 @@ pub async fn get_ai_config(State(state): State<Arc<AppState>>) -> Json<AIConfigD
                 ollama_model: c.ollama_model.clone(),
                 claude_model: c.claude_model.clone(),
                 openai_model: c.openai_model.clone(),
-                claude_key_set: c.claude_api_key.as_deref().map(|k| !k.is_empty()).unwrap_or(false),
-                openai_key_set: c.openai_api_key.as_deref().map(|k| !k.is_empty()).unwrap_or(false),
+                claude_key_set: c
+                    .claude_api_key
+                    .as_deref()
+                    .map(|k| !k.is_empty())
+                    .unwrap_or(false),
+                openai_key_set: c
+                    .openai_api_key
+                    .as_deref()
+                    .map(|k| !k.is_empty())
+                    .unwrap_or(false),
             })
         }
         None => Json(AIConfigDetail {
@@ -521,7 +561,10 @@ pub async fn set_ai_config(
     // model never silently wipes a stored key.
     let (prev_claude, prev_openai) = {
         match state.ai_engine.read().await.as_ref() {
-            Some(e) => (e.config().claude_api_key.clone(), e.config().openai_api_key.clone()),
+            Some(e) => (
+                e.config().claude_api_key.clone(),
+                e.config().openai_api_key.clone(),
+            ),
             None => (None, None),
         }
     };
@@ -615,7 +658,10 @@ pub async fn ai_complete(
     Json(req): Json<AIRequest>,
 ) -> (StatusCode, Json<AIResponseData>) {
     match state.ai_engine.read().await.as_ref() {
-        Some(engine) => match engine.complete_code(&req.code, req.context.as_deref()).await {
+        Some(engine) => match engine
+            .complete_code(&req.code, req.context.as_deref())
+            .await
+        {
             Ok(suggestion) => (StatusCode::OK, Json(AIResponseData { suggestion })),
             Err(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -652,7 +698,10 @@ fn default_dir() -> String {
 }
 
 pub async fn fs_list(Query(q): Query<FsQuery>) -> (StatusCode, Json<serde_json::Value>) {
-    let path = q.path.filter(|p| !p.trim().is_empty()).unwrap_or_else(default_dir);
+    let path = q
+        .path
+        .filter(|p| !p.trim().is_empty())
+        .unwrap_or_else(default_dir);
     let p = std::path::Path::new(&path);
 
     let read = match std::fs::read_dir(p) {
@@ -684,7 +733,10 @@ pub async fn fs_list(Query(q): Query<FsQuery>) -> (StatusCode, Json<serde_json::
         let ad = a["is_dir"].as_bool().unwrap_or(false);
         let bd = b["is_dir"].as_bool().unwrap_or(false);
         bd.cmp(&ad).then_with(|| {
-            a["name"].as_str().unwrap_or("").to_lowercase()
+            a["name"]
+                .as_str()
+                .unwrap_or("")
+                .to_lowercase()
                 .cmp(&b["name"].as_str().unwrap_or("").to_lowercase())
         })
     });
@@ -704,7 +756,10 @@ pub async fn fs_list(Query(q): Query<FsQuery>) -> (StatusCode, Json<serde_json::
 pub async fn fs_read(Query(q): Query<FsQuery>) -> (StatusCode, Json<serde_json::Value>) {
     let path = q.path.unwrap_or_default();
     match std::fs::read_to_string(&path) {
-        Ok(content) => (StatusCode::OK, Json(json!({ "path": path, "content": content }))),
+        Ok(content) => (
+            StatusCode::OK,
+            Json(json!({ "path": path, "content": content })),
+        ),
         Err(e) => (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": format!("cannot read {}: {}", path, e) })),
@@ -737,7 +792,10 @@ pub struct FsPathReq {
 fn fs_ok(r: std::io::Result<()>, path: String) -> (StatusCode, Json<serde_json::Value>) {
     match r {
         Ok(()) => (StatusCode::OK, Json(json!({ "ok": true, "path": path }))),
-        Err(e) => (StatusCode::BAD_REQUEST, Json(json!({ "ok": false, "error": e.to_string() }))),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "ok": false, "error": e.to_string() })),
+        ),
     }
 }
 
@@ -750,14 +808,20 @@ pub async fn fs_mkdir(Json(req): Json<FsEntryReq>) -> (StatusCode, Json<serde_js
 pub async fn fs_new_file(Json(req): Json<FsEntryReq>) -> (StatusCode, Json<serde_json::Value>) {
     let p = std::path::Path::new(&req.path).join(&req.name);
     if p.exists() {
-        return (StatusCode::BAD_REQUEST, Json(json!({ "ok": false, "error": "already exists" })));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "ok": false, "error": "already exists" })),
+        );
     }
     let path = p.to_string_lossy().to_string();
     fs_ok(std::fs::write(&p, b"").map(|_| ()), path)
 }
 
 pub async fn fs_write(Json(req): Json<FsWriteReq>) -> (StatusCode, Json<serde_json::Value>) {
-    fs_ok(std::fs::write(&req.path, req.content.as_bytes()).map(|_| ()), req.path.clone())
+    fs_ok(
+        std::fs::write(&req.path, req.content.as_bytes()).map(|_| ()),
+        req.path.clone(),
+    )
 }
 
 pub async fn fs_rename(Json(req): Json<FsRenameReq>) -> (StatusCode, Json<serde_json::Value>) {
@@ -769,7 +833,11 @@ pub async fn fs_rename(Json(req): Json<FsRenameReq>) -> (StatusCode, Json<serde_
 
 pub async fn fs_delete(Json(req): Json<FsPathReq>) -> (StatusCode, Json<serde_json::Value>) {
     let p = std::path::Path::new(&req.path);
-    let r = if p.is_dir() { std::fs::remove_dir_all(p) } else { std::fs::remove_file(p) };
+    let r = if p.is_dir() {
+        std::fs::remove_dir_all(p)
+    } else {
+        std::fs::remove_file(p)
+    };
     fs_ok(r, req.path.clone())
 }
 
@@ -818,7 +886,10 @@ pub async fn fs_upload(Json(req): Json<FsUploadReq>) -> (StatusCode, Json<serde_
     use base64::Engine;
     match base64::engine::general_purpose::STANDARD.decode(req.content_base64.as_bytes()) {
         Ok(bytes) => fs_ok(std::fs::write(&req.path, bytes), req.path.clone()),
-        Err(e) => (StatusCode::BAD_REQUEST, Json(json!({ "ok": false, "error": e.to_string() }))),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "ok": false, "error": e.to_string() })),
+        ),
     }
 }
 
@@ -1015,7 +1086,11 @@ async fn git(dir: Option<&str>, args: &[&str]) -> (bool, String) {
 
 fn git_json(ok: bool, output: String) -> (StatusCode, Json<serde_json::Value>) {
     (
-        if ok { StatusCode::OK } else { StatusCode::BAD_REQUEST },
+        if ok {
+            StatusCode::OK
+        } else {
+            StatusCode::BAD_REQUEST
+        },
         Json(json!({ "ok": ok, "output": output })),
     )
 }
@@ -1050,7 +1125,9 @@ pub async fn git_commit(Json(req): Json<GitOpReq>) -> (StatusCode, Json<serde_js
     if !ok_a {
         return git_json(false, out_a);
     }
-    let msg = req.message.unwrap_or_else(|| "Update from PrismNote".to_string());
+    let msg = req
+        .message
+        .unwrap_or_else(|| "Update from PrismNote".to_string());
     let (ok, out) = git(Some(&req.dir), &["commit", "-m", &msg]).await;
     git_json(ok, out)
 }
@@ -1128,7 +1205,11 @@ async fn execute_job_cells(state: &Arc<AppState>, cells: &[String]) -> JobRun {
     JobRun {
         started_at: started,
         finished_at: chrono::Local::now().to_rfc3339(),
-        status: if failed == 0 { "success".into() } else { "failed".into() },
+        status: if failed == 0 {
+            "success".into()
+        } else {
+            "failed".into()
+        },
         cells_ok: ok,
         cells_failed: failed,
         log,
@@ -1237,7 +1318,10 @@ pub async fn get_job(
     let jobs = state.jobs.lock().await;
     match jobs.iter().find(|j| j.id == id) {
         Some(j) => (StatusCode::OK, Json(serde_json::to_value(j).unwrap())),
-        None => (StatusCode::NOT_FOUND, Json(json!({ "error": "job not found" }))),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "job not found" })),
+        ),
     }
 }
 
@@ -1277,7 +1361,10 @@ pub async fn run_job_now(
 ) -> (StatusCode, Json<serde_json::Value>) {
     match run_job(&state, &id).await {
         Some(run) => (StatusCode::OK, Json(serde_json::to_value(run).unwrap())),
-        None => (StatusCode::NOT_FOUND, Json(json!({ "error": "job not found" }))),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "job not found" })),
+        ),
     }
 }
 
@@ -1294,9 +1381,15 @@ pub async fn run_job_by_name(
     match id {
         Some(id) => match run_job(&state, &id).await {
             Some(run) => (StatusCode::OK, Json(serde_json::to_value(run).unwrap())),
-            None => (StatusCode::NOT_FOUND, Json(json!({ "error": "job not found" }))),
+            None => (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "job not found" })),
+            ),
         },
-        None => (StatusCode::NOT_FOUND, Json(json!({ "error": format!("no job named '{}'", name) }))),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": format!("no job named '{}'", name) })),
+        ),
     }
 }
 
@@ -1310,7 +1403,12 @@ pub async fn job_airflow_dag(
     let jobs = state.jobs.lock().await;
     let job = match jobs.iter().find(|j| j.id == id) {
         Some(j) => j,
-        None => return (StatusCode::NOT_FOUND, Json(json!({ "error": "job not found" }))),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "job not found" })),
+            )
+        }
     };
     let safe = job
         .name
@@ -1322,7 +1420,11 @@ pub async fn job_airflow_dag(
         "daily" => {
             let t = job.schedule.time.clone().unwrap_or_else(|| "09:00".into());
             let parts: Vec<&str> = t.split(':').collect();
-            format!("\"{} {} * * *\"", parts.get(1).unwrap_or(&"0"), parts.first().unwrap_or(&"9"))
+            format!(
+                "\"{} {} * * *\"",
+                parts.get(1).unwrap_or(&"0"),
+                parts.first().unwrap_or(&"9")
+            )
         }
         _ => "None".to_string(),
     };
@@ -1355,18 +1457,29 @@ with DAG(
         schedule = schedule,
         enc = job.name.replace(' ', "%20"),
     );
-    (StatusCode::OK, Json(json!({ "dag": dag, "filename": format!("prismnote_{}.py", safe) })))
+    (
+        StatusCode::OK,
+        Json(json!({ "dag": dag, "filename": format!("prismnote_{}.py", safe) })),
+    )
 }
 
 // ── Variable explorer ────────────────────────────────────────────────────────
-pub async fn kernel_variables(State(state): State<Arc<AppState>>) -> (StatusCode, Json<serde_json::Value>) {
+pub async fn kernel_variables(
+    State(state): State<Arc<AppState>>,
+) -> (StatusCode, Json<serde_json::Value>) {
     let mut kernel = state.kernel.lock().await;
     match kernel.as_mut() {
         Some(k) => match k.inspect().await {
             Ok(v) => (StatusCode::OK, Json(json!({ "variables": v }))),
-            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string(), "variables": [] }))),
+            Err(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": e.to_string(), "variables": [] })),
+            ),
         },
-        None => (StatusCode::SERVICE_UNAVAILABLE, Json(json!({ "variables": [] }))),
+        None => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({ "variables": [] })),
+        ),
     }
 }
 
@@ -1391,7 +1504,12 @@ pub async fn ai_chat(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let engine = match state.ai_engine.read().await.as_ref() {
         Some(e) => e.clone(),
-        None => return (StatusCode::SERVICE_UNAVAILABLE, Json(json!({ "error": "No AI provider configured" }))),
+        None => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(json!({ "error": "No AI provider configured" })),
+            )
+        }
     };
     // Flatten the conversation into a single prompt (call_api is single-shot).
     let mut prompt = String::new();
@@ -1405,21 +1523,39 @@ pub async fn ai_chat(
     prompt.push_str("ASSISTANT:");
     match engine.call_api(&prompt).await {
         Ok(reply) => (StatusCode::OK, Json(json!({ "reply": reply }))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": e.to_string() })),
+        ),
     }
 }
 
 // ── Code formatting (pretty-print) ────────────────────────────────────────────
 // Reformats Python cell source with Black ("pretty" PEP8 formatter), falling
 // back to autopep8, then leaving the code untouched if neither is installed.
-pub async fn format_code(Json(req): Json<serde_json::Value>) -> (StatusCode, Json<serde_json::Value>) {
-    let code = req.get("code").and_then(|v| v.as_str()).unwrap_or("").to_string();
+pub async fn format_code(
+    Json(req): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let code = req
+        .get("code")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
     if code.trim().is_empty() {
-        return (StatusCode::OK, Json(json!({ "code": code, "changed": false })));
+        return (
+            StatusCode::OK,
+            Json(json!({ "code": code, "changed": false })),
+        );
     }
     match run_formatter(&code).await {
-        Some(formatted) => (StatusCode::OK, Json(json!({ "code": formatted, "changed": formatted != code }))),
-        None => (StatusCode::OK, Json(json!({ "code": code, "changed": false }))),
+        Some(formatted) => (
+            StatusCode::OK,
+            Json(json!({ "code": formatted, "changed": formatted != code })),
+        ),
+        None => (
+            StatusCode::OK,
+            Json(json!({ "code": code, "changed": false })),
+        ),
     }
 }
 
@@ -1481,38 +1617,67 @@ async fn explore_dispatch(
                     (StatusCode::OK, Json(v))
                 }
             }
-            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))),
+            Err(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": e.to_string() })),
+            ),
         },
-        None => (StatusCode::SERVICE_UNAVAILABLE, Json(json!({ "error": "kernel unavailable" }))),
+        None => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({ "error": "kernel unavailable" })),
+        ),
     }
 }
 
-pub async fn explore_overview(State(state): State<Arc<AppState>>, Json(req): Json<serde_json::Value>) -> (StatusCode, Json<serde_json::Value>) {
+pub async fn explore_overview(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
     explore_dispatch(state, req, "overview").await
 }
-pub async fn explore_schema(State(state): State<Arc<AppState>>, Json(req): Json<serde_json::Value>) -> (StatusCode, Json<serde_json::Value>) {
+pub async fn explore_schema(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
     explore_dispatch(state, req, "schema").await
 }
-pub async fn explore_describe(State(state): State<Arc<AppState>>, Json(req): Json<serde_json::Value>) -> (StatusCode, Json<serde_json::Value>) {
+pub async fn explore_describe(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
     explore_dispatch(state, req, "describe").await
 }
-pub async fn explore_lineage(State(state): State<Arc<AppState>>, Json(req): Json<serde_json::Value>) -> (StatusCode, Json<serde_json::Value>) {
+pub async fn explore_lineage(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
     explore_dispatch(state, req, "lineage").await
 }
-pub async fn explore_page(State(state): State<Arc<AppState>>, Json(req): Json<serde_json::Value>) -> (StatusCode, Json<serde_json::Value>) {
+pub async fn explore_page(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
     explore_dispatch(state, req, "page").await
 }
-pub async fn explore_profile(State(state): State<Arc<AppState>>, Json(req): Json<serde_json::Value>) -> (StatusCode, Json<serde_json::Value>) {
+pub async fn explore_profile(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
     explore_dispatch(state, req, "profile").await
 }
-pub async fn explore_aggregate(State(state): State<Arc<AppState>>, Json(req): Json<serde_json::Value>) -> (StatusCode, Json<serde_json::Value>) {
+pub async fn explore_aggregate(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
     explore_dispatch(state, req, "aggregate").await
 }
 
 /// Generate reproducible pandas code for the current Data Explorer view (source
 /// + filters + sort) so users can drop it into a notebook cell — reusing the
 /// established "insert as cell" idiom.
-pub async fn explore_export_code(Json(req): Json<serde_json::Value>) -> (StatusCode, Json<serde_json::Value>) {
+pub async fn explore_export_code(
+    Json(req): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
     let code = build_explore_code(&req);
     (StatusCode::OK, Json(json!({ "code": code })))
 }
@@ -1531,7 +1696,10 @@ fn build_explore_code(req: &serde_json::Value) -> String {
                     lines.push(format!("df = pd.read_json({})", js(path)));
                 } else {
                     lines.push("import duckdb".to_string());
-                    lines.push(format!("df = duckdb.sql(\"SELECT * FROM '{}'\").df()", path.replace('"', "")));
+                    lines.push(format!(
+                        "df = duckdb.sql(\"SELECT * FROM '{}'\").df()",
+                        path.replace('"', "")
+                    ));
                 }
             }
             Some("sql") => {
@@ -1559,7 +1727,11 @@ fn build_explore_code(req: &serde_json::Value) -> String {
                 other => other.to_string(),
             };
             let expr = match op {
-                "contains" => format!("df = df[df[{}].astype(str).str.contains({}, case=False, na=False)]", js(col), vstr),
+                "contains" => format!(
+                    "df = df[df[{}].astype(str).str.contains({}, case=False, na=False)]",
+                    js(col),
+                    vstr
+                ),
                 "isnull" => format!("df = df[df[{}].isna()]", js(col)),
                 "notnull" => format!("df = df[df[{}].notna()]", js(col)),
                 "in" => format!("df = df[df[{}].isin({})]", js(col), vstr),
@@ -1571,9 +1743,25 @@ fn build_explore_code(req: &serde_json::Value) -> String {
     // sort
     if let Some(sort) = req.get("sort").and_then(|v| v.as_array()) {
         if !sort.is_empty() {
-            let by: Vec<String> = sort.iter().filter_map(|s| s.get("col").and_then(|v| v.as_str()).map(|c| js(c))).collect();
-            let asc: Vec<String> = sort.iter().map(|s| if s.get("dir").and_then(|v| v.as_str()) == Some("desc") { "False".to_string() } else { "True".to_string() }).collect();
-            lines.push(format!("df = df.sort_values(by=[{}], ascending=[{}])", by.join(", "), asc.join(", ")));
+            let by: Vec<String> = sort
+                .iter()
+                .filter_map(|s| s.get("col").and_then(|v| v.as_str()).map(|c| js(c)))
+                .collect();
+            let asc: Vec<String> = sort
+                .iter()
+                .map(|s| {
+                    if s.get("dir").and_then(|v| v.as_str()) == Some("desc") {
+                        "False".to_string()
+                    } else {
+                        "True".to_string()
+                    }
+                })
+                .collect();
+            lines.push(format!(
+                "df = df.sort_values(by=[{}], ascending=[{}])",
+                by.join(", "),
+                asc.join(", ")
+            ));
         }
     }
     lines.push("df".to_string());
@@ -1591,7 +1779,9 @@ async fn query_via_kernel(
     py: &str,
 ) -> Result<(Vec<serde_json::Value>, Vec<serde_json::Value>), String> {
     let mut kernel = state.kernel.lock().await;
-    let k = kernel.as_mut().ok_or_else(|| "kernel unavailable".to_string())?;
+    let k = kernel
+        .as_mut()
+        .ok_or_else(|| "kernel unavailable".to_string())?;
     let outputs = match k.execute(py).await {
         Ok((_s, o)) => o,
         Err(e) => return Err(e.to_string()),
@@ -1607,9 +1797,20 @@ async fn query_via_kernel(
         }
     }
     for o in &outputs {
-        if let Some(df) = o.get("data").and_then(|d| d.get("application/vnd.prismnote.df+json")) {
-            let columns = df.get("columns").and_then(|v| v.as_array()).cloned().unwrap_or_default();
-            let rows = df.get("data").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+        if let Some(df) = o
+            .get("data")
+            .and_then(|d| d.get("application/vnd.prismnote.df+json"))
+        {
+            let columns = df
+                .get("columns")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default();
+            let rows = df
+                .get("data")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default();
             return Ok((columns, rows));
         }
     }
@@ -1673,10 +1874,18 @@ pub async fn db_query_code(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let conn = match load_databases().into_iter().find(|d| d.id == id) {
         Some(c) => c,
-        None => return (StatusCode::NOT_FOUND, Json(json!({ "error": "connection not found" }))),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "connection not found" })),
+            )
+        }
     };
     match db_query_py(&conn, &req.query) {
-        Ok(code) => (StatusCode::OK, Json(json!({ "code": to_cell_code(&code, "df") }))),
+        Ok(code) => (
+            StatusCode::OK,
+            Json(json!({ "code": to_cell_code(&code, "df") })),
+        ),
         Err(e) => (StatusCode::BAD_REQUEST, Json(json!({ "error": e }))),
     }
 }
@@ -1687,10 +1896,18 @@ pub async fn warehouse_query_code(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let conn = match load_warehouses().into_iter().find(|c| c.id == id) {
         Some(c) => c,
-        None => return (StatusCode::NOT_FOUND, Json(json!({ "error": "warehouse connection not found" }))),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "warehouse connection not found" })),
+            )
+        }
     };
     match warehouse_query_py(&conn, &req.query) {
-        Ok(code) => (StatusCode::OK, Json(json!({ "code": to_cell_code(&code, "df") }))),
+        Ok(code) => (
+            StatusCode::OK,
+            Json(json!({ "code": to_cell_code(&code, "df") })),
+        ),
         Err(e) => (StatusCode::BAD_REQUEST, Json(json!({ "error": e }))),
     }
 }
@@ -1723,7 +1940,9 @@ fn save_databases(dbs: &[crate::db::DatabaseConnection]) {
 }
 
 pub async fn list_databases() -> Json<DatabaseList> {
-    Json(DatabaseList { databases: load_databases() })
+    Json(DatabaseList {
+        databases: load_databases(),
+    })
 }
 
 pub async fn create_database(
@@ -1771,7 +1990,12 @@ pub async fn execute_database_query(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let conn = match load_databases().into_iter().find(|d| d.id == id) {
         Some(c) => c,
-        None => return (StatusCode::NOT_FOUND, Json(json!({ "error": "connection not found" }))),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "connection not found" })),
+            )
+        }
     };
     let py = match db_query_py(&conn, &req.query) {
         Ok(p) => p,
@@ -1801,14 +2025,20 @@ pub async fn suggest_libraries(
     State(state): State<Arc<AppState>>,
     Path(_id): Path<String>,
     Json(req): Json<crate::library_advisor::SuggestLibrariesRequest>,
-) -> (StatusCode, Json<crate::library_advisor::SuggestionsResponse>) {
+) -> (
+    StatusCode,
+    Json<crate::library_advisor::SuggestionsResponse>,
+) {
     let advisor = crate::library_advisor::LibraryAdvisor::new(state.ai_engine.read().await.clone());
 
-    match advisor.suggest_libraries(
-        &req.notebook_code,
-        req.installed_packages,
-        req.ignored_libraries,
-    ).await {
+    match advisor
+        .suggest_libraries(
+            &req.notebook_code,
+            req.installed_packages,
+            req.ignored_libraries,
+        )
+        .await
+    {
         Ok(response) => (StatusCode::OK, Json(response)),
         Err(_) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -1843,20 +2073,35 @@ pub async fn ignore_library(
                 }
 
                 // Add to ignored list
-                ipynb["metadata"]["prismnote"]["ignored_libraries"].as_array_mut().unwrap().push(json!({
-                    "name": req.library_name,
-                    "reason": req.reason,
-                    "ignored_at": now,
-                }));
+                ipynb["metadata"]["prismnote"]["ignored_libraries"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(json!({
+                        "name": req.library_name,
+                        "reason": req.reason,
+                        "ignored_at": now,
+                    }));
 
-                match std::fs::write(&path, serde_json::to_string_pretty(&ipynb).unwrap_or_default()) {
+                match std::fs::write(
+                    &path,
+                    serde_json::to_string_pretty(&ipynb).unwrap_or_default(),
+                ) {
                     Ok(_) => (StatusCode::OK, Json(json!({"status": "ignored"}))),
-                    Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to save"}))),
+                    Err(_) => (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(json!({"error": "Failed to save"})),
+                    ),
                 }
             }
-            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Invalid notebook"}))),
+            Err(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Invalid notebook"})),
+            ),
         },
-        Err(_) => (StatusCode::NOT_FOUND, Json(json!({"error": "Notebook not found"}))),
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "Notebook not found"})),
+        ),
     }
 }
 
@@ -1872,7 +2117,10 @@ pub async fn get_ignored_libraries(
                 let ignored = ipynb["metadata"]["prismnote"]["ignored_libraries"].clone();
                 (StatusCode::OK, Json(json!({"ignored": ignored})))
             }
-            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ignored": []}))),
+            Err(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"ignored": []})),
+            ),
         },
         Err(_) => (StatusCode::NOT_FOUND, Json(json!({"ignored": []}))),
     }
@@ -1899,15 +2147,16 @@ pub async fn execute_sql(
     let optimizations = crate::sql_executor::SQLExecutor::analyze_query(&req.query);
 
     // Format result as HTML table
-    let query_result = crate::sql_executor::SQLExecutor::execute_query(&req.query, &req.connection_id)
-        .await
-        .unwrap_or_else(|_| crate::sql_executor::QueryResult {
-            columns: vec![],
-            rows: vec![],
-            row_count: 0,
-            execution_time_ms: 0,
-            estimated_memory_bytes: 0,
-        });
+    let query_result =
+        crate::sql_executor::SQLExecutor::execute_query(&req.query, &req.connection_id)
+            .await
+            .unwrap_or_else(|_| crate::sql_executor::QueryResult {
+                columns: vec![],
+                rows: vec![],
+                row_count: 0,
+                execution_time_ms: 0,
+                estimated_memory_bytes: 0,
+            });
 
     let result_html = crate::sql_executor::SQLExecutor::format_result_as_html(&query_result);
 
@@ -1926,7 +2175,10 @@ pub async fn get_query_optimizations(
     Json(req): Json<ExecuteSQLRequest>,
 ) -> Json<serde_json::Value> {
     let optimizations = crate::sql_executor::SQLExecutor::analyze_query(&req.query);
-    let high_priority = optimizations.iter().filter(|o| o.severity == "high").count();
+    let high_priority = optimizations
+        .iter()
+        .filter(|o| o.severity == "high")
+        .count();
     let total_issues = optimizations.len();
     Json(json!({
         "optimizations": serde_json::to_value(&optimizations).unwrap_or(json!([])),
@@ -2014,9 +2266,7 @@ pub async fn build_execution_plan(
     }
 }
 
-pub async fn get_execution_statistics(
-    Path(notebook_id): Path<String>,
-) -> Json<serde_json::Value> {
+pub async fn get_execution_statistics(Path(notebook_id): Path<String>) -> Json<serde_json::Value> {
     let pipeline = crate::execution_pipeline::ExecutionPipeline::new();
     let stats = pipeline.get_execution_statistics(&notebook_id);
     Json(json!(stats))
@@ -2060,7 +2310,10 @@ fn save_warehouses(ws: &[crate::cloud_warehouse::CloudWarehouseConnection]) {
 /// Generate Python that runs `query` against a cloud warehouse using its official
 /// **open-source** client (Apache-2.0 / MIT) and returns a pandas DataFrame.
 /// Drivers are optional and user-installed — none are vendored.
-fn warehouse_query_py(conn: &crate::cloud_warehouse::CloudWarehouseConnection, query: &str) -> Result<String, String> {
+fn warehouse_query_py(
+    conn: &crate::cloud_warehouse::CloudWarehouseConnection,
+    query: &str,
+) -> Result<String, String> {
     use crate::cloud_warehouse::CloudWarehouseType as T;
     let q = js(query);
     let host = js(conn.host.as_deref().unwrap_or(""));
@@ -2217,7 +2470,12 @@ pub async fn execute_cloud_warehouse_query(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let conn = match load_warehouses().into_iter().find(|c| c.id == id) {
         Some(c) => c,
-        None => return (StatusCode::NOT_FOUND, Json(json!({ "error": "warehouse connection not found" }))),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "warehouse connection not found" })),
+            )
+        }
     };
     let py = match warehouse_query_py(&conn, &req.query) {
         Ok(p) => p,
@@ -2324,9 +2582,8 @@ pub async fn create_fine_tuning_job(
         save_steps: 500,
     };
 
-    let mut manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+    let mut manager =
+        crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
 
     match manager.create_fine_tuning_job(config) {
         Ok(job) => (StatusCode::CREATED, Json(json!(job))),
@@ -2338,17 +2595,15 @@ pub async fn create_fine_tuning_job(
 }
 
 pub async fn list_fine_tuning_jobs() -> Json<serde_json::Value> {
-    let manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+    let manager = crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
     let jobs = manager.list_jobs();
     Json(json!({"jobs": jobs}))
 }
 
-pub async fn get_fine_tuning_job(Path(job_id): Path<String>) -> (StatusCode, Json<serde_json::Value>) {
-    let manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+pub async fn get_fine_tuning_job(
+    Path(job_id): Path<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let manager = crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
 
     match manager.get_job(&job_id) {
         Some(job) => (StatusCode::OK, Json(json!(job))),
@@ -2359,10 +2614,11 @@ pub async fn get_fine_tuning_job(Path(job_id): Path<String>) -> (StatusCode, Jso
     }
 }
 
-pub async fn start_fine_tuning_job(Path(job_id): Path<String>) -> (StatusCode, Json<serde_json::Value>) {
-    let mut manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+pub async fn start_fine_tuning_job(
+    Path(job_id): Path<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let mut manager =
+        crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
 
     match manager.start_job(&job_id).await {
         Ok(job) => (StatusCode::OK, Json(json!(job))),
@@ -2373,10 +2629,11 @@ pub async fn start_fine_tuning_job(Path(job_id): Path<String>) -> (StatusCode, J
     }
 }
 
-pub async fn cancel_fine_tuning_job(Path(job_id): Path<String>) -> (StatusCode, Json<serde_json::Value>) {
-    let mut manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+pub async fn cancel_fine_tuning_job(
+    Path(job_id): Path<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let mut manager =
+        crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
 
     match manager.cancel_job(&job_id).await {
         Ok(_) => (StatusCode::OK, Json(json!({"status": "cancelled"}))),
@@ -2388,9 +2645,7 @@ pub async fn cancel_fine_tuning_job(Path(job_id): Path<String>) -> (StatusCode, 
 }
 
 pub async fn list_model_checkpoints(Path(job_id): Path<String>) -> Json<serde_json::Value> {
-    let manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+    let manager = crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
     let checkpoints = manager.list_checkpoints(&job_id);
     Json(json!({"checkpoints": checkpoints}))
 }
@@ -2398,9 +2653,8 @@ pub async fn list_model_checkpoints(Path(job_id): Path<String>) -> Json<serde_js
 pub async fn deploy_inference_endpoint(
     Path(checkpoint_id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let mut manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+    let mut manager =
+        crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
 
     match manager.deploy_endpoint(&checkpoint_id).await {
         Ok(endpoint) => (StatusCode::CREATED, Json(json!(endpoint))),
@@ -2412,17 +2666,16 @@ pub async fn deploy_inference_endpoint(
 }
 
 pub async fn list_inference_endpoints() -> Json<serde_json::Value> {
-    let manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+    let manager = crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
     let endpoints = manager.list_endpoints();
     Json(json!({"endpoints": endpoints}))
 }
 
-pub async fn delete_inference_endpoint(Path(endpoint_id): Path<String>) -> (StatusCode, Json<serde_json::Value>) {
-    let mut manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+pub async fn delete_inference_endpoint(
+    Path(endpoint_id): Path<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let mut manager =
+        crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
 
     match manager.delete_endpoint(&endpoint_id).await {
         Ok(_) => (StatusCode::NO_CONTENT, Json(json!({"status": "deleted"}))),
@@ -2434,9 +2687,7 @@ pub async fn delete_inference_endpoint(Path(endpoint_id): Path<String>) -> (Stat
 }
 
 pub async fn get_runpod_instances() -> (StatusCode, Json<serde_json::Value>) {
-    let manager = crate::ai_training::AITrainingManager::new(
-        std::env::var("RUNPOD_API_KEY").ok(),
-    );
+    let manager = crate::ai_training::AITrainingManager::new(std::env::var("RUNPOD_API_KEY").ok());
 
     match manager.get_runpod_instances().await {
         Ok(instances) => (StatusCode::OK, Json(json!({"instances": instances}))),
@@ -2524,17 +2775,22 @@ pub async fn upload_file(
     );
 
     match file_manager
-        .upload_file(&notebook_id, &req.filename, content_bytes, req.mime_type, "user".to_string())
+        .upload_file(
+            &notebook_id,
+            &req.filename,
+            content_bytes,
+            req.mime_type,
+            "user".to_string(),
+        )
         .await
     {
         Ok(metadata) => (
             StatusCode::CREATED,
-            Json(serde_json::to_value(&metadata).unwrap_or(json!({"error": "serialization failed"}))),
+            Json(
+                serde_json::to_value(&metadata).unwrap_or(json!({"error": "serialization failed"})),
+            ),
         ),
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": e})),
-        ),
+        Err(e) => (StatusCode::BAD_REQUEST, Json(json!({"error": e}))),
     }
 }
 
@@ -2558,10 +2814,7 @@ pub async fn download_file(
                 "notebook_id": notebook_id
             })),
         ),
-        Err(e) => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": e})),
-        ),
+        Err(e) => (StatusCode::NOT_FOUND, Json(json!({"error": e}))),
     }
 }
 
@@ -2584,10 +2837,7 @@ pub async fn list_files(
                 "files": files
             })),
         ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": e})),
-        ),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))),
     }
 }
 
@@ -2603,14 +2853,8 @@ pub async fn delete_file(
     );
 
     match file_manager.delete_file(&notebook_id, &file_id).await {
-        Ok(_) => (
-            StatusCode::NO_CONTENT,
-            Json(json!({"status": "deleted"})),
-        ),
-        Err(e) => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": e})),
-        ),
+        Ok(_) => (StatusCode::NO_CONTENT, Json(json!({"status": "deleted"}))),
+        Err(e) => (StatusCode::NOT_FOUND, Json(json!({"error": e}))),
     }
 }
 
@@ -3326,7 +3570,10 @@ pub async fn create_docker_container(
     let env = req.environment.unwrap_or_default();
     let ports = req.ports.unwrap_or_default();
 
-    match executor.create_container(&req.image, &req.name, env, ports).await {
+    match executor
+        .create_container(&req.image, &req.name, env, ports)
+        .await
+    {
         Ok(container) => (
             StatusCode::CREATED,
             Json(json!({
@@ -3565,7 +3812,11 @@ pub async fn search_notebooks(
         .collect();
 
     // Sort by score (descending)
-    results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    results.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     let total = results.len();
     let execution_time_ms = start.elapsed().as_millis() as u64;

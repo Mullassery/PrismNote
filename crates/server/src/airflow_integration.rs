@@ -59,15 +59,13 @@ impl AirflowManager {
 
     pub async fn list_dags(&self) -> Result<Vec<AirflowDag>, String> {
         // TODO: Fetch DAGs from Airflow API
-        Ok(vec![
-            AirflowDag {
-                dag_id: "example_dag".to_string(),
-                description: Some("Example data pipeline".to_string()),
-                schedule_interval: "@daily".to_string(),
-                owner: "airflow".to_string(),
-                tags: vec!["example".to_string(), "tutorial".to_string()],
-            },
-        ])
+        Ok(vec![AirflowDag {
+            dag_id: "example_dag".to_string(),
+            description: Some("Example data pipeline".to_string()),
+            schedule_interval: "@daily".to_string(),
+            owner: "airflow".to_string(),
+            tags: vec!["example".to_string(), "tutorial".to_string()],
+        }])
     }
 
     pub async fn trigger_dag(&self, dag_id: &str) -> Result<DagRun, String> {
@@ -98,15 +96,13 @@ impl AirflowManager {
 
     pub async fn list_tasks(&self, _dag_id: &str) -> Result<Vec<AirflowTask>, String> {
         // TODO: Fetch tasks from Airflow API
-        Ok(vec![
-            AirflowTask {
-                task_id: "extract".to_string(),
-                task_type: "PythonOperator".to_string(),
-                description: Some("Extract data from source".to_string()),
-                upstream_tasks: vec![],
-                downstream_tasks: vec!["transform".to_string()],
-            },
-        ])
+        Ok(vec![AirflowTask {
+            task_id: "extract".to_string(),
+            task_type: "PythonOperator".to_string(),
+            description: Some("Extract data from source".to_string()),
+            upstream_tasks: vec![],
+            downstream_tasks: vec!["transform".to_string()],
+        }])
     }
 
     pub fn generate_python_dag(dag_name: &str) -> String {

@@ -61,18 +61,12 @@ impl SQLExecutor {
         Self::parse_sql_cell(code).is_some()
     }
 
-    pub async fn execute_query(
-        _query: &str,
-        _connection_id: &str,
-    ) -> Result<QueryResult> {
+    pub async fn execute_query(_query: &str, _connection_id: &str) -> Result<QueryResult> {
         // TODO: Integrate with database manager
         // For now, return placeholder result
         Ok(QueryResult {
             columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![
-                vec![json!(1), json!("test")],
-                vec![json!(2), json!("data")],
-            ],
+            rows: vec![vec![json!(1), json!("test")], vec![json!(2), json!("data")]],
             row_count: 2,
             execution_time_ms: 150,
             estimated_memory_bytes: 2048,
@@ -135,7 +129,9 @@ impl SQLExecutor {
             optimizations.push(QueryOptimization {
                 issue: "SELECT * is used".to_string(),
                 severity: "medium".to_string(),
-                suggestion: "Specify only needed columns to reduce data transfer and improve performance".to_string(),
+                suggestion:
+                    "Specify only needed columns to reduce data transfer and improve performance"
+                        .to_string(),
                 estimated_impact: "5-20% faster".to_string(),
             });
         }
@@ -145,7 +141,8 @@ impl SQLExecutor {
             optimizations.push(QueryOptimization {
                 issue: "No WHERE clause detected".to_string(),
                 severity: "high".to_string(),
-                suggestion: "Add WHERE clause to filter results and reduce data scanned".to_string(),
+                suggestion: "Add WHERE clause to filter results and reduce data scanned"
+                    .to_string(),
                 estimated_impact: "50-90% faster".to_string(),
             });
         }
@@ -155,7 +152,9 @@ impl SQLExecutor {
             optimizations.push(QueryOptimization {
                 issue: "LIKE with leading wildcard detected".to_string(),
                 severity: "high".to_string(),
-                suggestion: "Use exact matches or indexed LIKE patterns starting with literal characters".to_string(),
+                suggestion:
+                    "Use exact matches or indexed LIKE patterns starting with literal characters"
+                        .to_string(),
                 estimated_impact: "10-100x faster".to_string(),
             });
         }
@@ -165,7 +164,8 @@ impl SQLExecutor {
             optimizations.push(QueryOptimization {
                 issue: "Nested SELECT (subquery) detected".to_string(),
                 severity: "medium".to_string(),
-                suggestion: "Consider using JOIN instead of subquery for better performance".to_string(),
+                suggestion: "Consider using JOIN instead of subquery for better performance"
+                    .to_string(),
                 estimated_impact: "5-50% faster".to_string(),
             });
         }
@@ -175,7 +175,8 @@ impl SQLExecutor {
             optimizations.push(QueryOptimization {
                 issue: "NOT IN with subquery detected".to_string(),
                 severity: "medium".to_string(),
-                suggestion: "Use NOT EXISTS (more efficient) or LEFT JOIN instead of NOT IN".to_string(),
+                suggestion: "Use NOT EXISTS (more efficient) or LEFT JOIN instead of NOT IN"
+                    .to_string(),
                 estimated_impact: "10-50% faster".to_string(),
             });
         }
@@ -185,7 +186,9 @@ impl SQLExecutor {
             optimizations.push(QueryOptimization {
                 issue: "Multiple OR conditions detected".to_string(),
                 severity: "low".to_string(),
-                suggestion: "Consider using IN clause or UNION if appropriate for better optimization".to_string(),
+                suggestion:
+                    "Consider using IN clause or UNION if appropriate for better optimization"
+                        .to_string(),
                 estimated_impact: "5-30% faster".to_string(),
             });
         }
@@ -195,7 +198,9 @@ impl SQLExecutor {
             optimizations.push(QueryOptimization {
                 issue: "Function applied in WHERE clause".to_string(),
                 severity: "medium".to_string(),
-                suggestion: "Store data in normalized form or use case-insensitive collation instead".to_string(),
+                suggestion:
+                    "Store data in normalized form or use case-insensitive collation instead"
+                        .to_string(),
                 estimated_impact: "10-50% faster".to_string(),
             });
         }
@@ -233,8 +238,6 @@ mod tests {
     fn test_query_analysis() {
         let optimizations = SQLExecutor::analyze_query("SELECT * FROM users");
         assert!(!optimizations.is_empty());
-        assert!(optimizations
-            .iter()
-            .any(|o| o.issue.contains("SELECT *")));
+        assert!(optimizations.iter().any(|o| o.issue.contains("SELECT *")));
     }
 }

@@ -10,23 +10,87 @@ const MAX_QUERY_NESTING: usize = 10; // Prevent deeply nested queries
 
 /// SQL keywords allowed in user queries (read-only operations)
 const ALLOWED_KEYWORDS: &[&str] = &[
-    "SELECT", "FROM", "WHERE", "JOIN", "LEFT", "INNER", "OUTER", "RIGHT", "CROSS",
-    "ON", "AND", "OR", "NOT", "IN", "LIKE", "BETWEEN", "IS", "NULL", "TRUE", "FALSE",
-    "ORDER", "BY", "GROUP", "HAVING", "LIMIT", "OFFSET", "DISTINCT", "AS", "WITH",
-    "UNION", "ALL", "CASE", "WHEN", "THEN", "ELSE", "END", "CAST", "INTERVAL",
-    "EXTRACT", "DATE", "TIME", "TIMESTAMP", "CURRENT", "LOCAL", "ZONE",
-    "COLLATE", "ILIKE", "GLOB", "REGEXP", "SIMILAR", "CONTAINS", "JSONB",
+    "SELECT",
+    "FROM",
+    "WHERE",
+    "JOIN",
+    "LEFT",
+    "INNER",
+    "OUTER",
+    "RIGHT",
+    "CROSS",
+    "ON",
+    "AND",
+    "OR",
+    "NOT",
+    "IN",
+    "LIKE",
+    "BETWEEN",
+    "IS",
+    "NULL",
+    "TRUE",
+    "FALSE",
+    "ORDER",
+    "BY",
+    "GROUP",
+    "HAVING",
+    "LIMIT",
+    "OFFSET",
+    "DISTINCT",
+    "AS",
+    "WITH",
+    "UNION",
+    "ALL",
+    "CASE",
+    "WHEN",
+    "THEN",
+    "ELSE",
+    "END",
+    "CAST",
+    "INTERVAL",
+    "EXTRACT",
+    "DATE",
+    "TIME",
+    "TIMESTAMP",
+    "CURRENT",
+    "LOCAL",
+    "ZONE",
+    "COLLATE",
+    "ILIKE",
+    "GLOB",
+    "REGEXP",
+    "SIMILAR",
+    "CONTAINS",
+    "JSONB",
 ];
 
 /// SQL keywords NEVER allowed (dangerous operations)
 const BLOCKED_KEYWORDS: &[&str] = &[
-    "CREATE", "DROP", "ALTER", "DELETE", "INSERT", "UPDATE", "TRUNCATE",
-    "EXEC", "EXECUTE", "CALL", "DECLARE", "SET", "GO",
-    "GRANT", "REVOKE", "DENY",
+    "CREATE",
+    "DROP",
+    "ALTER",
+    "DELETE",
+    "INSERT",
+    "UPDATE",
+    "TRUNCATE",
+    "EXEC",
+    "EXECUTE",
+    "CALL",
+    "DECLARE",
+    "SET",
+    "GO",
+    "GRANT",
+    "REVOKE",
+    "DENY",
     // SQL Server stored procedure prefixes
-    "xp_", "sp_",
+    "xp_",
+    "sp_",
     // Dangerous functions
-    "COPY", "INTO", "OUTFILE", "LOAD_FILE", "INTO_OUTFILE",
+    "COPY",
+    "INTO",
+    "OUTFILE",
+    "LOAD_FILE",
+    "INTO_OUTFILE",
 ];
 
 pub struct QueryValidator;
@@ -96,7 +160,7 @@ impl QueryValidator {
             // Handle -- comments (line comments)
             if ch == '-' && chars.peek() == Some(&'-') {
                 chars.next(); // consume second -
-                // Skip until end of line
+                              // Skip until end of line
                 while let Some(c) = chars.next() {
                     if c == '\n' {
                         result.push('\n');
@@ -234,7 +298,10 @@ impl QueryValidator {
         for pattern in &suspicious_patterns {
             if let Ok(re) = Regex::new(pattern) {
                 if re.is_match(&upper) {
-                    return Err(anyhow!("Detected suspicious pattern after semicolon: {}", pattern));
+                    return Err(anyhow!(
+                        "Detected suspicious pattern after semicolon: {}",
+                        pattern
+                    ));
                 }
             }
         }

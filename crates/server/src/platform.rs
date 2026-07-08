@@ -144,7 +144,9 @@ impl Platform {
             (OS::Linux, Architecture::Aarch64Generic) => "prismnote-linux-aarch64".to_string(),
             (OS::Linux, Architecture::IntelX86_64) => "prismnote-linux-x86_64".to_string(),
             (OS::Windows, Architecture::IntelX86_64) => "prismnote-windows-x86_64.exe".to_string(),
-            (OS::Windows, Architecture::Aarch64Generic) => "prismnote-windows-aarch64.exe".to_string(),
+            (OS::Windows, Architecture::Aarch64Generic) => {
+                "prismnote-windows-aarch64.exe".to_string()
+            }
             _ => "prismnote".to_string(),
         }
     }
@@ -196,10 +198,7 @@ mod tests {
     fn test_platform_detection() {
         let platform = Platform::detect().expect("Platform detection failed");
         assert!(Platform::supported());
-        println!(
-            "Detected: {:?} on {:?}",
-            platform.os, platform.arch
-        );
+        println!("Detected: {:?} on {:?}", platform.os, platform.arch);
     }
 
     #[test]

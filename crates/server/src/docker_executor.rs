@@ -59,29 +59,24 @@ pub struct DockerExecutor {
 impl DockerExecutor {
     pub fn new(docker_host: Option<String>) -> Self {
         Self {
-            docker_host: docker_host
-                .unwrap_or_else(|| "unix:///var/run/docker.sock".to_string()),
+            docker_host: docker_host.unwrap_or_else(|| "unix:///var/run/docker.sock".to_string()),
             timeout_seconds: 30,
         }
     }
 
     pub async fn list_containers(&self) -> Result<Vec<DockerContainer>, String> {
         // TODO: Use docker API or CLI to list containers
-        Ok(vec![
-            DockerContainer {
-                id: "abc123def456".to_string(),
-                name: "prismnote-dev".to_string(),
-                image: "python:3.11".to_string(),
-                status: "running".to_string(),
-                port_bindings: HashMap::from([
-                    ("8000/tcp".to_string(), "8000".to_string()),
-                ]),
-                environment: vec![
-                    "PYTHONUNBUFFERED=1".to_string(),
-                    "PRISMNOTE_DEV=1".to_string(),
-                ],
-            },
-        ])
+        Ok(vec![DockerContainer {
+            id: "abc123def456".to_string(),
+            name: "prismnote-dev".to_string(),
+            image: "python:3.11".to_string(),
+            status: "running".to_string(),
+            port_bindings: HashMap::from([("8000/tcp".to_string(), "8000".to_string())]),
+            environment: vec![
+                "PYTHONUNBUFFERED=1".to_string(),
+                "PRISMNOTE_DEV=1".to_string(),
+            ],
+        }])
     }
 
     pub async fn execute_in_container(
@@ -113,16 +108,14 @@ impl DockerExecutor {
         path: &str,
     ) -> Result<Vec<ContainerFile>, String> {
         // TODO: List files in container directory
-        Ok(vec![
-            ContainerFile {
-                container_id: container_id.to_string(),
-                path: path.to_string(),
-                name: "example.py".to_string(),
-                size: 1024,
-                is_dir: false,
-                modified_time: chrono::Local::now().to_rfc3339(),
-            },
-        ])
+        Ok(vec![ContainerFile {
+            container_id: container_id.to_string(),
+            path: path.to_string(),
+            name: "example.py".to_string(),
+            size: 1024,
+            is_dir: false,
+            modified_time: chrono::Local::now().to_rfc3339(),
+        }])
     }
 
     pub async fn read_container_file(
@@ -211,7 +204,10 @@ impl DockerExecutor {
     ) -> Result<String, String> {
         // TODO: Get container logs
         let num_lines = lines.unwrap_or(50);
-        Ok(format!("Last {} lines from container {}", num_lines, container_id))
+        Ok(format!(
+            "Last {} lines from container {}",
+            num_lines, container_id
+        ))
     }
 
     pub async fn copy_to_container(

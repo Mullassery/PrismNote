@@ -75,12 +75,7 @@ impl RBACManager {
         Ok(acl)
     }
 
-    pub fn grant_access(
-        &self,
-        user_id: &str,
-        username: &str,
-        role: Role,
-    ) -> Result<NotebookACL> {
+    pub fn grant_access(&self, user_id: &str, username: &str, role: Role) -> Result<NotebookACL> {
         let mut acl = self.load_acl()?;
 
         // Remove existing permission if any
@@ -108,10 +103,7 @@ impl RBACManager {
     pub fn check_permission(&self, user_id: &str, action: &str) -> Result<bool> {
         let acl = self.load_acl()?;
 
-        let permission = acl
-            .permissions
-            .iter()
-            .find(|p| p.user_id == user_id);
+        let permission = acl.permissions.iter().find(|p| p.user_id == user_id);
 
         match permission {
             Some(perm) => Ok(self.has_permission(&perm.role, action)),
@@ -134,7 +126,13 @@ impl RBACManager {
             .map(|p| p.role.clone()))
     }
 
-    pub fn log_audit(&self, user_id: &str, action: &str, resource: &str, details: &str) -> Result<()> {
+    pub fn log_audit(
+        &self,
+        user_id: &str,
+        action: &str,
+        resource: &str,
+        details: &str,
+    ) -> Result<()> {
         let log = AuditLog {
             user_id: user_id.to_string(),
             action: action.to_string(),
@@ -202,7 +200,10 @@ impl RBACManager {
             let content = fs::read_to_string(&acl_path)?;
             Ok(serde_json::from_str(&content)?)
         } else {
-            Err(anyhow::anyhow!("ACL not initialized for notebook {}", self.notebook_id))
+            Err(anyhow::anyhow!(
+                "ACL not initialized for notebook {}",
+                self.notebook_id
+            ))
         }
     }
 }

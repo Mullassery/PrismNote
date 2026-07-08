@@ -127,28 +127,55 @@ fn strip_code_fences(text: &str) -> String {
 }
 
 impl AIEngine {
-
     async fn ollama_call_api(&self, prompt: &str) -> Result<String> {
-        let ollama_url = self.config.ollama_url.as_ref().ok_or(anyhow!("Ollama URL not configured"))?;
-        let model = self.config.ollama_model.as_ref().ok_or(anyhow!("Ollama model not selected"))?;
+        let ollama_url = self
+            .config
+            .ollama_url
+            .as_ref()
+            .ok_or(anyhow!("Ollama URL not configured"))?;
+        let model = self
+            .config
+            .ollama_model
+            .as_ref()
+            .ok_or(anyhow!("Ollama model not selected"))?;
         self.ollama_request(ollama_url, model, prompt).await
     }
 
     async fn claude_call_api(&self, prompt: &str) -> Result<String> {
-        let api_key = self.config.claude_api_key.as_ref().ok_or(anyhow!("Claude API key not configured"))?;
+        let api_key = self
+            .config
+            .claude_api_key
+            .as_ref()
+            .ok_or(anyhow!("Claude API key not configured"))?;
         self.claude_request(api_key, prompt).await
     }
 
     async fn openai_call_api(&self, prompt: &str) -> Result<String> {
-        let api_key = self.config.openai_api_key.as_ref().ok_or(anyhow!("OpenAI API key not configured"))?;
-        let model = self.config.openai_model.as_ref().ok_or(anyhow!("OpenAI model not selected"))?;
+        let api_key = self
+            .config
+            .openai_api_key
+            .as_ref()
+            .ok_or(anyhow!("OpenAI API key not configured"))?;
+        let model = self
+            .config
+            .openai_model
+            .as_ref()
+            .ok_or(anyhow!("OpenAI model not selected"))?;
         self.openai_request(api_key, model, prompt).await
     }
 
     // Ollama integration (local LLM)
     async fn ollama_explain(&self, code: &str) -> Result<String> {
-        let ollama_url = self.config.ollama_url.as_ref().ok_or(anyhow!("Ollama URL not configured"))?;
-        let model = self.config.ollama_model.as_ref().ok_or(anyhow!("Ollama model not selected"))?;
+        let ollama_url = self
+            .config
+            .ollama_url
+            .as_ref()
+            .ok_or(anyhow!("Ollama URL not configured"))?;
+        let model = self
+            .config
+            .ollama_model
+            .as_ref()
+            .ok_or(anyhow!("Ollama model not selected"))?;
 
         let prompt = format!(
             "You are Prism, a friendly Python data-science teacher. Explain this code clearly in 2-3 sentences (the what AND the why), then add one line starting with '💡 Tip:' giving a relevant, specific tip or gotcha for this code:\n\n```python\n{}\n```",
@@ -160,8 +187,16 @@ impl AIEngine {
     }
 
     async fn ollama_fix(&self, code: &str, error: &str) -> Result<String> {
-        let ollama_url = self.config.ollama_url.as_ref().ok_or(anyhow!("Ollama URL not configured"))?;
-        let model = self.config.ollama_model.as_ref().ok_or(anyhow!("Ollama model not selected"))?;
+        let ollama_url = self
+            .config
+            .ollama_url
+            .as_ref()
+            .ok_or(anyhow!("Ollama URL not configured"))?;
+        let model = self
+            .config
+            .ollama_model
+            .as_ref()
+            .ok_or(anyhow!("Ollama model not selected"))?;
 
         let prompt = format!(
             "Fix this Python code that has an error:\n\nError: {}\n\nCode:\n```python\n{}\n```\n\nProvide corrected code only, no explanation.",
@@ -173,8 +208,16 @@ impl AIEngine {
     }
 
     async fn ollama_complete(&self, code: &str, context: Option<&str>) -> Result<String> {
-        let ollama_url = self.config.ollama_url.as_ref().ok_or(anyhow!("Ollama URL not configured"))?;
-        let model = self.config.ollama_model.as_ref().ok_or(anyhow!("Ollama model not selected"))?;
+        let ollama_url = self
+            .config
+            .ollama_url
+            .as_ref()
+            .ok_or(anyhow!("Ollama URL not configured"))?;
+        let model = self
+            .config
+            .ollama_model
+            .as_ref()
+            .ok_or(anyhow!("Ollama model not selected"))?;
 
         let ctx = context.unwrap_or("");
         let prompt = format!(
@@ -212,7 +255,11 @@ impl AIEngine {
 
     // Claude integration
     async fn claude_explain(&self, code: &str) -> Result<String> {
-        let api_key = self.config.claude_api_key.as_ref().ok_or(anyhow!("Claude API key not configured"))?;
+        let api_key = self
+            .config
+            .claude_api_key
+            .as_ref()
+            .ok_or(anyhow!("Claude API key not configured"))?;
 
         let message = format!(
             "You are Prism, a friendly Python data-science teacher. Explain this code clearly in 2-3 sentences (the what AND the why), then add one line starting with '💡 Tip:' giving a relevant, specific tip or gotcha for this code:\n\n```python\n{}\n```",
@@ -223,7 +270,11 @@ impl AIEngine {
     }
 
     async fn claude_fix(&self, code: &str, error: &str) -> Result<String> {
-        let api_key = self.config.claude_api_key.as_ref().ok_or(anyhow!("Claude API key not configured"))?;
+        let api_key = self
+            .config
+            .claude_api_key
+            .as_ref()
+            .ok_or(anyhow!("Claude API key not configured"))?;
 
         let message = format!(
             "Fix this Python code that has an error:\n\nError: {}\n\nCode:\n```python\n{}\n```\n\nProvide corrected code only, no explanation.",
@@ -234,7 +285,11 @@ impl AIEngine {
     }
 
     async fn claude_complete(&self, code: &str, context: Option<&str>) -> Result<String> {
-        let api_key = self.config.claude_api_key.as_ref().ok_or(anyhow!("Claude API key not configured"))?;
+        let api_key = self
+            .config
+            .claude_api_key
+            .as_ref()
+            .ok_or(anyhow!("Claude API key not configured"))?;
 
         let ctx = context.unwrap_or("");
         let message = format!(
@@ -247,7 +302,11 @@ impl AIEngine {
 
     async fn claude_request(&self, api_key: &str, message: &str) -> Result<String> {
         let client = reqwest::Client::new();
-        let model = self.config.claude_model.as_deref().unwrap_or("claude-sonnet-4-6");
+        let model = self
+            .config
+            .claude_model
+            .as_deref()
+            .unwrap_or("claude-sonnet-4-6");
         let body = json!({
             "model": model,
             "max_tokens": 1024,
@@ -283,8 +342,16 @@ impl AIEngine {
 
     // OpenAI integration
     async fn openai_explain(&self, code: &str) -> Result<String> {
-        let api_key = self.config.openai_api_key.as_ref().ok_or(anyhow!("OpenAI API key not configured"))?;
-        let model = self.config.openai_model.as_ref().ok_or(anyhow!("OpenAI model not selected"))?;
+        let api_key = self
+            .config
+            .openai_api_key
+            .as_ref()
+            .ok_or(anyhow!("OpenAI API key not configured"))?;
+        let model = self
+            .config
+            .openai_model
+            .as_ref()
+            .ok_or(anyhow!("OpenAI model not selected"))?;
 
         let message = format!(
             "You are Prism, a friendly Python data-science teacher. Explain this code clearly in 2-3 sentences (the what AND the why), then add one line starting with '💡 Tip:' giving a relevant, specific tip or gotcha for this code:\n\n```python\n{}\n```",
@@ -295,8 +362,16 @@ impl AIEngine {
     }
 
     async fn openai_fix(&self, code: &str, error: &str) -> Result<String> {
-        let api_key = self.config.openai_api_key.as_ref().ok_or(anyhow!("OpenAI API key not configured"))?;
-        let model = self.config.openai_model.as_ref().ok_or(anyhow!("OpenAI model not selected"))?;
+        let api_key = self
+            .config
+            .openai_api_key
+            .as_ref()
+            .ok_or(anyhow!("OpenAI API key not configured"))?;
+        let model = self
+            .config
+            .openai_model
+            .as_ref()
+            .ok_or(anyhow!("OpenAI model not selected"))?;
 
         let message = format!(
             "Fix this Python code that has an error:\n\nError: {}\n\nCode:\n```python\n{}\n```\n\nProvide corrected code only.",
@@ -307,8 +382,16 @@ impl AIEngine {
     }
 
     async fn openai_complete(&self, code: &str, context: Option<&str>) -> Result<String> {
-        let api_key = self.config.openai_api_key.as_ref().ok_or(anyhow!("OpenAI API key not configured"))?;
-        let model = self.config.openai_model.as_ref().ok_or(anyhow!("OpenAI model not selected"))?;
+        let api_key = self
+            .config
+            .openai_api_key
+            .as_ref()
+            .ok_or(anyhow!("OpenAI API key not configured"))?;
+        let model = self
+            .config
+            .openai_model
+            .as_ref()
+            .ok_or(anyhow!("OpenAI model not selected"))?;
 
         let ctx = context.unwrap_or("");
         let message = format!(

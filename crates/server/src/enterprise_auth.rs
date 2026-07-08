@@ -195,10 +195,7 @@ impl EnterpriseAuthManager {
         Ok(())
     }
 
-    pub async fn authenticate_with_aad(
-        &mut self,
-        auth_code: &str,
-    ) -> Result<AuthenticatedUser> {
+    pub async fn authenticate_with_aad(&mut self, auth_code: &str) -> Result<AuthenticatedUser> {
         let config = self
             .aad_config
             .as_ref()
@@ -300,8 +297,7 @@ impl EnterpriseAuthManager {
         user_agent: &str,
     ) -> Result<AuthSession> {
         let session_id = format!("sess-{}", uuid::Uuid::new_v4());
-        let expires_at =
-            (chrono::Local::now() + chrono::Duration::hours(8)).to_rfc3339();
+        let expires_at = (chrono::Local::now() + chrono::Duration::hours(8)).to_rfc3339();
 
         let session = AuthSession {
             session_id: session_id.clone(),
@@ -361,21 +357,18 @@ impl EnterpriseAuthManager {
         Ok(())
     }
 
-    pub fn check_permission(
-        &self,
-        session_id: &str,
-        required_role: &UserRole,
-    ) -> Result<bool> {
+    pub fn check_permission(&self, session_id: &str, required_role: &UserRole) -> Result<bool> {
         let session = self.validate_session(session_id)?;
 
-        let has_permission = session.roles.iter().any(|role| {
-            match (role, required_role) {
+        let has_permission = session
+            .roles
+            .iter()
+            .any(|role| match (role, required_role) {
                 (UserRole::Admin, _) => true,
                 (UserRole::Manager, UserRole::Member) => true,
                 (UserRole::Manager, UserRole::Guest) => true,
                 (r, req) => r == req,
-            }
-        });
+            });
 
         Ok(has_permission)
     }
@@ -548,10 +541,9 @@ mod tests {
     fn test_tenant_management() {
         let mut manager = EnterpriseAuthManager::new("secret".to_string());
 
-        let tenant =
-            manager
-                .create_tenant("Acme Corp", AuthProvider::MicrosoftAAD)
-                .unwrap();
+        let tenant = manager
+            .create_tenant("Acme Corp", AuthProvider::MicrosoftAAD)
+            .unwrap();
         assert!(manager.get_tenant(&tenant.tenant_id).is_some());
 
         let tenants = manager.list_tenants();

@@ -1,3 +1,4 @@
+use crate::AppState;
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -5,7 +6,6 @@ use axum::{
     },
     response::IntoResponse,
 };
-use crate::AppState;
 use futures::{sink::SinkExt, stream::StreamExt};
 use std::sync::Arc;
 
@@ -20,10 +20,7 @@ pub async fn notebook_ws(
 
 /// Forward live cell-output stream messages to the client, while draining (and
 /// ignoring) anything the client sends, until either side closes.
-async fn handle_socket(
-    socket: WebSocket,
-    mut rx: tokio::sync::broadcast::Receiver<String>,
-) {
+async fn handle_socket(socket: WebSocket, mut rx: tokio::sync::broadcast::Receiver<String>) {
     let (mut sender, mut receiver) = socket.split();
 
     let mut send_task = tokio::spawn(async move {
@@ -40,9 +37,8 @@ async fn handle_socket(
         }
     });
 
-    let mut recv_task = tokio::spawn(async move {
-        while let Some(Ok(_)) = receiver.next().await {}
-    });
+    let mut recv_task =
+        tokio::spawn(async move { while let Some(Ok(_)) = receiver.next().await {} });
 
     tokio::select! {
         _ = &mut send_task => recv_task.abort(),

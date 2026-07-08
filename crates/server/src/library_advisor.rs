@@ -85,8 +85,8 @@ impl LibraryAdvisor {
         let response_text = ai.call_api(&prompt).await?;
 
         // Parse JSON response
-        let mut response: SuggestionsResponse = serde_json::from_str(&response_text)
-            .unwrap_or(SuggestionsResponse {
+        let mut response: SuggestionsResponse =
+            serde_json::from_str(&response_text).unwrap_or(SuggestionsResponse {
                 suggestions: vec![],
                 detected_intent: "Analysis in progress".to_string(),
                 context_summary: "Analyzing notebook patterns...".to_string(),
@@ -95,7 +95,10 @@ impl LibraryAdvisor {
         // Post-process: add installed version info and filter ignored
         for suggestion in &mut response.suggestions {
             // Check if already installed
-            if let Some(installed) = installed_packages.iter().find(|p| p.starts_with(&suggestion.name)) {
+            if let Some(installed) = installed_packages
+                .iter()
+                .find(|p| p.starts_with(&suggestion.name))
+            {
                 if let Some(version) = installed.split('=').nth(1) {
                     suggestion.installed_version = Some(version.to_string());
                     suggestion.is_update = version != &suggestion.version;
@@ -104,7 +107,9 @@ impl LibraryAdvisor {
         }
 
         // Filter out ignored libraries
-        response.suggestions.retain(|s| !ignored_libraries.contains(&s.name));
+        response
+            .suggestions
+            .retain(|s| !ignored_libraries.contains(&s.name));
 
         Ok(response)
     }

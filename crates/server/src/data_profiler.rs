@@ -60,7 +60,9 @@ impl DataProfiler {
         dataframe_json: &serde_json::Value,
         name: &str,
     ) -> Result<DataFrameProfile> {
-        let rows = dataframe_json.as_array().ok_or(anyhow::anyhow!("Expected array"))?;
+        let rows = dataframe_json
+            .as_array()
+            .ok_or(anyhow::anyhow!("Expected array"))?;
         let row_count = rows.len();
 
         if row_count == 0 {
@@ -117,7 +119,10 @@ impl DataProfiler {
             }
 
             let non_null_count = row_count - null_count;
-            let unique_count = values.iter().collect::<std::collections::HashSet<_>>().len();
+            let unique_count = values
+                .iter()
+                .collect::<std::collections::HashSet<_>>()
+                .len();
 
             total_missing += null_count;
 
@@ -180,7 +185,8 @@ impl DataProfiler {
                         "{:.1}% of values are missing",
                         (col.null_count as f64 / profile.row_count as f64) * 100.0
                     ),
-                    suggestion: "Consider dropping this column or imputing missing values".to_string(),
+                    suggestion: "Consider dropping this column or imputing missing values"
+                        .to_string(),
                 });
             }
 
@@ -207,7 +213,8 @@ impl DataProfiler {
                                 column: col.name.clone(),
                                 issue_type: "outlier".to_string(),
                                 severity: "medium".to_string(),
-                                description: "High standard deviation suggests outliers".to_string(),
+                                description: "High standard deviation suggests outliers"
+                                    .to_string(),
                                 suggestion: "Consider using robust scaling or outlier removal"
                                     .to_string(),
                             });
@@ -258,10 +265,7 @@ impl DataProfiler {
         };
 
         let std_dev = if let Some(m) = mean {
-            let variance = numeric_values
-                .iter()
-                .map(|v| (v - m).powi(2))
-                .sum::<f64>()
+            let variance = numeric_values.iter().map(|v| (v - m).powi(2)).sum::<f64>()
                 / numeric_values.len() as f64;
             Some(variance.sqrt())
         } else {
@@ -275,9 +279,13 @@ impl DataProfiler {
             median,
             std_dev,
             percentile_25: Some(numeric_values[(numeric_values.len() / 4).max(0)]),
-            percentile_75: Some(numeric_values[((numeric_values.len() * 3) / 4).min(numeric_values.len() - 1)]),
+            percentile_75: Some(
+                numeric_values[((numeric_values.len() * 3) / 4).min(numeric_values.len() - 1)],
+            ),
             quartile_1: Some(numeric_values[(numeric_values.len() / 4).max(0)]),
-            quartile_3: Some(numeric_values[((numeric_values.len() * 3) / 4).min(numeric_values.len() - 1)]),
+            quartile_3: Some(
+                numeric_values[((numeric_values.len() * 3) / 4).min(numeric_values.len() - 1)],
+            ),
         }
     }
 
@@ -286,10 +294,7 @@ impl DataProfiler {
             return "unknown".to_string();
         }
 
-        let numeric_count = values
-            .iter()
-            .filter(|v| v.parse::<f64>().is_ok())
-            .count();
+        let numeric_count = values.iter().filter(|v| v.parse::<f64>().is_ok()).count();
 
         let bool_count = values
             .iter()
@@ -311,7 +316,12 @@ impl DataProfiler {
             let bytes_per_value = match col.data_type.as_str() {
                 "numeric" => 8,
                 "boolean" => 1,
-                _ => col.sample_values.iter().map(|v| v.len()).max().unwrap_or(50),
+                _ => col
+                    .sample_values
+                    .iter()
+                    .map(|v| v.len())
+                    .max()
+                    .unwrap_or(50),
             };
             total += bytes_per_value * row_count;
         }

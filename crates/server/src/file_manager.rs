@@ -1,9 +1,9 @@
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use tokio::fs;
 use uuid::Uuid;
-use chrono::Utc;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FileMetadata {
@@ -86,11 +86,7 @@ impl FileManager {
         })
     }
 
-    pub async fn download_file(
-        &self,
-        notebook_id: &str,
-        file_id: &str,
-    ) -> Result<Vec<u8>, String> {
+    pub async fn download_file(&self, notebook_id: &str, file_id: &str) -> Result<Vec<u8>, String> {
         let notebook_dir = self.base_dir.join("files").join(notebook_id);
 
         // Find file with matching ID
@@ -104,9 +100,7 @@ impl FileManager {
                 .to_string_lossy()
                 .starts_with(&format!("{}_", file_id))
             {
-                let content = fs::read(entry.path())
-                    .await
-                    .map_err(|e| e.to_string())?;
+                let content = fs::read(entry.path()).await.map_err(|e| e.to_string())?;
                 return Ok(content);
             }
         }
@@ -114,11 +108,7 @@ impl FileManager {
         Err("File not found".to_string())
     }
 
-    pub async fn delete_file(
-        &self,
-        notebook_id: &str,
-        file_id: &str,
-    ) -> Result<(), String> {
+    pub async fn delete_file(&self, notebook_id: &str, file_id: &str) -> Result<(), String> {
         let notebook_dir = self.base_dir.join("files").join(notebook_id);
 
         let mut entries = fs::read_dir(&notebook_dir)
@@ -157,7 +147,12 @@ impl FileManager {
             if let Ok(metadata) = entry.metadata().await {
                 let filename = entry.file_name();
                 files.push(FileMetadata {
-                    id: filename.to_string_lossy().split('_').next().unwrap_or("").to_string(),
+                    id: filename
+                        .to_string_lossy()
+                        .split('_')
+                        .next()
+                        .unwrap_or("")
+                        .to_string(),
                     notebook_id: notebook_id.to_string(),
                     filename: filename.to_string_lossy().to_string(),
                     size_bytes: metadata.len(),
@@ -308,8 +303,7 @@ impl CloudStorageManager {
             .map_err(|e| e.to_string())?;
 
         let config_file = self.config_dir.join(format!("{}.json", mount.id));
-        let config_json = serde_json::to_string_pretty(mount)
-            .map_err(|e| e.to_string())?;
+        let config_json = serde_json::to_string_pretty(mount).map_err(|e| e.to_string())?;
 
         fs::write(&config_file, config_json)
             .await

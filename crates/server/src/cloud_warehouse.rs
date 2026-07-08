@@ -358,11 +358,7 @@ impl CloudWarehouseManager {
         }])
     }
 
-    pub async fn get_tables(
-        &self,
-        connection_id: &str,
-        _database: &str,
-    ) -> Result<Vec<TableInfo>> {
+    pub async fn get_tables(&self, connection_id: &str, _database: &str) -> Result<Vec<TableInfo>> {
         let _conn = self
             .get_connection(connection_id)
             .ok_or_else(|| anyhow::anyhow!("Connection not found: {}", connection_id))?;

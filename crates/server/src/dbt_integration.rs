@@ -55,22 +55,18 @@ impl DbtManager {
 
     pub async fn list_models(&self) -> Result<Vec<DbtModel>, String> {
         // TODO: Implement dbt project parsing
-        Ok(vec![
-            DbtModel {
-                name: "example_model".to_string(),
-                path: "models/example.sql".to_string(),
-                model_type: "table".to_string(),
-                description: Some("Example dbt model".to_string()),
-                columns: vec![
-                    DbtColumn {
-                        name: "id".to_string(),
-                        data_type: "integer".to_string(),
-                        description: None,
-                        tests: vec!["unique".to_string(), "not_null".to_string()],
-                    },
-                ],
-            },
-        ])
+        Ok(vec![DbtModel {
+            name: "example_model".to_string(),
+            path: "models/example.sql".to_string(),
+            model_type: "table".to_string(),
+            description: Some("Example dbt model".to_string()),
+            columns: vec![DbtColumn {
+                name: "id".to_string(),
+                data_type: "integer".to_string(),
+                description: None,
+                tests: vec!["unique".to_string(), "not_null".to_string()],
+            }],
+        }])
     }
 
     pub async fn run_dbt(&self, _selector: Option<String>) -> Result<DbtRunResult, String> {
@@ -88,14 +84,12 @@ impl DbtManager {
 
     pub async fn run_tests(&self) -> Result<Vec<DbtTest>, String> {
         // TODO: Execute dbt test
-        Ok(vec![
-            DbtTest {
-                name: "test_id_unique".to_string(),
-                model: "users".to_string(),
-                test_type: "unique".to_string(),
-                status: "pass".to_string(),
-            },
-        ])
+        Ok(vec![DbtTest {
+            name: "test_id_unique".to_string(),
+            model: "users".to_string(),
+            test_type: "unique".to_string(),
+            status: "pass".to_string(),
+        }])
     }
 
     pub async fn generate_docs(&self) -> Result<String, String> {

@@ -15,7 +15,11 @@ pub struct Schedule {
 
 impl Default for Schedule {
     fn default() -> Self {
-        Schedule { kind: "manual".into(), minutes: None, time: None }
+        Schedule {
+            kind: "manual".into(),
+            minutes: None,
+            time: None,
+        }
     }
 }
 

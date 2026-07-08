@@ -67,10 +67,7 @@ impl DatabaseManager {
         }
     }
 
-    pub async fn execute_query(
-        conn: &DatabaseConnection,
-        query: &str,
-    ) -> Result<QueryResult> {
+    pub async fn execute_query(conn: &DatabaseConnection, query: &str) -> Result<QueryResult> {
         // SECURITY: Validate query before execution (basic injection prevention)
         // This is defense-in-depth; real protection requires parameterized queries
         crate::query_validator::QueryValidator::validate(query)?;
@@ -130,9 +127,7 @@ impl DatabaseManager {
         _query: &str,
     ) -> Result<(Vec<String>, Vec<Vec<Value>>, usize)> {
         // Implementation using mysql_async crate
-        Err(anyhow!(
-            "MySQL connector requires: cargo add mysql_async"
-        ))
+        Err(anyhow!("MySQL connector requires: cargo add mysql_async"))
     }
 
     // SQLite (OSS - Public Domain)
@@ -162,15 +157,16 @@ impl DatabaseManager {
         _query: &str,
     ) -> Result<(Vec<String>, Vec<Vec<Value>>, usize)> {
         // Implementation using duckdb crate
-        Err(anyhow!(
-            "DuckDB connector requires: cargo add duckdb"
-        ))
+        Err(anyhow!("DuckDB connector requires: cargo add duckdb"))
     }
 
     // MongoDB (OSS - SSPL/Custom, but Rust driver is MIT)
     async fn test_mongodb(conn: &DatabaseConnection) -> Result<String> {
         // Would use: https://github.com/mongodb/mongo-rust-driver (Apache)
-        Ok(format!("MongoDB connection: {}", conn.url.as_ref().unwrap_or(&"default".to_string())))
+        Ok(format!(
+            "MongoDB connection: {}",
+            conn.url.as_ref().unwrap_or(&"default".to_string())
+        ))
     }
 
     async fn query_mongodb(
@@ -178,8 +174,6 @@ impl DatabaseManager {
         _query: &str,
     ) -> Result<(Vec<String>, Vec<Vec<Value>>, usize)> {
         // Implementation using mongodb crate
-        Err(anyhow!(
-            "MongoDB connector requires: cargo add mongodb"
-        ))
+        Err(anyhow!("MongoDB connector requires: cargo add mongodb"))
     }
 }

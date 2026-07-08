@@ -207,11 +207,10 @@ impl AITrainingManager {
         let job = self.jobs.get(job_id).unwrap();
         let compute_provider = job.config.compute_provider.clone();
         let instance_id = match compute_provider {
-            ComputeProvider::RunPod => {
-                self.launch_runpod_instance()
-                    .await
-                    .unwrap_or_else(|_| "pod-pending".to_string())
-            }
+            ComputeProvider::RunPod => self
+                .launch_runpod_instance()
+                .await
+                .unwrap_or_else(|_| "pod-pending".to_string()),
             ComputeProvider::Local => "local".to_string(),
             _ => format!("instance-{}", uuid::Uuid::new_v4()),
         };
@@ -263,12 +262,7 @@ impl AITrainingManager {
         Ok(())
     }
 
-    pub fn add_training_log(
-        &mut self,
-        job_id: &str,
-        level: &str,
-        message: &str,
-    ) -> Result<()> {
+    pub fn add_training_log(&mut self, job_id: &str, level: &str, message: &str) -> Result<()> {
         let job = self
             .jobs
             .get_mut(job_id)
@@ -345,10 +339,7 @@ impl AITrainingManager {
             .collect()
     }
 
-    pub async fn deploy_endpoint(
-        &mut self,
-        checkpoint_id: &str,
-    ) -> Result<InferenceEndpoint> {
+    pub async fn deploy_endpoint(&mut self, checkpoint_id: &str) -> Result<InferenceEndpoint> {
         let _checkpoint = self
             .get_checkpoint(checkpoint_id)
             .ok_or_else(|| anyhow::anyhow!("Checkpoint not found"))?;
@@ -398,7 +389,7 @@ impl AITrainingManager {
                 Ok(1.50 * 4.0) // 4 hours
             }
             ComputeProvider::Local => Ok(0.0), // Local training is free
-            _ => Ok(10.0), // Default estimate
+            _ => Ok(10.0),                     // Default estimate
         }
     }
 

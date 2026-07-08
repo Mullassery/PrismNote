@@ -149,7 +149,11 @@ impl SchedulerManager {
         Ok(job)
     }
 
-    pub fn get_execution_history(&self, schedule_id: &str, limit: usize) -> Result<Vec<ExecutionJob>> {
+    pub fn get_execution_history(
+        &self,
+        schedule_id: &str,
+        limit: usize,
+    ) -> Result<Vec<ExecutionJob>> {
         let jobs_dir = format!("{}/jobs", self.scheduler_dir);
         if !Path::new(&jobs_dir).exists() {
             return Ok(vec![]);
@@ -197,11 +201,7 @@ impl SchedulerManager {
         self.load_schedule(schedule_id)
     }
 
-    pub fn set_notifications(
-        &self,
-        schedule_id: &str,
-        config: NotificationConfig,
-    ) -> Result<()> {
+    pub fn set_notifications(&self, schedule_id: &str, config: NotificationConfig) -> Result<()> {
         let notif_path = format!("{}/{}.notif", self.scheduler_dir, schedule_id);
         let content = serde_json::to_string_pretty(&config)?;
         fs::write(&notif_path, content)?;
