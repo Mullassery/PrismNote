@@ -191,8 +191,8 @@ impl QueryValidator {
 
     /// Check parentheses nesting depth to prevent deeply nested queries
     fn check_nesting_depth(query: &str) -> Result<()> {
-        let mut depth = 0;
-        let mut max_depth = 0;
+        let mut depth: usize = 0;
+        let mut max_depth: usize = 0;
 
         for ch in query.chars() {
             match ch {
