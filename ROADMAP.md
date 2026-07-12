@@ -87,6 +87,52 @@
 
 ---
 
+## 🔍 Competitive Gaps vs Market
+
+Based on analysis of data notebooks market (Jupyter, Databricks, Hex, Observable, Zeppelin), these gaps exist:
+
+### CRITICAL (Blocks Cloud Deployment)
+- **Local-only deployment** — Cannot collaborate in real-time; no cloud hosting
+  - **Market Impact:** Teams won't use local-only notebooks long-term
+  - **Recommended Fix:** v1.2.0 (Q4 2026) CORS/CSRF is REQUIRED for cloud
+  - **Why:** Cloud-first is table-stakes for modern tools (Databricks, Hex)
+
+- **No CORS/CSRF protection** — Do NOT expose to internet until v1.2.0
+  - **Market Impact:** Security risk for team/multi-user deployment
+  - **Timeline:** v1.2.0 (Q4 2026) required before internet deployment
+  - **Why:** Cross-origin attacks are exploit vector for notebooks
+
+- **No authentication/authorization** — Anyone with access sees all notebooks
+  - **Market Impact:** Teams cannot share secrets (API keys, creds)
+  - **Timeline:** v1.2.0 (Q4 2026) required for multi-user
+  - **Why:** Compliance risk (GDPR, SOC2) without auth
+
+### HIGH (Reduces Addressable Market)
+- **No version history/git** — Cannot revert changes or track who did what
+  - **Competitor Advantage:** Databricks notebooks have automatic versioning
+  - **Timeline:** v1.4.0 (Q2 2027)
+  - **Why:** Data audit trails are table-stakes for enterprises
+
+- **Spark incomplete** — Cannot use large clusters (use DuckDB instead)
+  - **Competitor Advantage:** Databricks is Spark-native
+  - **Timeline:** v1.4.0 (Q2 2027)
+  - **Why:** Only teams with massive data need Spark
+
+- **No real-time collaboration** — Cannot work together simultaneously
+  - **Competitor Advantage:** Hex, Databricks have live co-editing
+  - **Timeline:** v2.0.0 (Q2 2027)
+  - **Why:** Teams prefer collaborative tools
+
+### MEDIUM (Nice-to-Have)
+- **No automatic cell dependency tracking** — Must manually manage execution order
+  - **Competitor Advantage:** Observable auto-executes in dependency order
+  - **Timeline:** v1.1.0 (Q3 2026) for smart execution
+
+- **Reproducibility only 5.9%** — Hidden state from out-of-order execution (industry-wide issue)
+  - **Timeline:** Inherent to notebook design; major improvement v1.1.0
+
+---
+
 ## 📋 Roadmap
 
 ### v1.1.0 (Q3 2026) — Documentation + UX
