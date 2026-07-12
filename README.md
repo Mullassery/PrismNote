@@ -302,3 +302,25 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 ## License
 
 [MIT](LICENSE) © Georgi Mammen Mullassery
+
+## 🔒 Security & Error Handling
+
+PrismNote includes comprehensive security features:
+
+- **SQL Injection Protection**: Blocks dangerous keywords (DROP, DELETE, INSERT)
+- **File Access Control**: Path validation prevents directory traversal
+- **Rate Limiting**: Token bucket algorithm with per-client and query limits
+- **Security Headers**: CORS, CSP, and X-Frame-Options for web safety
+- **Detailed Error Messages**: See `python/prismnote/error_messages.py` for notebook and query guidance
+
+### Security Roadmap
+
+- ✅ v1.0.1: Dependencies pinned, SQL injection protection
+- ✅ v1.0.2: File access control, input validation
+- ✅ v1.1.0: Rate limiting, security headers, error handling middleware
+- 🔄 v1.2.0: CORS/CSRF protection, authentication/authorization
+- 🔄 v2.0.0: Team collaboration, cloud deployment
+
+**SECURITY NOTE:** Do NOT expose to internet until v1.2.0 without additional hardening.
+
+Full security roadmap: [ROADMAP.md](ROADMAP.md)
