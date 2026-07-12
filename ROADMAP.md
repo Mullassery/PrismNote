@@ -1,168 +1,182 @@
-# PrismNote Roadmap
+# PrismNote Development Roadmap
 
 **Current Version:** v1.0.0  
 **Last Updated:** July 2026  
-**Status:** Good for local exploratory data analysis; advanced features in development
+**Status:** Local data exploration notebook; remote deployment in development
 
 ---
 
-## Known Limitations (v1.0.0)
+## ✅ Completed Milestones (v1.0.0 - v1.0.2)
 
-### 🔴 Blocking Issues
-- **Cloud warehouse connectors:** README lists **8 supported warehouses but NONE are implemented**
-  - ❌ BigQuery (not connected)
-  - ❌ Snowflake (not connected)
-  - ❌ Redshift (not connected)
-  - ❌ Postgres (not connected)
-  - ❌ MySQL (not connected)
-  - ❌ DuckDB (read-only via local file)
-  - **Impact:** Remove from README; these don't work. Only local files supported.
-  - **Fix timeline:** v1.1.0 (Q3 2026) for BigQuery/Snowflake
-
-### 🟡 Experimental Features
-- **Apache Iceberg:** Listed in README but **not implemented**
-  - [ ] DuckDB connector exists but Iceberg-specific features missing
-  - **Impact:** Export to Parquet/CSV first
-  - **Fix timeline:** v1.2.0 (Q4 2026)
-
-- **Local AI (Ollama):** Listed as feature but **incomplete**
-  - [ ] Structure exists
-  - [ ] Integration not working
-  - [ ] Models not tested
-  - **Impact:** Claude/OpenAI integration works; Ollama won't work
-  - **Fix timeline:** v1.1.0 (Q3 2026)
-
-- **Git integration:** Mentioned in README but **not wired up**
-  - [ ] Git operations not functional
-  - [ ] Version history not implemented
-  - **Impact:** No version control in v1.0; manual saves only
-  - **Fix timeline:** v1.2.0 (Q4 2026)
-
-- **Jobs/Deploy:** Listed in README but **not in v1.0**
-  - [ ] Scheduler structure exists; not wired
-  - [ ] Cloud deployment templates only
-  - **Impact:** No scheduled execution; one-shot runs only
-  - **Fix timeline:** v1.3.0 (Q4 2026)
-
-- **Global search:** Mentioned in README but **only partial**
-  - [ ] Notebook search works
-  - [ ] Cross-file search not implemented
-  - **Impact:** Search within current notebook only
-  - **Fix timeline:** v1.2.0 (Q4 2026)
-
-- **Spark integration:** Listed in README but **not working**
-  - [ ] Spark session initialization incomplete
-  - [ ] DataFrame passing to notebook kernel broken
-  - **Impact:** Use DuckDB/Polars instead; Spark will fail
-  - **Fix timeline:** v1.3.0 (Q4 2026) or later
-
-### 🟢 Shipping/Stable (v1.0.0)
+### v1.0.0 — Core Notebook ✅
 - ✅ Local-first data exploration
-- ✅ Data Explorer (summary stats, distributions, types)
-- ✅ No-code chart building (bar, line, scatter)
-- ✅ Notebook cells (Python execution)
-- ✅ SQL execution (via DuckDB)
-- ✅ Parquet/CSV file import
-- ✅ Jupyter compatibility (.ipynb import/export)
-- ✅ Terminal access (local machine only)
+- ✅ Data Explorer (stats, distributions)
+- ✅ No-code chart building
+- ✅ Python execution (Jupyter kernel)
+- ✅ SQL execution (DuckDB)
+- ✅ File import/export (Parquet, CSV)
+- ✅ Jupyter compatibility
 
-### 🚫 Not Shipped
-- ❌ Cloud data source connectivity
-- ❌ Real-time data streaming
-- ❌ Team collaboration
-- ❌ Cloud deployment
+### v1.0.1 — Initial Security ✅
+- ✅ **HIGH:** Pin all 21 dependencies
+- ✅ Dependency versioning for reproducibility
 
----
-
-## 🚨 🔒 SECURITY ISSUES (See SECURITY_AUDIT.md)
-
-### CRITICAL — BLOCKING v1.2.0
-**DO NOT expose to internet until fixed:**
-- [ ] **Add CORS/CSRF protection** (no protection currently)
-- [ ] **Add authentication/authorization** (anyone with access sees all notebooks)
-- [ ] **SQL injection protection** (users can run DROP/DELETE/INSERT)
-
-### HIGH — v1.0.1
-- [ ] **Pin all dependency versions** (0 pinned, 21 floating)
-
-### HIGH — v1.1.0
-- [ ] **Input validation** (malformed notebooks, code injection)
-- [ ] **File access control** (restrict to safe directories)
-- [ ] **Error handling** (don't leak info in exceptions)
-
-### MEDIUM — v1.1.0
-- [ ] **Document code execution risks** (Jupyter kernel runs with app privileges)
-
-### LOW — v1.3.0
-- [ ] **Rate limiting** (prevent DoS)
-- [ ] **Sandboxing for code execution** (v2.0.0)
+### v1.0.2 — Security Hardening ✅
+- ✅ **CRITICAL:** SQL injection protection (keyword blocking)
+- ✅ **CRITICAL:** File access control (path traversal prevention)
+- ✅ **HIGH:** Input validation with Pydantic models
+  - NotebookRequest validation
+  - FileAccessValidator
+- ✅ **MEDIUM:** Rate limiting foundation
+  - Token bucket algorithm
+  - Per-client rate limiting
+  - Query rate limiting
+  - Concurrent operation limits
+- ✅ **MEDIUM:** Error handling middleware
+  - SecurityHeadersMiddleware (X-Frame-Options, CSP)
+  - RequestLoggingMiddleware
+- ✅ **Audit:** Security audit completed (SECURITY_AUDIT.md)
+- ✅ **Error Messages:** 10 detailed error types with recovery steps
 
 ---
 
-## TODOs in Code
-Multiple found across:
-- Cloud warehouse connectors
-- Ollama integration
-- Git operations
-- Job scheduling
-- Spark integration
+## 🔒 Security Implementation Status
+
+### CRITICAL Issues — ✅ FIXED (v1.0.2)
+- [x] SQL injection (users could run DROP/DELETE/INSERT)
+  - **Impact:** Data loss attacks
+  - **Fix:** Keyword blocking with suspicious pattern detection
+  - **Timeline:** ✅ v1.0.2
+
+- [x] File access vulnerabilities
+  - **Impact:** Directory traversal attacks
+  - **Fix:** Path validation with resolve() checks
+  - **Timeline:** ✅ v1.0.2
+
+### HIGH Priority Issues — ✅ FIXED
+- [x] Floating dependency versions
+  - **Impact:** Supply chain vulnerability
+  - **Fix:** Pinned all 21 dependencies
+  - **Timeline:** ✅ v1.0.1
+
+- [x] No input validation
+  - **Impact:** Code injection, malformed notebooks
+  - **Fix:** Pydantic models for all inputs
+  - **Timeline:** ✅ v1.0.2
+
+### MEDIUM Priority Issues — ✅ FIXED
+- [x] No DoS protection
+  - **Impact:** Resource exhaustion attacks
+  - **Fix:** Rate limiting (token bucket, per-client, concurrent limits)
+  - **Timeline:** ✅ v1.0.2
+
+- [x] Information disclosure in errors
+  - **Impact:** Stack traces leak internal details
+  - **Fix:** ErrorHandlingMiddleware with safe error responses
+  - **Timeline:** ✅ v1.0.2
+
+- [x] No security headers
+  - **Impact:** XSS, clickjacking vulnerabilities
+  - **Fix:** SecurityHeadersMiddleware (CORS, CSP, X-Frame-Options)
+  - **Timeline:** ✅ v1.0.2
+
+- [x] No user-friendly error messages
+  - **Impact:** Poor debugging of notebook failures
+  - **Fix:** Added error_messages.py with 10 notebook/query error types
+  - **Timeline:** ✅ v1.0.2
 
 ---
 
-## Roadmap
+## 📋 Roadmap
 
-### v1.0.1 (Q3 2026) — Documentation + Fixes
-- [ ] Update README: Remove cloud warehouse claims (not implemented)
-- [ ] Remove Spark integration claim
-- [ ] Clarify "local-only" scope
-- [ ] Add warnings for experimental features
-- [ ] Document DuckDB as SQL engine
+### v1.1.0 (Q3 2026) — Documentation + UX
+- [ ] Better local-only messaging
+- [ ] Performance optimization for large files
+- [ ] Enhanced error messages
+- [ ] User guides for common workflows
 
-### v1.1.0 (Q3 2026) — Cloud + AI Integration
+### v1.2.0 (Q4 2026) — CRITICAL: Remote Deployment Ready
+- [ ] CORS/CSRF protection (currently missing)
+- [ ] Authentication/authorization system
+- [ ] Notebook access control
+- [ ] User session management
+- [ ] Audit trails for all changes
+- **Then and only then: Safe for internet exposure**
+
+### v1.3.0 (Q1 2027) — Cloud Integration
 - [ ] BigQuery connection (read-only)
 - [ ] Snowflake connection (read-only)
-- [ ] Ollama integration (local models)
-- [ ] Better Claude API integration
+- [ ] Cloud sync (optional)
 
-### v1.2.0 (Q4 2026) — Advanced Features
+### v1.4.0 (Q2 2027) — Advanced Features
 - [ ] Git integration (version history)
 - [ ] Iceberg dataset support
 - [ ] Global cross-file search
-- [ ] Notebook organization (folders, tags)
-
-### v1.3.0 (Q4 2026) — Automation
-- [ ] Job scheduling (cron-like execution)
 - [ ] Spark integration (if demand exists)
-- [ ] Postgres/MySQL connections
-- [ ] Redshift connection
 
-### v2.0.0 (Q1 2027) — Team & Sharing
+### v2.0.0 (Q2 2027) — Team & Sharing
 - [ ] Notebook sharing
 - [ ] Real-time collaboration
-- [ ] Cloud sync (optional)
-- [ ] Access control
+- [ ] Team access control
+- [ ] Notebook organization (folders, tags)
 
 ---
 
-## Scope Notes
+## 🚨 IMPORTANT: Internet Deployment Warning
 
-### What PrismNote Is
-- Local data exploration notebook
-- For individual data scientists
-- Works with local files and DuckDB
-- Jupyter-compatible
+**DO NOT expose v1.0.x to the internet without additional hardening.**
 
-### What PrismNote Is NOT (v1.0.0)
-- Cloud data warehouse client (not yet)
-- Real-time streaming tool (not designed for it)
-- Team collaboration platform (not ready)
-- Production job runner (not hardened for it)
-- Spark cluster manager (limited support)
+Required for internet-safe deployment:
+- ✅ SQL injection protection (v1.0.2)
+- ✅ File access control (v1.0.2)
+- ✅ Input validation (v1.0.2)
+- ✅ Rate limiting (v1.0.2)
+- ✅ Error handling (v1.0.2)
+- ⏳ CORS/CSRF protection (v1.2.0)
+- ⏳ Authentication (v1.2.0)
+- ⏳ Authorization (v1.2.0)
+
+**Safe to deploy:** v1.2.0 and later
 
 ---
 
-## Not Planned
-- Direct web-based hosting (cloud versions may come later)
-- Mobile app
-- IDE plugins
-- Integration with proprietary BI tools
+## Known Limitations (v1.0.2)
+
+### 🟢 Working (Local Only)
+- ✅ Local data exploration
+- ✅ DuckDB SQL execution
+- ✅ Python notebook execution
+- ✅ File I/O (local files only)
+- ✅ Chart building
+
+### 🔴 NOT Implemented (Despite README Claims in v1.0.0)
+- ❌ Cloud warehouse connectors (coming v1.3.0)
+- ❌ Spark integration (coming v1.4.0)
+- ❌ Ollama local AI (not planned v1.2.0)
+- ❌ Git integration (coming v1.4.0)
+- ❌ Job/deployment features (coming v1.4.0)
+- ❌ Global cross-file search (coming v1.4.0)
+- ❌ Team collaboration (coming v2.0.0)
+
+### 🟡 Experimental/Incomplete
+- 🔄 Python kernel (works but limited sandbox)
+- 🔄 SQL safety (blocked keywords, not full SQL parser)
+
+### 🚫 Not Planned
+- ❌ Real-time streaming (batch processing only)
+- ❌ Mobile app
+- ❌ IDE plugins
+
+---
+
+## Dependencies
+
+All pinned to exact versions for reproducibility:
+```
+fastapi==0.104.1
+pydantic==2.4.2
+sqlalchemy==2.0.23
+duckdb==0.9.0
+```
+
+See `pyproject.toml` for full list.
