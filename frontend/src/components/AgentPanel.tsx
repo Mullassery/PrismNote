@@ -26,7 +26,7 @@ import MDPreview from '@uiw/react-markdown-preview'
 import { useNotebookStore } from '../hooks/useNotebook'
 import { useFontSize } from '../hooks/useFontSize'
 import { ollamaEndpoint, getAiConfig, aiChat } from '../api/ai'
-import { buildEnvironmentContext } from '../hooks/useAIContext'
+import { buildEnvironmentContext, sanitizeForAI } from '../hooks/useAIContext'
 
 type Provider = 'ollama' | 'claude' | 'openai'
 const PROVIDER_LABEL: Record<Provider, string> = { ollama: 'Ollama', claude: 'Claude', openai: 'OpenAI' }
@@ -60,7 +60,9 @@ Teaching style (always):
 
 const planSystem = `${teacherPersona}
 
-You are PrismNote's PLANNING agent. Read the user's request and the current notebook, then reply with a short, numbered plan describing the approach. Do NOT write the final code or take actions yet — planning only. Be concise, and end with a "💡 Tip:" line.`
+You are PrismNote's PLANNING agent. Read the user's request and the current notebook, then reply with a short, numbered plan describing the approach. Do NOT write the final code or take actions yet — planning only. Be concise, and end with a "💡 Tip:" line.
+
+SECURITY: You have access ONLY to visible data in the notebook, data explorer, and workspace. NEVER request, assume, or mention API keys, passwords, credentials, or security settings. If the user needs to connect to a database, guide them to PrismNote Settings → Data Sources (you cannot access those directly).`
 
 const actSystem = `${teacherPersona}
 
@@ -68,7 +70,9 @@ You are PrismNote's CODING agent for a Python data-science notebook. Briefly exp
 - Add a code cell:  <action type="add_cell">PYTHON CODE</action>
 - Edit cell N:      <action type="edit_cell" index="N">PYTHON CODE</action>
 - Run cell N:       <action type="run_cell" index="N"/>
-Only emit actions you are confident about. Keep code runnable and self-contained. After the actions, add a short "💡 Tip:" line relevant to the code.`
+Only emit actions you are confident about. Keep code runnable and self-contained. After the actions, add a short "💡 Tip:" line relevant to the code.
+
+SECURITY: You have access ONLY to visible data in the notebook, data explorer, and workspace. NEVER emit code that requests, stores, or logs API keys, passwords, or credentials. If the user needs to connect to a database, guide them to PrismNote Settings → Data Sources.`
 
 function parseActions(text: string): AgentAction[] {
   const re = /<action\s+type="(add_cell|edit_cell|run_cell)"(?:\s+index="(\d+)")?\s*(?:\/>|>([\s\S]*?)<\/action>)/g
@@ -213,7 +217,12 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
     const cells = currentNotebook?.cells ?? []
     if (!cells.length) return '(empty notebook)'
     return cells
-      .map((c, i) => `# Cell ${i} (${c.cell_type})\n${Array.isArray(c.source) ? c.source.join('') : c.source}`)
+      .map((c, i) => {
+        const src = Array.isArray(c.source) ? c.source.join('') : c.source
+        // Sanitize code to strip credentials before sending to AI
+        const sanitized = sanitizeForAI(src)
+        return `# Cell ${i} (${c.cell_type})\n${sanitized}`
+      })
       .join('\n\n')
   }
 
@@ -438,13 +447,6 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
             >
               Retry →
             </button>
-          </div>
-        )}
-
-        {messages.length === 0 && connected !== false && (
-          <div className="text-[12px] bg-indigo-500/15 border border-indigo-500/30 rounded-lg p-3 space-y-1.5">
-            <p className="font-semibold text-indigo-300">Ask anything</p>
-            <p className="pn-faint text-[11px]">Plan mode: discuss approach • Act mode: write code</p>
           </div>
         )}
 

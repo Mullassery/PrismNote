@@ -6,8 +6,8 @@ interface Props {
   onClose: () => void
   theme: 'light' | 'dark'
   setTheme: (t: 'light' | 'dark') => void
-  panels: { files: boolean; terminal: boolean; ai: boolean }
-  togglePanel: (p: 'files' | 'terminal' | 'ai') => void
+  panels: { files: boolean; terminal: boolean; notebook: boolean }
+  togglePanel: (p: 'files' | 'terminal' | 'notebook') => void
 }
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -186,9 +186,9 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
           </Section>
 
           <Section icon={<Columns3 size={13} />} title="Layout">
+            <Row label="Data Science Notebook"><Toggle on={panels.notebook} onClick={() => togglePanel('notebook')} /></Row>
             <Row label="Files"><Toggle on={panels.files} onClick={() => togglePanel('files')} /></Row>
-            <Row label="Bottom Panel" hint="Output · Variables · Plots · Terminal"><Toggle on={panels.terminal} onClick={() => togglePanel('terminal')} /></Row>
-            <Row label="AI Assistant"><Toggle on={panels.ai} onClick={() => togglePanel('ai')} /></Row>
+            <Row label="Terminal Console"><Toggle on={panels.terminal} onClick={() => togglePanel('terminal')} /></Row>
           </Section>
 
           <Section icon={<Bot size={13} />} title="AI Provider">

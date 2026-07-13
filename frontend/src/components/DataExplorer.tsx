@@ -118,16 +118,16 @@ export function ExplorerPicker({
       role="dialog"
       aria-modal="true"
       aria-label="Data Explorer — choose a dataset"
-      className="absolute inset-0 z-40 pn-app flex flex-col"
+      className="absolute inset-0 z-40 pn-app flex flex-col pointer-events-none"
     >
-      <div className="h-10 flex items-center gap-2 px-4 border-b pn-bd">
+      <div className="h-10 flex items-center gap-2 px-4 border-b pn-bd pointer-events-auto">
         <Table2 size={16} className="prism-text" />
         <span className="text-sm font-semibold pn-text">Data Explorer</span>
         <span className="text-[12px] pn-faint">— choose a dataset</span>
         <div className="flex-1" />
         <button onClick={onClose} className="p-1 rounded pn-hover pn-muted"><X size={16} /></button>
       </div>
-      <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto w-full space-y-8">
+      <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto w-full space-y-8 pointer-events-auto">
         <section>
           <div className="flex items-center gap-2 mb-4">
             <VariableIcon size={16} className="text-emerald-400" />
@@ -437,6 +437,14 @@ export default function DataExplorer({
           </span>
         )}
         <div className="flex-1" />
+
+        {/* zoom (grid font size) - moved before action buttons */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button onClick={fontDec} title="Zoom out" className="p-1 rounded pn-hover pn-muted"><Minus size={13} /></button>
+          <span className="text-[10px] tabular-nums w-5 text-center pn-faint" title="Zoom">{fontSize}</span>
+          <button onClick={fontInc} title="Zoom in" className="p-1 rounded pn-hover pn-muted"><Plus size={13} /></button>
+        </div>
+
         <button onClick={insertAsCell} title="Insert reproducible code into the notebook"
           className="flex items-center gap-1 px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 pn-text text-[12px]">
           <NotebookPen size={13} /> Insert as cell
@@ -451,12 +459,6 @@ export default function DataExplorer({
             <BarChart3 size={13} /> Visualize
           </button>
         )}
-        {/* zoom (grid font size) */}
-        <div className="flex items-center gap-0.5 ml-1">
-          <button onClick={fontDec} title="Zoom out" className="p-1 rounded pn-hover pn-muted"><Minus size={13} /></button>
-          <span className="text-[10px] tabular-nums w-5 text-center pn-faint" title="Zoom">{fontSize}</span>
-          <button onClick={fontInc} title="Zoom in" className="p-1 rounded pn-hover pn-muted"><Plus size={13} /></button>
-        </div>
         <button onClick={onClose} title="Close" className="p-1 rounded pn-hover pn-muted"><X size={16} /></button>
       </div>
 

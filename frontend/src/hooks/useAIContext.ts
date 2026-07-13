@@ -25,11 +25,30 @@ export const useAIContext = create<AIContextState>((set) => ({
   setWorkspace: (workspace, files) => set({ workspace, files }),
 }))
 
+/** Strip secrets from code/strings to prevent credential leakage to AI model.
+ * WARNING: This is a heuristic filter, not cryptographically secure. Users should
+ * avoid pasting real secrets into notebooks. */
+export function sanitizeForAI(text: string): string {
+  return text
+    // Hide API keys: "key=...", "KEY: ...", "XXXXXXXXXXXXXXXX" patterns
+    .replace(/(['"]?(?:api[_-]?)?key['"]?\s*[:=]\s*)([a-zA-Z0-9_\-\.]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
+    // Hide common credential patterns: passwords, tokens, secrets
+    .replace(/(['"]?(?:password|passwd|pwd|token|secret|api[_-]?secret)['"]?\s*[:=]\s*)([^\s,;}\]]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
+    // Hide OAuth/Bearer tokens: "Bearer XXXXX"
+    .replace(/bearer\s+[a-zA-Z0-9_\-\.]+/gi, 'bearer [REDACTED]')
+    // Hide connection strings with passwords: postgresql://user:pass@host
+    .replace(/([a-z]+:\/\/[^:]+:)[^@]+(@)/gi, '$1[REDACTED]$2')
+    // Hide email+password combos
+    .replace(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+)[\"'\s]*[:=,]\s*[^\s,;}\]"']+/g, '$1:[REDACTED]')
+}
+
 /** Render the environment block injected into the AI agent's system prompt. */
 export function buildEnvironmentContext(): string {
   const { dataset, workspace, files } = useAIContext.getState()
   const parts: string[] = []
   // PrismNote is a local, single-user OSS build — there is no login/account.
+  // AI has access to all data visible in the notebook and data explorer,
+  // but Settings/Security tabs are off-limits (never sent to AI).
   parts.push('Session: local workspace (open-source build, no account / login).')
   if (workspace) {
     const list = files.slice(0, 40).join(', ')

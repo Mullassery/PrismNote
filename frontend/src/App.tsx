@@ -5,7 +5,6 @@ import './styles/components.css'
 import {
   Files,
   Search as SearchIcon,
-  Sparkles,
   TerminalSquare,
   Settings as SettingsIcon,
   CircleUserRound,
@@ -21,7 +20,7 @@ import {
   PanelBottom,
   Command as CommandIcon,
 } from 'lucide-react'
-import { Briefcase, GitBranch, Rocket, Database, Table2, Library } from 'lucide-react'
+import { Briefcase, GitBranch, Rocket, Database, Table2, Library, BarChart3 } from 'lucide-react'
 import Notebook from './components/Notebook'
 import DataExplorer, { ExplorerPicker, type ExplorerTarget } from './components/DataExplorer'
 import DataCatalogPanel from './components/DataCatalogPanel'
@@ -33,21 +32,19 @@ import DeployPanel from './components/DeployPanel'
 import DataPanel from './components/DataPanel'
 import FileExplorer from './components/FileExplorer'
 import BottomPanel from './components/BottomPanel'
-import AgentPanel from './components/AgentPanel'
+import PlotsPanel from './components/PlotsPanel'
 import MenuBar from './components/MenuBar'
 import UnifiedSearch from './components/UnifiedSearch'
 import CommandPalette, { type Command } from './components/CommandPalette'
 import SettingsModal from './components/SettingsModal'
-import Login from './pages/Login'
 import { useNotebookStore } from './hooks/useNotebook'
 import { useWorkspace, openNotebookFile, saveJsonAs } from './hooks/useWorkspace'
 import { useAuth } from './hooks/useAuth'
 
 function App() {
   const auth = useAuth()
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
-  const [panels, setPanels] = useState({ files: true, terminal: true, ai: true })
+  const [panels, setPanels] = useState({ files: true, terminal: true, notebook: true })
   const [searchOpen, setSearchOpen] = useState(false)
   const [jobsOpen, setJobsOpen] = useState(false)
   const [gitOpen, setGitOpen] = useState(false)
@@ -55,6 +52,7 @@ function App() {
   const [jobsCreate, setJobsCreate] = useState(false)
   const [deployOpen, setDeployOpen] = useState(false)
   const [dataOpen, setDataOpen] = useState(false)
+  const [plotsOpen, setPlotsOpen] = useState(false)
   const [catalogOpen, setCatalogOpen] = useState(false)
   const [explorer, setExplorer] = useState<{ target: ExplorerTarget; title: string } | null>(null)
   const [explorerPicker, setExplorerPicker] = useState(false)
@@ -94,28 +92,25 @@ function App() {
   // - 900px: hide files panel (keep center)
   // - 700px: hide terminal (keep essential UI)
   useEffect(() => {
-    const HIDE_AI = 1400 // below this, hide AI panel
-    const HIDE_FILES = 900 // below this, hide files panel
-    const TIGHT = 700 // below this, hide terminal
+    const HIDE_FILES = 900 // hide files panel
+    const TIGHT = 700 // hide terminal
     let prev = {
-      hideAi: window.innerWidth < HIDE_AI,
       hideFiles: window.innerWidth < HIDE_FILES,
       tight: window.innerWidth < TIGHT,
     }
-    if (prev.hideAi || prev.hideFiles || prev.tight) {
+    if (prev.hideFiles || prev.tight) {
       setPanels((p) => ({
         files: prev.hideFiles ? false : p.files,
-        ai: prev.hideAi ? false : p.ai,
         terminal: prev.tight ? false : p.terminal,
+        notebook: p.notebook,
       }))
     }
     const onResize = () => {
-      const hideAi = window.innerWidth < HIDE_AI
       const hideFiles = window.innerWidth < HIDE_FILES
       const tight = window.innerWidth < TIGHT
-      if (hideAi !== prev.hideAi || hideFiles !== prev.hideFiles || tight !== prev.tight) {
-        prev = { hideAi, hideFiles, tight }
-        setPanels({ files: !hideFiles, ai: !hideAi, terminal: !tight })
+      if (hideFiles !== prev.hideFiles || tight !== prev.tight) {
+        prev = { hideFiles, tight }
+        setPanels((p) => ({ files: !hideFiles, terminal: !tight, notebook: p.notebook }))
       }
     }
     window.addEventListener('resize', onResize)
@@ -175,7 +170,7 @@ function App() {
   }
   const toggleTheme = () => applyTheme(theme === 'light' ? 'dark' : 'light')
 
-  const togglePanel = (p: 'files' | 'terminal' | 'ai') => setPanels((s) => ({ ...s, [p]: !s[p] }))
+  const togglePanel = (p: 'files' | 'terminal' | 'notebook') => setPanels((s) => ({ ...s, [p]: !s[p] }))
 
   // The center column hosts several full-bleed overlays (Data Explorer, Data &
   // SQL, Jobs, Git, Deploy). They are mutually exclusive — opening one closes
@@ -219,18 +214,19 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [explorerReqNonce])
 
+  // Auto-open plots panel when visualization is created
+  const vizNonce = useViz((s) => s.nonce)
+  useEffect(() => {
+    if (vizNonce > 0) {
+      setPlotsOpen(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vizNonce])
+
   // Create instantly with a unique default name (rename later). Avoids
   // window.prompt, which is silently suppressed in embedded browsers, PWAs,
   // and after Chrome's "prevent additional dialogs" — a common reason the
   // button appeared to do nothing.
-  const requireAuth = (action: () => void) => {
-    if (!auth.isAuthenticated) {
-      setShowLoginPrompt(true)
-      return
-    }
-    action()
-  }
-
   const newNotebook = () => {
     const existing = (useNotebookStore.getState() as any).notebooks as { name: string }[]
     let name = 'Untitled'
@@ -299,7 +295,6 @@ function App() {
     { id: 'data', category: 'Run', title: 'Data Querying…', icon: <Database size={14} />, keywords: 'database sql query warehouse connection', run: () => { closeCenterOverlays(); setDataOpen(true) } },
     { id: 'toggle-files', category: 'View', title: 'Toggle File Explorer', icon: <PanelLeft size={14} />, run: () => togglePanel('files') },
     { id: 'toggle-term', category: 'View', title: 'Toggle Terminal', icon: <PanelBottom size={14} />, run: () => togglePanel('terminal') },
-    { id: 'toggle-ai', category: 'View', title: 'Toggle AI Assistant', icon: <PanelRight size={14} />, run: () => togglePanel('ai') },
     { id: 'theme-dark', category: 'Preferences', title: 'Color Theme: Dark', icon: <Palette size={14} />, keywords: 'color palette appearance', run: () => applyTheme('dark') },
     { id: 'theme-light', category: 'Preferences', title: 'Color Theme: Light', icon: <Palette size={14} />, keywords: 'color palette appearance', run: () => applyTheme('light') },
     { id: 'settings', category: 'Preferences', title: 'Open Settings', shortcut: '⌘,', icon: <SettingsIcon size={14} />, run: () => setOverlay('settings') },
@@ -349,12 +344,13 @@ function App() {
           {/* Data surfaces — the product's focus */}
           {railBtn(!!explorer || explorerPicker, openExplorer, 'Data Explorer  ⌘E', Table2)}
           {railBtn(dataOpen, () => toggleCenter(dataOpen, () => setDataOpen(true)), 'Data Querying', Database)}
+          {railBtn(plotsOpen, () => setPlotsOpen(!plotsOpen), 'Plots & Dashboards', BarChart3)}
           <div className="w-7 my-1 border-t pn-bd" />
           {/* Workspace */}
+          {railBtn(panels.notebook, () => togglePanel('notebook'), 'Data Science Notebook', BookOpen)}
           {railBtn(panels.files, () => togglePanel('files'), 'Files', Files)}
           {railBtn(searchOpen, () => setSearchOpen((v) => !v), 'Search  ⌘K', SearchIcon)}
-          {railBtn(panels.terminal, () => togglePanel('terminal'), 'Bottom Panel — Output · Variables · Plots · Terminal', TerminalSquare)}
-          {railBtn(panels.ai, () => togglePanel('ai'), 'AI Assistant', Sparkles)}
+          {railBtn(panels.terminal, () => togglePanel('terminal'), 'Terminal Console', TerminalSquare)}
           <div className="w-7 my-1 border-t pn-bd" />
           {/* Operations */}
           {railBtn(gitOpen, () => toggleCenter(gitOpen, () => setGitOpen(true)), 'Source Control', GitBranch)}
@@ -428,42 +424,44 @@ function App() {
         {panels.files && <FileExplorer />}
 
         {/* Center: code panel + bottom panel */}
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative">
-          {jobsOpen && <JobsPanel onClose={() => setJobsOpen(false)} initialCreate={jobsCreate} />}
-          {gitOpen && <GitPanel onClose={() => setGitOpen(false)} initialFocus={gitFocus} />}
-          {deployOpen && <DeployPanel onClose={() => setDeployOpen(false)} />}
-          {dataOpen && <DataPanel onClose={() => setDataOpen(false)} />}
-          {catalogOpen && (
-            <div className="absolute inset-0 z-20 flex">
-              <div className="flex-1 flex flex-col">
-                <DataCatalogPanel />
-                <div className="p-3 border-t pn-bd flex justify-end">
-                  <button
-                    onClick={() => setCatalogOpen(false)}
-                    className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-medium transition"
-                  >
-                    Close Catalog
-                  </button>
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Notebook area with overlays - only covers notebook space, not terminal */}
+          <div className={`overflow-hidden relative ${panels.notebook || explorer || explorerPicker || dataOpen || jobsOpen || gitOpen || deployOpen || catalogOpen ? 'flex-1' : ''}`}>
+            {jobsOpen && <JobsPanel onClose={() => setJobsOpen(false)} initialCreate={jobsCreate} />}
+            {gitOpen && <GitPanel onClose={() => setGitOpen(false)} initialFocus={gitFocus} />}
+            {deployOpen && <DeployPanel onClose={() => setDeployOpen(false)} />}
+            {dataOpen && <DataPanel onClose={() => setDataOpen(false)} />}
+            {catalogOpen && (
+              <div className="absolute inset-0 z-20 flex">
+                <div className="flex-1 flex flex-col">
+                  <DataCatalogPanel />
+                  <div className="p-3 border-t pn-bd flex justify-end">
+                    <button
+                      onClick={() => setCatalogOpen(false)}
+                      className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-medium transition"
+                    >
+                      Close Catalog
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          {explorerPicker && (
-            <ExplorerPicker
-              onClose={() => setExplorerPicker(false)}
-              onPick={(target, title) => { setExplorer({ target, title }); setExplorerPicker(false) }}
-            />
-          )}
-          {explorer && (
-            <DataExplorer
-              target={explorer.target}
-              title={explorer.title}
-              onClose={() => setExplorer(null)}
-              onVisualize={openVizFor}
-            />
-          )}
-          <div className="flex-1 overflow-hidden">
-            {currentNotebookId ? (
+            )}
+            {explorerPicker && (
+              <ExplorerPicker
+                onClose={() => setExplorerPicker(false)}
+                onPick={(target, title) => { setExplorer({ target, title }); setExplorerPicker(false) }}
+              />
+            )}
+            {explorer && (
+              <DataExplorer
+                target={explorer.target}
+                title={explorer.title}
+                onClose={() => setExplorer(null)}
+                onVisualize={openVizFor}
+              />
+            )}
+            <div className={`overflow-hidden ${panels.notebook ? 'flex-1' : ''}`}>
+            {panels.notebook && (currentNotebookId ? (
               <Notebook />
             ) : (
               <div className="h-full flex flex-col overflow-auto bg-gradient-to-b from-slate-900/30 to-slate-900/5">
@@ -485,13 +483,13 @@ function App() {
                     {/* CTA Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
                       <button
-                        onClick={() => requireAuth(() => { closeCenterOverlays(); setExplorerPicker(true) })}
+                        onClick={() => { closeCenterOverlays(); setExplorerPicker(true) }}
                         className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl prism-bg text-white font-semibold text-base hover:brightness-110 transition shadow-lg shadow-purple-500/20"
                       >
                         <Table2 size={20} /> Explore Data
                       </button>
                       <button
-                        onClick={() => requireAuth(newNotebook)}
+                        onClick={newNotebook}
                         className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border pn-bd pn-text font-semibold text-base transition"
                       >
                         <Plus size={20} /> New Notebook
@@ -546,18 +544,20 @@ function App() {
                   </div>
                 </div>
               </div>
-            )}
+            ))}
+            </div>
           </div>
           {panels.terminal && (
             <BottomPanel
+              notebookVisible={panels.notebook}
               onClose={() => togglePanel('terminal')}
               onOpenExplorer={(target, title) => showExplorer(target, title)}
             />
           )}
         </div>
 
-        {/* Right: Cline-style agent (Ollama) */}
-        {panels.ai && <AgentPanel onClose={() => togglePanel('ai')} />}
+        {/* Right: Plots & Dashboards */}
+        {plotsOpen && <PlotsPanel onClose={() => setPlotsOpen(false)} />}
       </div>
 
       {/* Status bar */}
@@ -579,24 +579,6 @@ function App() {
       )}
       {overlay === 'settings' && (
         <SettingsModal onClose={() => setOverlay(null)} theme={theme} setTheme={applyTheme} panels={panels} togglePanel={togglePanel} />
-      )}
-
-      {/* Login Modal for Unauthenticated Users */}
-      {showLoginPrompt && !auth.isAuthenticated && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-900 rounded-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-slate-900 border-b pn-bd p-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold pn-text">Sign In Required</h2>
-              <button onClick={() => setShowLoginPrompt(false)} className="text-slate-400 hover:text-white">
-                ✕
-              </button>
-            </div>
-            <div className="p-6">
-              <p className="pn-faint mb-6">Sign in to start using PrismNote and create notebooks, explore data, and more.</p>
-              <Login />
-            </div>
-          </div>
-        </div>
       )}
     </div>
   )

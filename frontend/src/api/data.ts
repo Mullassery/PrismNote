@@ -61,3 +61,24 @@ export const queryCode = (kind: 'db' | 'warehouse', id: string, query: string) =
       { query },
     )
     .then((r) => r.data.code)
+
+export interface SchemaTable {
+  name: string
+  columns: { name: string; type: string }[]
+}
+
+export interface DatabaseSchema {
+  tables: SchemaTable[]
+}
+
+export const getDatabaseSchema = (id: string) =>
+  axios
+    .get<DatabaseSchema>(`/api/databases/${id}/schema`)
+    .then((r) => r.data)
+    .catch(() => ({ tables: [] }))
+
+export const getWarehouseSchema = (id: string) =>
+  axios
+    .get<DatabaseSchema>(`/api/cloud-warehouses/${id}/schema`)
+    .then((r) => r.data)
+    .catch(() => ({ tables: [] }))

@@ -11,9 +11,20 @@ export default function Notebook() {
   const [collapsed, setCollapsed] = useState(false)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
+  const [notebookZoom, setNotebookZoom] = useState(14)
   const cellRefsMap = useRef(new Map<string, React.RefObject<HTMLDivElement | null>>()).current
   // Code editor font, live across all cells via a window event each Cell listens to.
   const { size: codeFont, inc, dec } = useFontSize('pn-code-size', 16, 9, 40)
+
+  // Listen for notebook zoom changes from Toolbar
+  useEffect(() => {
+    const handleZoomChange = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      setNotebookZoom(detail)
+    }
+    window.addEventListener('pn-notebook-zoom', handleZoomChange)
+    return () => window.removeEventListener('pn-notebook-zoom', handleZoomChange)
+  }, [])
 
   // Initialize refs for all cells
   useEffect(() => {
@@ -81,7 +92,7 @@ export default function Notebook() {
 
       {!collapsed && (
       <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-4 min-w-0">
+        <div className="flex-1 overflow-y-auto p-4 min-w-0" style={{ fontSize: `${notebookZoom}px` }}>
           <div className="w-full min-w-0">
           <Inserter at={0} />
           {currentNotebook.cells.map((cell, idx) => (

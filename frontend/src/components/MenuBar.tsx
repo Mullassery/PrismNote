@@ -9,8 +9,8 @@ import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 interface MenuBarProps {
   theme: 'light' | 'dark'
   onToggleTheme: () => void
-  panels: { files: boolean; terminal: boolean; ai: boolean }
-  onTogglePanel: (panel: 'files' | 'terminal' | 'ai') => void
+  panels: { files: boolean; terminal: boolean; notebook: boolean }
+  onTogglePanel: (panel: 'files' | 'terminal' | 'notebook') => void
   onOpenSearch?: () => void
   onOpenJobs?: (create?: boolean) => void
   onOpenGit?: (focus?: 'commit' | 'clone') => void
@@ -170,9 +170,9 @@ export default function MenuBar({ theme, onToggleTheme, panels, onTogglePanel, o
     View: [
       { label: 'Data Explorer', shortcut: '⌘E', action: () => onOpenDataExplorer?.() },
       { label: 'Data Querying', action: () => onOpenData?.(), separatorAfter: true },
+      { label: 'Data Science Notebook', checked: panels.notebook, action: () => onTogglePanel('notebook') },
       { label: 'Files', checked: panels.files, action: () => onTogglePanel('files') },
       { label: 'Terminal & Console', checked: panels.terminal, action: () => onTogglePanel('terminal') },
-      { label: 'AI Assistant', checked: panels.ai, action: () => onTogglePanel('ai') },
       { label: 'Search…', shortcut: '⌘K', action: () => onOpenSearch?.(), separatorAfter: true },
       { label: theme === 'dark' ? 'Light Theme' : 'Dark Theme', action: onToggleTheme },
     ],

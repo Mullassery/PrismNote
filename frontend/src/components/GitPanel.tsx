@@ -47,15 +47,15 @@ export default function GitPanel({ onClose, initialFocus }: { onClose: () => voi
   }
 
   return (
-    <div className="absolute inset-0 z-30 pn-app flex flex-col">
-      <div className="h-10 flex items-center justify-between px-4 border-b pn-bd">
+    <div className="absolute inset-0 z-30 pn-app flex flex-col pointer-events-none">
+      <div className="h-10 flex items-center justify-between px-4 border-b pn-bd pointer-events-auto">
         <span className="flex items-center gap-2 text-sm font-semibold pn-text">
           <GitBranch size={16} className="text-blue-400" /> Source Control
         </span>
         <button onClick={onClose} className="p-1 rounded pn-hover pn-muted"><X size={16} /></button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-3xl">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-3xl pointer-events-auto">
         {/* Repo directory */}
         <div>
           <div className="text-[12px] pn-muted mb-1">Repository folder (absolute path)</div>

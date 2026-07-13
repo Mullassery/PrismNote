@@ -61,8 +61,8 @@ export default function JobsPanel({ onClose, initialCreate }: { onClose: () => v
     s.kind === 'interval' ? `every ${s.minutes}m` : s.kind === 'daily' ? `daily ${s.time}` : 'manual'
 
   return (
-    <div className="absolute inset-0 z-30 pn-app flex flex-col">
-      <div className="h-10 flex items-center justify-between px-4 border-b pn-bd">
+    <div className="absolute inset-0 z-30 pn-app flex flex-col pointer-events-none">
+      <div className="h-10 flex items-center justify-between px-4 border-b pn-bd pointer-events-auto">
         <span className="flex items-center gap-2 text-sm font-semibold pn-text">
           <Briefcase size={16} className="text-blue-400" /> Jobs
         </span>
@@ -131,7 +131,7 @@ export default function JobsPanel({ onClose, initialCreate }: { onClose: () => v
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pointer-events-auto">
         {loading && <div className="pn-faint text-sm flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Loading…</div>}
         {!loading && jobs.length === 0 && (
           <div className="pn-faint text-sm">No jobs yet. Open a notebook and click “Run current notebook as Job”.</div>

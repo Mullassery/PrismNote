@@ -32,8 +32,8 @@ export default function DeployPanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="absolute inset-0 z-30 pn-app flex flex-col">
-      <div className="h-10 flex items-center justify-between px-4 border-b pn-bd">
+    <div className="absolute inset-0 z-30 pn-app flex flex-col pointer-events-none">
+      <div className="h-10 flex items-center justify-between px-4 border-b pn-bd pointer-events-auto">
         <span className="flex items-center gap-2 text-sm font-semibold pn-text">
           <Rocket size={16} className="text-blue-400" /> Deploy to Cloud
         </span>
@@ -43,7 +43,7 @@ export default function DeployPanel({ onClose }: { onClose: () => void }) {
       {loading ? (
         <div className="p-4 pn-faint flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Generating artifacts…</div>
       ) : (
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden pointer-events-auto">
           <div className="flex items-center gap-1 px-3 py-1.5 border-b pn-bd">
             {files.map((f) => (
               <button key={f} onClick={() => setTab(f)}
