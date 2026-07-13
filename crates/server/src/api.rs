@@ -3925,14 +3925,21 @@ pub async fn auth_register(
 }
 
 pub async fn auth_login(
+    State(state): State<Arc<AppState>>,
     Json(req): Json<LoginRequest>,
 ) -> Result<Json<AuthResponse>, (StatusCode, String)> {
     // For now, just validate that we have email and password
     if !req.email.contains('@') {
+        let event = crate::audit::AuditEvent::new("unknown".to_string(), crate::audit::ACTION_FAILED_LOGIN.to_string())
+            .with_error("Invalid email format");
+        let _ = crate::audit::log_event(&state.db_pool, event).await;
         return Err((StatusCode::BAD_REQUEST, "Invalid email format".to_string()));
     }
 
     if req.password.len() < 8 {
+        let event = crate::audit::AuditEvent::new(req.email.clone(), crate::audit::ACTION_FAILED_LOGIN.to_string())
+            .with_error("Invalid credentials");
+        let _ = crate::audit::log_event(&state.db_pool, event).await;
         return Err((
             StatusCode::UNAUTHORIZED,
             "Invalid email or password".to_string(),
@@ -3945,6 +3952,11 @@ pub async fn auth_login(
     let jwt_token = auth_manager
         .generate_jwt(&user_id, &req.email, &[UserRole::Member])
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Log successful login
+    let event = crate::audit::AuditEvent::new(user_id.clone(), crate::audit::ACTION_LOGIN.to_string())
+        .with_details(json!({ "email": req.email }));
+    let _ = crate::audit::log_event(&state.db_pool, event).await;
 
     Ok(Json(AuthResponse {
         access_token: jwt_token.access_token,
@@ -4029,17 +4041,22 @@ pub struct LogoutResponse {
 /// Example: Logout endpoint (requires authentication)
 pub async fn logout(
     user: CurrentUser,
+    State(state): State<Arc<AppState>>,
     Json(_req): Json<LogoutRequest>,
 ) -> (StatusCode, Json<LogoutResponse>) {
-    // Future: Invalidate JWT/session in database
-    // When database integration complete, this will revoke the session
-    tracing::info!("User {} logged out", user.user_id);
+    let user_id = user.user_id.clone();
+
+    // Log logout event
+    let event = crate::audit::AuditEvent::new(user_id.clone(), crate::audit::ACTION_LOGOUT.to_string());
+    let _ = crate::audit::log_event(&state.db_pool, event).await;
+
+    tracing::info!("User {} logged out", user_id);
 
     (
         StatusCode::OK,
         Json(LogoutResponse {
             message: "Successfully logged out".to_string(),
-            user_id: user.user_id,
+            user_id,
         }),
     )
 }
@@ -4656,6 +4673,176 @@ pub async fn get_group_members(
         Err(e) => {
             tracing::error!("Failed to get group members: {}", e);
             Json(vec![])
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Audit Logging — Phase 4
+// ════════════════════════════════════════════════════════════════════════════
+
+#[derive(Deserialize)]
+pub struct AuditQueryRequest {
+    pub user_id: Option<String>,
+    pub action: Option<String>,
+    pub resource_type: Option<String>,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+#[derive(Serialize)]
+pub struct AuditLogsResponse {
+    pub logs: Vec<serde_json::Value>,
+    pub total: i64,
+    pub limit: i64,
+    pub offset: i64,
+}
+
+/// Query audit logs (admin only)
+pub async fn query_audit_logs(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<AuditQueryRequest>,
+) -> Result<Json<AuditLogsResponse>, (StatusCode, String)> {
+    // Check if user is admin
+    if !user.roles.contains(&"Admin".to_string()) {
+        return Err((StatusCode::FORBIDDEN, "Only admins can query audit logs".to_string()));
+    }
+
+    let limit = req.limit.unwrap_or(100).min(1000); // Max 1000 logs per query
+    let offset = req.offset.unwrap_or(0);
+
+    match crate::audit::query_logs(
+        &state.db_pool,
+        req.user_id.as_deref(),
+        req.action.as_deref(),
+        req.resource_type.as_deref(),
+        limit,
+        offset,
+    )
+    .await
+    {
+        Ok((logs, total)) => {
+            Ok(Json(AuditLogsResponse {
+                logs,
+                total,
+                limit,
+                offset,
+            }))
+        }
+        Err(e) => {
+            tracing::error!("Failed to query audit logs: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to query logs".to_string()))
+        }
+    }
+}
+
+/// Get audit log statistics (admin only)
+pub async fn get_audit_stats(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    // Check if user is admin
+    if !user.roles.contains(&"Admin".to_string()) {
+        return Err((StatusCode::FORBIDDEN, "Only admins can view audit stats".to_string()));
+    }
+
+    // Get stats by action
+    let action_stats_query = "SELECT action, COUNT(*) as count,
+                              SUM(CASE WHEN result = 'failure' THEN 1 ELSE 0 END) as failures
+                              FROM audit_logs GROUP BY action ORDER BY count DESC";
+
+    let action_stats = match sqlx::query_as::<_, (String, i64, Option<i64>)>(action_stats_query)
+        .fetch_all(&state.db_pool)
+        .await
+    {
+        Ok(rows) => rows.into_iter()
+            .map(|(action, count, failures)| json!({
+                "action": action,
+                "count": count,
+                "failures": failures.unwrap_or(0)
+            }))
+            .collect::<Vec<_>>(),
+        Err(e) => {
+            tracing::error!("Failed to get action stats: {}", e);
+            vec![]
+        }
+    };
+
+    // Get stats by user
+    let user_stats_query = "SELECT user_id, COUNT(*) as count
+                            FROM audit_logs GROUP BY user_id
+                            ORDER BY count DESC LIMIT 10";
+
+    let user_stats = match sqlx::query_as::<_, (String, i64)>(user_stats_query)
+        .fetch_all(&state.db_pool)
+        .await
+    {
+        Ok(rows) => rows.into_iter()
+            .map(|(user_id, count)| json!({
+                "user_id": user_id,
+                "count": count
+            }))
+            .collect::<Vec<_>>(),
+        Err(e) => {
+            tracing::error!("Failed to get user stats: {}", e);
+            vec![]
+        }
+    };
+
+    // Get total count and date range
+    let total_query = "SELECT COUNT(*) as total,
+                             MIN(timestamp) as earliest,
+                             MAX(timestamp) as latest
+                      FROM audit_logs";
+
+    let (total, earliest, latest) = match sqlx::query_as::<_, (i64, Option<String>, Option<String>)>(total_query)
+        .fetch_one(&state.db_pool)
+        .await
+    {
+        Ok((t, e, l)) => (t, e, l),
+        Err(e) => {
+            tracing::error!("Failed to get total stats: {}", e);
+            (0, None, None)
+        }
+    };
+
+    Ok(Json(json!({
+        "total_logs": total,
+        "earliest_log": earliest,
+        "latest_log": latest,
+        "actions": action_stats,
+        "top_users": user_stats,
+    })))
+}
+
+/// Cleanup old audit logs (admin only)
+pub async fn cleanup_audit_logs(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    // Check if user is admin
+    if !user.roles.contains(&"Admin".to_string()) {
+        return Err((StatusCode::FORBIDDEN, "Only admins can cleanup audit logs".to_string()));
+    }
+
+    let days = params
+        .get("days")
+        .and_then(|d| d.parse::<i64>().ok())
+        .unwrap_or(90);
+
+    match crate::audit::cleanup_old_logs(&state.db_pool, days).await {
+        Ok(count) => {
+            tracing::info!("Cleaned up {} audit logs older than {} days", count, days);
+            Ok(Json(json!({
+                "deleted": count,
+                "days": days
+            })))
+        }
+        Err(e) => {
+            tracing::error!("Failed to cleanup audit logs: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to cleanup logs".to_string()))
         }
     }
 }

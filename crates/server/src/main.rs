@@ -2,6 +2,7 @@ mod ai;
 mod ai_training;
 mod airflow_integration;
 mod api;
+mod audit;
 mod cell_executor;
 mod cloud_storage;
 mod cloud_warehouse;
@@ -443,6 +444,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/admin/groups", post(api::create_group).get(api::list_groups))
         .route("/admin/groups/:group_id/members", post(api::add_group_member).get(api::get_group_members))
         .route("/admin/groups/:group_id/members/:user_email", delete(api::remove_group_member))
+        // Audit Logging endpoints
+        .route("/admin/audit/logs", post(api::query_audit_logs))
+        .route("/admin/audit/stats", get(api::get_audit_stats))
+        .route("/admin/audit/cleanup", post(api::cleanup_audit_logs))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
