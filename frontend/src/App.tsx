@@ -21,9 +21,10 @@ import {
   PanelBottom,
   Command as CommandIcon,
 } from 'lucide-react'
-import { Briefcase, GitBranch, Rocket, Database, Table2 } from 'lucide-react'
+import { Briefcase, GitBranch, Rocket, Database, Table2, Library } from 'lucide-react'
 import Notebook from './components/Notebook'
 import DataExplorer, { ExplorerPicker, type ExplorerTarget } from './components/DataExplorer'
+import DataCatalogPanel from './components/DataCatalogPanel'
 import { useViz } from './hooks/useViz'
 import { useExplorerRequest } from './hooks/useExplorerRequest'
 import JobsPanel from './components/JobsPanel'
@@ -52,6 +53,7 @@ function App() {
   const [jobsCreate, setJobsCreate] = useState(false)
   const [deployOpen, setDeployOpen] = useState(false)
   const [dataOpen, setDataOpen] = useState(false)
+  const [catalogOpen, setCatalogOpen] = useState(false)
   const [explorer, setExplorer] = useState<{ target: ExplorerTarget; title: string } | null>(null)
   const [explorerPicker, setExplorerPicker] = useState(false)
   const [railMenu, setRailMenu] = useState<null | 'settings' | 'accounts'>(null)
@@ -274,6 +276,7 @@ function App() {
   // ── Command Palette command set ──
   const commands: Command[] = [
     { id: 'data-explorer', category: 'Explore', title: 'Open Data Explorer', shortcut: '⌘E', icon: <Table2 size={14} />, keywords: 'dataframe table grid columns schema statistics parquet csv iceberg duckdb', run: () => { closeCenterOverlays(); setExplorerPicker(true) } },
+    { id: 'data-catalog', category: 'Explore', title: 'Data Catalog', icon: <Library size={14} />, keywords: 'catalog governance pii metadata lineage tables columns', run: () => { setCatalogOpen(true) } },
     { id: 'new-nb', category: 'File', title: 'New Notebook', shortcut: '⌘N', icon: <Plus size={14} />, run: newNotebook },
     { id: 'open-folder', category: 'File', title: 'Open Folder…', icon: <FolderOpen size={14} />, run: openFolder },
     { id: 'open-file', category: 'File', title: 'Open File…', shortcut: '⌘O', icon: <FileUp size={14} />, keywords: 'notebook ipynb', run: openFile },
@@ -420,6 +423,21 @@ function App() {
           {gitOpen && <GitPanel onClose={() => setGitOpen(false)} initialFocus={gitFocus} />}
           {deployOpen && <DeployPanel onClose={() => setDeployOpen(false)} />}
           {dataOpen && <DataPanel onClose={() => setDataOpen(false)} />}
+          {catalogOpen && (
+            <div className="absolute inset-0 z-20 flex">
+              <div className="flex-1 flex flex-col">
+                <DataCatalogPanel />
+                <div className="p-3 border-t pn-bd flex justify-end">
+                  <button
+                    onClick={() => setCatalogOpen(false)}
+                    className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-medium transition"
+                  >
+                    Close Catalog
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {explorerPicker && (
             <ExplorerPicker
               onClose={() => setExplorerPicker(false)}
