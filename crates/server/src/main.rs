@@ -442,7 +442,7 @@ async fn main() -> anyhow::Result<()> {
         .nest("/ws", ws_routes)
         .fallback(static_handler)
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024))
-        .layer(CorsLayer::permissive())
+        .layer(middleware::cors_layer())
         .layer(TraceLayer::new_for_http());
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
