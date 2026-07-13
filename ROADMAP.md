@@ -240,22 +240,64 @@ Phase 3 enhancements (optional polish):
 
 **Shipping Status:** v1.2.1 features 100% built, ready for UI integration
 
-### v1.3.0 (Q1 2027) — AI & Productivity
-**~16 hours | Databricks Copilot-inspired**
-- [ ] **AI Assistant Inside Cells** — Explain, Optimize, Generate Tests, Document
-- [ ] **Notebook Versioning** — Git-style diffs, cell history, rollback
-- [ ] **Query Plan Visualizer** — DuckDB EXPLAIN as interactive DAG
-- [ ] **Multi-language Cells** — SQL, Python, Bash, JavaScript in one notebook
-- [ ] BigQuery connection (read-only)
-- [ ] Snowflake connection (read-only)
+### v1.3.0 (Q1 2027) — Data Catalog & Governance
+**~24 hours | Enterprise governance, local-first**
 
-### v1.4.0 (Q2 2027) — Advanced Analysis & Applications
-**~20 hours | Enterprise feature parity**
-- [ ] **Notebook as Application** — input widgets, dropdowns, date selectors, parameters
+#### Data Catalog & Discovery (Foundation)
+- [ ] **Data Catalog** — local metadata store (SQLite)
+  - Support: Parquet, CSV, DuckDB, Iceberg, PostgreSQL (+ Snowflake, BigQuery connectors)
+  - Track: tables, columns, owners, descriptions, tags
+- [ ] **Universal Search** — search all datasets (name, description, tags, columns)
+- [ ] **Dataset Ownership & Teams** — assign responsibility, track stewards
+- [ ] **Business Glossary** — centralized definitions (inspired by Snowflake Horizon)
+
+#### Query & Lineage (Intelligence)
+- [ ] **Column-Level Lineage** — auto-parse SQL with SQLGlot, show data flow
+- [ ] **Column Impact Analysis** — which dashboards/notebooks use this column?
+- [ ] **Data Lineage Visualization** — DAG of table transformations
+- [ ] **Query History Extended** — duration, rows scanned, rows returned, user context
+
+#### Governance & Quality (Trust)
+- [ ] **Dataset Certification** — ✓ badge (has owner, description, passed QA)
+- [ ] **Governance Tags** — PII, Financial, Internal, Public, Sensitive (auto-apply via AI)
+- [ ] **Sensitive Data Detection** — auto-detect email, phone, SSN, card (Microsoft Presidio)
+- [ ] **Quality Assertions** — Not null, positive, unique checks (Great Expectations)
+- [ ] **Data Contracts** — schema validation, SLAs (OpenMetadata foundation)
+
+#### AI-Powered Features (Copilot)
+- [ ] **Auto Metadata Generation** — AI generates description, tags, owner suggestions
+- [ ] **Data Discovery Assistant** — "show customer datasets" → natural language search
+- [ ] **Auto Quality Checks** — AI generates test cases based on column type
+
+#### Plus Previous Databricks Features
+- [ ] **AI Assistant Inside Cells** — Explain, Optimize, Generate Tests
+- [ ] **Notebook Versioning** — Git-style diffs
+- [ ] **Query Plan Visualizer** — DuckDB EXPLAIN as DAG
+- [ ] **Multi-language Cells** — SQL, Python, Bash, JavaScript
+
+### v1.4.0 (Q2 2027) — Semantic Layer & Applications
+**~22 hours | Metrics, reusability, enterprise applications**
+
+#### Semantic Layer (MetricFlow-inspired)
+- [ ] **Metric Definitions** — define once, use everywhere
+  - Example: `revenue = sum(order_amount) where status='completed'`
+  - Reuse in multiple notebooks, dashboards, notebooks
+- [ ] **Dimension Modeling** — fact tables, dimension tables
+- [ ] **Metric Lineage** — show how metrics are calculated, dependencies
+- [ ] **Metric Validation** — test metric calculations across sources
+
+#### Notebook as Application (Snowflake Streamlit-inspired)
+- [ ] **Input Widgets** — dropdowns, date selectors, text inputs
+- [ ] **Parameterized Notebooks** — `date_range = widget.date_picker()`
+- [ ] **Non-technical User Mode** — run notebooks without editing cells
+
+#### Reusability & Components
+- [ ] **Reusable Components Library** — SQL/Python snippets, viz templates
 - [ ] **Notebook Dependency Graph** — visual cell dependency DAG
-- [ ] **Data Lineage Tracking** — CSV → transform → metric → dashboard visualization
-- [ ] **Reusable Components Library** — SQL/Python snippets, viz templates, ETL blocks
-- [ ] **Job Scheduling with Notifications** — daily/hourly runs, retry policies, email alerts
+- [ ] **Job Scheduling** — daily/hourly runs, retry policies, alerts
+- [ ] **Cost Observatory (Local)** — CPU time, memory, query duration tracking
+
+#### Plus Previous Features
 - [ ] Git integration (version history)
 - [ ] Iceberg dataset support
 
@@ -272,6 +314,60 @@ Phase 3 enhancements (optional polish):
 - [ ] Real-time collaboration (concurrent editing)
 - [ ] Notebook organization (folders, tags, collections)
 - [ ] Team management and workspaces
+
+---
+
+## 🏆 PrismNote's Unique Positioning vs Enterprise Catalogs
+
+### What Makes This Different
+
+**Enterprise Catalogs (Snowflake, OpenMetadata, DataHub):**
+- Require external infrastructure (servers, databases)
+- Separate system from computation
+- Often cloud-only or complex deployment
+- Metadata divorced from data
+
+**PrismNote Governance (v1.3.0+):**
+- ✅ **Local-first** — metadata stored in same SQLite as notebooks
+- ✅ **Computation-native** — catalog understands notebooks, not just datasets
+- ✅ **Zero deployment** — works on laptop, single executable
+- ✅ **Source-agnostic** — works with Parquet, CSV, DuckDB, Iceberg, PostgreSQL, Snowflake, BigQuery
+- ✅ **Notebook-aware** — tracks lineage through NOTEBOOKS, not just tables
+- ✅ **AI-first** — auto-generate metadata, tags, quality checks using Claude API
+- ✅ **Privacy-first** — all metadata stays local, no cloud required
+
+### Three-Tier Lineage Model (PrismNote-Unique)
+
+Traditional catalogs track:
+```
+Table A → Table B → Table C
+```
+
+PrismNote tracks:
+```
+Data Source
+    ↓
+Notebook (extraction/transformation)
+    ↓
+Dataset (intermediate result)
+    ↓
+Notebook (analysis)
+    ↓
+Dashboard/Report
+```
+
+This is where most platforms fail — they don't understand notebooks as first-class computational assets.
+
+### Roadmap Evolution
+
+| Version | Focus | Differentiator |
+|---------|-------|---|
+| v1.2.0 | Auth + Audit | Multi-user ready |
+| **v1.2.1** | Query Intelligence | Caching, autocomplete, history |
+| **v1.3.0** | Governance | Local catalog + lineage + AI metadata |
+| **v1.4.0** | Semantic Layer | Metrics + reusability |
+| v1.5.0 | Publishing | Export notebooks as reports |
+| v2.0+ | Team Scale | Real-time collab + workspace mgmt |
 
 ---
 
