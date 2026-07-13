@@ -356,23 +356,8 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
         </button>
       </div>
 
-      {/* controls */}
-      <div className="px-3 py-1.5 border-b pn-bd space-y-1">
-        <div className="flex gap-1 text-[11px]">
-          {(['plan', 'act'] as Mode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              className={`px-2 py-1 rounded capitalize font-medium transition ${
-                mode === m ? 'pn-text bg-indigo-500/20' : 'pn-faint hover:pn-text'
-              }`}
-              title={m}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-
+      {/* model selector */}
+      <div className="px-3 py-1.5 border-b pn-bd">
         <div className="relative">
           {provider !== 'ollama' ? (
             <div className="px-2 py-1 rounded text-[10px] bg-indigo-500/15 pn-text truncate">{PROVIDER_LABEL[provider]} • {cloudModel}</div>
