@@ -3971,3 +3971,73 @@ pub async fn get_csrf_token() -> Json<CsrfTokenResponse> {
         expires_in: 3600,
     })
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Authenticated Endpoint Examples (v1.2.0)
+// ════════════════════════════════════════════════════════════════════════════
+
+use crate::middleware::CurrentUser;
+
+#[derive(Serialize)]
+pub struct AuthenticatedResponse {
+    pub message: String,
+    pub user_id: String,
+    pub email: String,
+    pub roles: Vec<String>,
+}
+
+/// Example: Get current user info (requires authentication)
+pub async fn get_me(
+    user: CurrentUser,
+) -> Json<AuthenticatedResponse> {
+    Json(AuthenticatedResponse {
+        message: "Successfully authenticated".to_string(),
+        user_id: user.user_id,
+        email: user.email,
+        roles: user.roles,
+    })
+}
+
+/// Example: List notebooks with authentication
+pub async fn list_notebooks_authenticated(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+) -> Json<AuthenticatedResponse> {
+    // Future: Filter notebooks by user's access permissions
+    tracing::info!("User {} listed notebooks", user.user_id);
+
+    Json(AuthenticatedResponse {
+        message: format!("Notebooks listed for {}", user.email),
+        user_id: user.user_id,
+        email: user.email,
+        roles: user.roles,
+    })
+}
+
+#[derive(Deserialize)]
+pub struct LogoutRequest {
+    pub session_id: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct LogoutResponse {
+    pub message: String,
+    pub user_id: String,
+}
+
+/// Example: Logout endpoint (requires authentication)
+pub async fn logout(
+    user: CurrentUser,
+    Json(_req): Json<LogoutRequest>,
+) -> (StatusCode, Json<LogoutResponse>) {
+    // Future: Invalidate JWT/session in database
+    tracing::info!("User {} logged out", user.user_id);
+
+    (
+        StatusCode::OK,
+        Json(LogoutResponse {
+            message: "Successfully logged out".to_string(),
+            user_id: user.user_id,
+        }),
+    )
+}

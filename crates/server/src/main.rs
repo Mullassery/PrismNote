@@ -18,6 +18,7 @@ mod jobs;
 mod k8s_deployment;
 mod kernel;
 mod library_advisor;
+mod middleware;
 mod models;
 mod output_renderer;
 mod platform;
@@ -418,6 +419,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/register", post(api::auth_register))
         .route("/auth/login", post(api::auth_login))
         .route("/auth/csrf", get(api::get_csrf_token))
+        // Protected endpoints (require JWT)
+        .route("/auth/me", get(api::get_me))
+        .route("/auth/logout", post(api::logout))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
