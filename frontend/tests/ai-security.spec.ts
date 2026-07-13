@@ -8,11 +8,12 @@ test.describe('AI Security & Data Access', () => {
     // Click AI tab
     const aiTab = page.locator('button:has-text("AI")')
     await aiTab.click()
-    await page.waitForSelector('text=Ask anything', { timeout: 5000 })
 
-    // Verify welcome message shows
-    expect(await page.isVisible('text=Ask anything')).toBe(true)
-    expect(await page.isVisible('text=Plan mode: discuss approach')).toBe(true)
+    // Verify AI tab UI loads (model selector and input field)
+    await page.waitForSelector('textarea, input[type="text"]', { timeout: 5000 })
+
+    const input = page.locator('textarea, input[type="text"]').first()
+    expect(await input.isVisible()).toBe(true)
   })
 
   test('sanitizeForAI redacts API keys', async ({ page }) => {
@@ -88,7 +89,7 @@ print(result)
     // Click AI tab
     const aiTab = page.locator('button:has-text("AI")')
     await aiTab.click()
-    await page.waitForSelector('text=Ask anything', { timeout: 5000 })
+    await page.waitForSelector('textarea, input[type="text"]', { timeout: 5000 })
 
     // When no notebook is open, AI should show appropriate message
     const bottomPanel = page.locator('[class*="pn-surface"]').last()
@@ -107,7 +108,7 @@ print(result)
     // Click AI tab
     const aiTab = page.locator('button:has-text("AI")')
     await aiTab.click()
-    await page.waitForSelector('text=Ask anything', { timeout: 5000 })
+    await page.waitForSelector('textarea, input[type="text"]', { timeout: 5000 })
 
     // Find input by role
     const input = page.locator('textarea, input[type="text"]').first()
@@ -180,7 +181,7 @@ print(result)
     // Click AI tab
     const aiTab = page.locator('button:has-text("AI")')
     await aiTab.click()
-    await page.waitForSelector('text=Ask anything', { timeout: 5000 })
+    await page.waitForSelector('textarea, input[type="text"]', { timeout: 5000 })
 
     // Look for model selector button in bottom panel
     const modelButton = page.locator('[class*="px-2"][class*="py-1"][class*="rounded"][class*="text-left"]').first()

@@ -102,12 +102,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 713,
+                      "duration": 904,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:03.565Z",
+                      "startTime": "2026-07-13T22:17:04.388Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -136,12 +136,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 48,
+                      "duration": 63,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:04.342Z",
+                      "startTime": "2026-07-13T22:17:05.454Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -151,7 +151,7 @@
               ],
               "id": "14c3203ec385c2a8029c-0059f63ebba02526d5d7",
               "file": "ai-security.spec.ts",
-              "line": 18,
+              "line": 19,
               "column": 3
             },
             {
@@ -175,7 +175,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:04.396Z",
+                      "startTime": "2026-07-13T22:17:05.523Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -185,7 +185,7 @@
               ],
               "id": "14c3203ec385c2a8029c-9ab66f8c5d103c2c68c4",
               "file": "ai-security.spec.ts",
-              "line": 40,
+              "line": 41,
               "column": 3
             },
             {
@@ -209,7 +209,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:04.446Z",
+                      "startTime": "2026-07-13T22:17:05.573Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -219,7 +219,7 @@
               ],
               "id": "14c3203ec385c2a8029c-c14e15094e068734d828",
               "file": "ai-security.spec.ts",
-              "line": 51,
+              "line": 52,
               "column": 3
             },
             {
@@ -238,12 +238,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2623,
+                      "duration": 2657,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:04.497Z",
+                      "startTime": "2026-07-13T22:17:05.624Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -253,7 +253,7 @@
               ],
               "id": "14c3203ec385c2a8029c-4cb1ec35135c96540672",
               "file": "ai-security.spec.ts",
-              "line": 70,
+              "line": 71,
               "column": 3
             },
             {
@@ -272,12 +272,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 709,
+                      "duration": 690,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:07.124Z",
+                      "startTime": "2026-07-13T22:17:08.286Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -287,7 +287,7 @@
               ],
               "id": "14c3203ec385c2a8029c-9dbaeec5137cf80c3692",
               "file": "ai-security.spec.ts",
-              "line": 84,
+              "line": 85,
               "column": 3
             },
             {
@@ -306,12 +306,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 731,
+                      "duration": 730,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:07.840Z",
+                      "startTime": "2026-07-13T22:17:08.983Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -321,7 +321,7 @@
               ],
               "id": "14c3203ec385c2a8029c-98277a9c0b4474e9dc27",
               "file": "ai-security.spec.ts",
-              "line": 103,
+              "line": 104,
               "column": 3
             },
             {
@@ -340,12 +340,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1268,
+                      "duration": 1286,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:08.574Z",
+                      "startTime": "2026-07-13T22:17:09.716Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -355,7 +355,7 @@
               ],
               "id": "14c3203ec385c2a8029c-1cf5355d1cf9f85d49e0",
               "file": "ai-security.spec.ts",
-              "line": 120,
+              "line": 121,
               "column": 3
             },
             {
@@ -374,12 +374,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 640,
+                      "duration": 638,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:09.845Z",
+                      "startTime": "2026-07-13T22:17:11.006Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -389,7 +389,7 @@
               ],
               "id": "14c3203ec385c2a8029c-c71ea0ac2de6889cd02b",
               "file": "ai-security.spec.ts",
-              "line": 150,
+              "line": 151,
               "column": 3
             },
             {
@@ -413,7 +413,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:10.489Z",
+                      "startTime": "2026-07-13T22:17:11.649Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -423,7 +423,7 @@
               ],
               "id": "14c3203ec385c2a8029c-c8bd9d9385542839532d",
               "file": "ai-security.spec.ts",
-              "line": 164,
+              "line": 165,
               "column": 3
             },
             {
@@ -442,12 +442,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 973,
+                      "duration": 740,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:11.129Z",
+                      "startTime": "2026-07-13T22:17:12.288Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -457,7 +457,7 @@
               ],
               "id": "14c3203ec385c2a8029c-2a20ab7e2fa54fd8a600",
               "file": "ai-security.spec.ts",
-              "line": 176,
+              "line": 177,
               "column": 3
             },
             {
@@ -476,12 +476,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 280,
+                      "duration": 262,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:12.105Z",
+                      "startTime": "2026-07-13T22:17:13.032Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -491,7 +491,7 @@
               ],
               "id": "14c3203ec385c2a8029c-5738816460e89200e1bc",
               "file": "ai-security.spec.ts",
-              "line": 195,
+              "line": 196,
               "column": 3
             },
             {
@@ -510,12 +510,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2718,
+                      "duration": 2701,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:12.388Z",
+                      "startTime": "2026-07-13T22:17:13.297Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -525,7 +525,7 @@
               ],
               "id": "14c3203ec385c2a8029c-45c6f17ffd6f9e1036cb",
               "file": "ai-security.spec.ts",
-              "line": 221,
+              "line": 222,
               "column": 3
             }
           ]
@@ -533,7 +533,7 @@
         {
           "title": "AI Context Boundary Tests",
           "file": "ai-security.spec.ts",
-          "line": 241,
+          "line": 242,
           "column": 6,
           "specs": [
             {
@@ -552,12 +552,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 64,
+                      "duration": 50,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-13T22:00:15.111Z",
+                      "startTime": "2026-07-13T22:17:16.002Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -567,7 +567,7 @@
               ],
               "id": "14c3203ec385c2a8029c-ce943dec69024be4002a",
               "file": "ai-security.spec.ts",
-              "line": 242,
+              "line": 243,
               "column": 3
             }
           ]
@@ -577,8 +577,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-07-13T22:00:03.329Z",
-    "duration": 11868.896999999999,
+    "startTime": "2026-07-13T22:17:04.136Z",
+    "duration": 11936.869,
     "expected": 14,
     "skipped": 0,
     "unexpected": 0,
