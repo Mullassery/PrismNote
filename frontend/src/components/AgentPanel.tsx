@@ -146,10 +146,16 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
   // discover local Ollama models (retryable)
   const checkOllama = () => {
     setConnected(null)
-    fetch(`${ollamaEndpoint()}/api/tags`)
-      .then((r) => r.json())
+    const endpoint = ollamaEndpoint()
+    fetch(`${endpoint}/api/tags`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Ollama API error: ${r.status}`)
+        return r.json()
+      })
       .then((d) => {
         const names = (d.models ?? []).map((m: any) => m.name)
+        console.log('Ollama models found:', JSON.stringify(names))
+        console.log('Full response:', JSON.stringify(d))
         setModels(names)
         // Prefer a coding model by default (this is a coding agent)
         const preferred =
@@ -159,7 +165,10 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
         setModel(preferred ?? '')
         setConnected(true)
       })
-      .catch(() => setConnected(false))
+      .catch((err) => {
+        console.error(`Failed to fetch Ollama models from ${endpoint}:`, err.message)
+        setConnected(false)
+      })
   }
 
   // Load the configured provider; for cloud providers "connected" = key saved.
