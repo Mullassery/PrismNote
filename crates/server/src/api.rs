@@ -3830,3 +3830,144 @@ pub async fn search_notebooks(
         }),
     )
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Authentication Endpoints (v1.2.0)
+// ════════════════════════════════════════════════════════════════════════════
+
+use std::collections::HashMap;
+use crate::enterprise_auth::{UserRole, EnterpriseAuthManager};
+
+#[derive(Deserialize)]
+pub struct RegisterRequest {
+    pub email: String,
+    pub password: String,
+    pub display_name: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct LoginRequest {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Serialize)]
+pub struct AuthResponse {
+    pub access_token: String,
+    pub refresh_token: Option<String>,
+    pub token_type: String,
+    pub expires_in: u32,
+    pub user: UserResponse,
+}
+
+#[derive(Serialize)]
+pub struct UserResponse {
+    pub user_id: String,
+    pub email: String,
+    pub display_name: String,
+    pub roles: Vec<String>,
+}
+
+#[derive(Clone)]
+pub struct User {
+    pub user_id: String,
+    pub email: String,
+    pub password_hash: String,
+    pub display_name: String,
+    pub created_at: String,
+}
+
+pub async fn auth_register(
+    Json(req): Json<RegisterRequest>,
+) -> Result<Json<AuthResponse>, (StatusCode, String)> {
+    // Validate email format
+    if !req.email.contains('@') {
+        return Err((StatusCode::BAD_REQUEST, "Invalid email format".to_string()));
+    }
+
+    // Validate password length (minimum 12 characters)
+    if req.password.len() < 12 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Password must be at least 12 characters".to_string(),
+        ));
+    }
+
+    // Hash password with bcrypt
+    let password_hash = bcrypt::hash(&req.password, 12)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Create user
+    let user_id = format!("user-{}", Uuid::new_v4());
+    let display_name = req.display_name.unwrap_or_else(|| {
+        req.email.split('@').next().unwrap_or("User").to_string()
+    });
+
+    // Generate JWT using a default secret for now (will be injected from AppState later)
+    let auth_manager = EnterpriseAuthManager::new("default-secret".to_string());
+    let jwt_token = auth_manager
+        .generate_jwt(&user_id, &req.email, &[UserRole::Member])
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(AuthResponse {
+        access_token: jwt_token.access_token,
+        refresh_token: jwt_token.refresh_token,
+        token_type: jwt_token.token_type,
+        expires_in: jwt_token.expires_in,
+        user: UserResponse {
+            user_id,
+            email: req.email,
+            display_name,
+            roles: vec!["Member".to_string()],
+        },
+    }))
+}
+
+pub async fn auth_login(
+    Json(req): Json<LoginRequest>,
+) -> Result<Json<AuthResponse>, (StatusCode, String)> {
+    // For now, just validate that we have email and password
+    if !req.email.contains('@') {
+        return Err((StatusCode::BAD_REQUEST, "Invalid email format".to_string()));
+    }
+
+    if req.password.len() < 8 {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            "Invalid email or password".to_string(),
+        ));
+    }
+
+    // Generate JWT for now (will be tied to user database later)
+    let user_id = format!("user-{}", Uuid::new_v4());
+    let auth_manager = EnterpriseAuthManager::new("default-secret".to_string());
+    let jwt_token = auth_manager
+        .generate_jwt(&user_id, &req.email, &[UserRole::Member])
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(AuthResponse {
+        access_token: jwt_token.access_token,
+        refresh_token: jwt_token.refresh_token,
+        token_type: jwt_token.token_type,
+        expires_in: jwt_token.expires_in,
+        user: UserResponse {
+            user_id,
+            email: req.email.clone(),
+            display_name: req.email.split('@').next().unwrap_or("User").to_string(),
+            roles: vec!["Member".to_string()],
+        },
+    }))
+}
+
+#[derive(Serialize)]
+pub struct CsrfTokenResponse {
+    pub token: String,
+    pub expires_in: u32,
+}
+
+pub async fn get_csrf_token() -> Json<CsrfTokenResponse> {
+    Json(CsrfTokenResponse {
+        token: format!("csrf-{}", Uuid::new_v4()),
+        expires_in: 3600,
+    })
+}

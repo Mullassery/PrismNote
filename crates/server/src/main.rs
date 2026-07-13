@@ -414,6 +414,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/docker/images/pull", post(api::pull_docker_image))
         // Global search (v0.3)
         .route("/search", post(api::search_notebooks))
+        // Authentication endpoints (v1.2.0)
+        .route("/auth/register", post(api::auth_register))
+        .route("/auth/login", post(api::auth_login))
+        .route("/auth/csrf", get(api::get_csrf_token))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
