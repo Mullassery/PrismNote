@@ -2,7 +2,7 @@
 
 **Current Version:** v1.2.1  
 **Last Updated:** July 14, 2026  
-**Status:** ✅ v1.2.1 released · 🔨 v1.3.1 Chainlit UI in progress · 🔜 v1.3.0 (Data Catalog & Governance)
+**Status:** ✅ v1.2.1 released · ✅ v1.3.1 Chainlit UI complete · 🔨 v1.3.0 (Data Catalog & Governance in progress — 6/24h)
 
 ---
 
@@ -275,27 +275,32 @@ Phase 3 enhancements (optional polish):
 - Next: v1.3.0 (Data Catalog & Governance, 24h) + v1.3.1 (Chainlit AI, 8h)
 
 ### v1.3.0 (Q1 2027) — Data Catalog & Governance
-**~24 hours | Enterprise governance, local-first**
+**~24 hours | Enterprise governance, local-first** (🔨 Phase 1-2 complete: 6/24h)
 
-#### Data Catalog & Discovery (Foundation)
-- [ ] **Data Catalog** — local metadata store (SQLite)
+#### Data Catalog & Discovery (Foundation) ✅ Modules + API
+- [x] **Data Catalog** — local metadata registry in Rust (160 lines, `catalog.rs`)
   - Support: Parquet, CSV, DuckDB, Iceberg, PostgreSQL (+ Snowflake, BigQuery connectors)
   - Track: tables, columns, owners, descriptions, tags
+  - REST: `POST /catalog/register`, `GET /catalog/list`, `GET /catalog/search`
 - [ ] **Universal Search** — search all datasets (name, description, tags, columns)
 - [ ] **Dataset Ownership & Teams** — assign responsibility, track stewards
 - [ ] **Business Glossary** — centralized definitions (inspired by Snowflake Horizon)
 
-#### Query & Lineage (Intelligence)
-- [ ] **Column-Level Lineage** — auto-parse SQL with SQLGlot, show data flow
-- [ ] **Column Impact Analysis** — which dashboards/notebooks use this column?
-- [ ] **Data Lineage Visualization** — DAG of table transformations
+#### Query & Lineage (Intelligence) ✅ Modules + API
+- [x] **Column-Level Lineage** — graph tracking in Rust (180 lines, `lineage.rs`)
+  - Track: source→target transformations with operation type
+  - REST: `POST /lineage/add`, `GET /lineage/:table/:column`
+- [x] **Column Impact Analysis** — downstream impact via graph traversal
+- [ ] **Data Lineage Visualization** — DAG of table transformations (frontend)
 - [ ] **Query History Extended** — duration, rows scanned, rows returned, user context
 
-#### Governance & Quality (Trust)
-- [ ] **Dataset Certification** — ✓ badge (has owner, description, passed QA)
-- [ ] **Governance Tags** — PII, Financial, Internal, Public, Sensitive (auto-apply via AI)
-- [ ] **Sensitive Data Detection** — auto-detect email, phone, SSN, card (Microsoft Presidio)
-- [ ] **Quality Assertions** — Not null, positive, unique checks (Great Expectations)
+#### Governance & Quality (Trust) ✅ Modules + API
+- [x] **Governance Tags** — PII, sensitivity levels via `governance.rs` (260 lines)
+  - Categories: Email, Phone, SSN, CreditCard, Address, Name
+  - Sensitivity: Public, Internal, Confidential, Restricted
+  - REST: `POST /governance/set`, `GET /governance/pii-columns`
+- [x] **Quality Assertions** — SQL rule engine with severity levels
+- [ ] **Sensitive Data Detection** — auto-detect patterns in data preview
 - [ ] **Data Contracts** — schema validation, SLAs (OpenMetadata foundation)
 
 #### AI-Powered Features (Copilot)
