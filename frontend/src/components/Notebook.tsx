@@ -9,7 +9,7 @@ import { useFontSize } from '../hooks/useFontSize'
 export default function Notebook() {
   const { currentNotebook, addCell, selectedCellIndex, setSelectedCell } = useNotebookStore()
   const [collapsed, setCollapsed] = useState(false)
-  const cellRefsMap = useRef(new Map<string, React.RefObject<HTMLDivElement>>()).current
+  const cellRefsMap = useRef(new Map<string, React.RefObject<HTMLDivElement | null>>()).current
   // Code editor font, live across all cells via a window event each Cell listens to.
   const { size: codeFont, inc, dec } = useFontSize('pn-code-size', 16, 9, 40)
 

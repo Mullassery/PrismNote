@@ -17,7 +17,7 @@ function parseTOC(cells: any[]): TOCItem[] {
     const source = Array.isArray(cell.source) ? cell.source.join('') : cell.source
     const lines = source.split('\n')
 
-    lines.forEach(line => {
+    lines.forEach((line: string) => {
       const match = line.match(/^(#{1,6})\s+(.+)$/)
       if (match) {
         const level = match[1].length

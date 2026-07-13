@@ -1,9 +1,10 @@
-import { CellExecutionState, useExecutionMinimapStore } from '../hooks/useExecutionMinimap'
+import type { CellExecutionState } from '../hooks/useExecutionMinimap'
+import { useExecutionMinimapStore } from '../hooks/useExecutionMinimap'
 
 interface ExecutionMinimapDotProps {
   cellId: string
   cellIndex: number
-  cellRef: React.RefObject<HTMLDivElement>
+  cellRef: React.RefObject<HTMLDivElement | null>
 }
 
 function getDotColor(state: CellExecutionState['state']): string {
@@ -38,7 +39,7 @@ export default function ExecutionMinimapDot({ cellId, cellIndex, cellRef }: Exec
   const executionTime = useExecutionMinimapStore((state) => state.getExecutionTime(cellId))
 
   const handleClick = () => {
-    if (cellRef.current) {
+    if (cellRef && cellRef.current) {
       cellRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }
