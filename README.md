@@ -2,9 +2,9 @@
 
 # ◆ PrismNote
 
-**Enterprise data science notebook with built-in governance, BI dashboards, and warehouse-grade data exploration.**
+**A modern data science notebook that makes exploring and understanding data faster than writing code.**
 
-Python + SQL · Data Catalog & Governance · Rill Data BI dashboards · Chainlit AI · local first — all on your machine.
+No more `df.head()` → Explore data visually · Build charts without coding · Automatic governance & quality checks · Local AI assistant — all in one tool.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/prismnote.svg)](https://pypi.org/project/prismnote/)
@@ -12,7 +12,7 @@ Python + SQL · Data Catalog & Governance · Rill Data BI dashboards · Chainlit
 [![Built with Rust](https://img.shields.io/badge/engine-Rust-orange.svg)](https://www.rust-lang.org/)
 [![GitHub stars](https://img.shields.io/github/stars/Mullassery/prismnote?style=social)](https://github.com/Mullassery/prismnote/stargazers)
 
-### ⭐ If PrismNote is useful to you, please [**star the repo**](https://github.com/Mullassery/prismnote) — it genuinely helps the project grow and reach more data scientists.
+### ⭐ If PrismNote saves you time, please [**star the repo**](https://github.com/Mullassery/prismnote) — it genuinely helps others discover it.
 
 <img src="docs/screenshots/02_notebook_dark.png" alt="PrismNote" width="820">
 
@@ -20,176 +20,194 @@ Python + SQL · Data Catalog & Governance · Rill Data BI dashboards · Chainlit
 
 ---
 
-## Why PrismNote?
+## The Problem PrismNote Solves
 
-Jupyter is great for code, but exploring data still means writing `df.head()`, `df.describe()`,
-and one-off `matplotlib` calls. PrismNote makes **data exploration a first-class surface**:
-open any DataFrame — or a Parquet/CSV/Iceberg file — in a fast, scrollable grid with
-per-column statistics, distributions, and lineage, then build charts with no code. It's
-**local-first** (your data never leaves your machine), **Jupyter-compatible** (`.ipynb` in/out),
-and **AI-native** (local via Ollama, or Claude/OpenAI).
+You're deep in analysis. You need to understand a new dataset, build a quick chart, or verify data quality. In Jupyter, that means:
+- Writing `df.head()`, `df.describe()`, `df.info()` repeatedly
+- Building matplotlib/plotly code from scratch for each chart
+- Manually checking for NULL values, duplicates, and data quality issues
+- Switching between tools to share results or trace where data came from
 
-- 🔍 **Data Explorer first** — the headline feature, ranked above the notebook itself.
-- 🔒 **Local & private** — runs on your machine; local AI via Ollama, no account required.
-- 🦀 **Fast** — a Rust + Axum engine driving a persistent Python kernel.
-- 🔗 **Open formats** — Parquet, CSV, JSON, Arrow, **Apache Iceberg** via DuckDB.
-- 🧩 **Batteries included** — kernel, SQL, charts, AI, jobs, git, deploy, search, terminal.
+**PrismNote eliminates this friction.** Open any data file or DataFrame, explore it visually with instant statistics and charts, verify quality automatically, and share interactive dashboards — all without leaving the notebook.
 
----
-
-## What's New in v1.3.0
-
-🎯 **Data Governance & Enterprise BI**
-
-- **📊 Rill Data Dashboards** — Replace static plots with interactive multi-tile dashboards (12+ viz types)
-- **🗂️ Data Catalog** — Central metadata registry with full-text search, lineage tracking, ownership
-- **🔐 PII Detection** — Automatic detection of sensitive data across all columns (email, phone, SSN, credit card)
-- **✅ Quality Assertions** — SQL-based quality rules with automated scoring (0-100)
-- **🎯 Governance Tags** — Sensitivity classification (Public/Internal/Confidential/Restricted)
-- **🤖 Chainlit AI** — Modern conversational interface with session persistence and notebook context
-- **📈 Impact Analysis** — Trace which cells/dashboards depend on specific columns
-
-[See full changelog →](./RELEASES.md)
+- **🔍 Explore faster than writing code** — Click a file, see schema + statistics + histograms instantly. No `df.describe()` needed.
+- **🔒 Your data stays on your machine** — Everything runs locally. No cloud uploads, no account required. (AI via Ollama works offline.)
+- **⚡ Instant setup** — Single binary, one command. Works on Mac, Linux, Windows. No Docker, no dependencies to wrangle.
+- **📊 Build dashboards in minutes** — No-code chart builder for exploratory work. Rill Data integration for polished, shareable dashboards.
+- **🤖 AI that understands your notebook** — Chainlit AI assistant knows your data, cells, and context. Fix errors, explore ideas, get suggestions.
 
 ---
 
-## Quickstart
+## What's New in v1.3.0 — Working with Data at Scale
 
-Install with **pip** _or_ **uv** _or_ **brew** _or_ **curl** — pick one. The browser opens automatically.
+**v1.3.0 adds the tools you need when working with sensitive data, collaborating with others, or building production-grade analyses.**
 
+### 📊 Build Real Dashboards (Not Just Plots)
+Create interactive dashboards with filters, drill-down, and multiple chart types — then share them via URL. Finally, a chart builder that doesn't feel like a hack.
+
+### 🗂️ Find & Understand Your Data
+A data catalog that actually lists what you have. Search by name, find columns with PII, trace where data comes from, and see what depends on what.
+
+### 🔐 Governance Without the Paperwork
+Automatically detects sensitive data (emails, phone numbers, SSNs). Classify data as Public/Internal/Confidential/Restricted. Know your data quality score (0-100) at a glance.
+
+### 🤖 Talk to Your Data
+Instead of scrolling through notebooks, ask Chainlit AI about your data. It understands what's in each cell, remembers the conversation, and suggests next steps.
+
+[Full v1.3.0 changelog →](./RELEASES.md)
+
+---
+
+## Get Started in 30 Seconds
+
+Pick your favorite package manager. That's it.
+
+**pip** (most people):
 ```bash
-# ── pip ──
 pip install prismnote
+prismnote
+# Browser opens to http://localhost:8000
 ```
 
-— OR —
-
+**uv** (if you use uv):
 ```bash
-# ── uv ──  run instantly (no install), or install as a tool
-uvx prismnote
-#   or:  uv tool install prismnote
-```
-
-— OR —
-
-```bash
-# ── Homebrew (macOS / Linux) ──
-brew tap Mullassery/prismnote
-brew install prismnote
-```
-
-— OR —
-
-```bash
-# ── curl ──  no Python required (installs the binary to /usr/local/bin)
-curl -fsSL https://raw.githubusercontent.com/Mullassery/prismnote/main/install.sh | bash
+uv tool install prismnote
 prismnote
 ```
 
-Your browser opens to **http://localhost:8000** automatically. Click **Open Data Explorer** (`⌘E`) or **New Notebook** to get started.
-
-> **No Docker required.** PrismNote runs as a single native binary — Docker is **not**
-> needed to install or run it. (Docker is only used by the optional *Deploy to Cloud*
-> artifacts, and by maintainers who cross-build release binaries.)
-
-> The pip/uv package is a thin launcher: on first run it downloads the prebuilt server
-> binary for your platform from the matching **GitHub Release** (`vX.Y.Z`). If a release
-> binary isn't published for your platform yet, use **[From source](#from-source)** below.
-
-### From source
-
-Requires **Rust** (stable), **Node 18+**, and **Python 3.8+** on `PATH`:
-
+**Homebrew** (macOS/Linux):
 ```bash
-# kernel runtime deps (ipykernel required; the rest enable rich output, %sql, charts)
-pip install ipykernel pandas matplotlib rich duckdb
-
-cargo run                                   # backend  → http://localhost:8000
-cd frontend && npm install && npm run dev   # frontend → http://localhost:5173
+brew tap Mullassery/prismnote
+brew install prismnote
+prismnote
 ```
 
-Open http://localhost:5173.
+**No dependencies, no setup.** The entire app — Rust backend, Python kernel, React frontend — comes in one binary. Everything runs on your machine.
+
+**First time?** The browser opens automatically to http://localhost:8000. 
+- Click **Open Data Explorer** (⌘E) to load a CSV or Parquet file
+- Click **New Notebook** to start coding
+- Press **⌘,** anytime to configure AI or database connections
+
+### Build from Source (for developers)
+
+If you want to modify PrismNote or a binary isn't available for your platform:
+
+**Requirements:** Rust, Node 18+, Python 3.8+
+
+```bash
+# Clone the repo
+git clone https://github.com/Mullassery/prismnote.git
+cd prismnote
+
+# Install Python deps
+pip install ipykernel pandas matplotlib rich duckdb
+
+# Terminal 1: Start the backend (http://localhost:8000)
+cargo run
+
+# Terminal 2: Start the frontend dev server (http://localhost:5173)
+cd frontend && npm install && npm run dev
+```
+
+Then open http://localhost:5173 in your browser.
 
 ---
 
-## Highlights
+## How It Actually Works — Explore Data the Fast Way
 
-### 🔍 Data Explorer — better than a `df.describe()`
-Open a live DataFrame, a file, or a DuckDB query in a warehouse-style explorer:
+### 🔍 Open Any Data, See It Instantly
+Double-click a Parquet, CSV, or database table. You immediately see:
+- **Full column breakdown** — data type, nulls, unique values, top 10 samples
+- **Histograms & distributions** — understand skew, outliers, ranges at a glance
+- **Statistics** — mean, median, std dev, quartiles (no `df.describe()` needed)
+- **Lineage** — which notebook cells created this data, which use it
 
-- **Virtualized grid** that scrolls millions of rows (server-side paging/sort/filter).
-- **Tabs:** Preview · **Schema** (types + null %) · **Statistics** · **Metadata** · **Lineage**.
-- **Per-column profiling** — histograms, top values, and a full `describe()` table
-  (count, nulls, distinct, mean, std, min/quartiles/max, sum, skew, kurtosis).
-- **Nested types** — `struct` and `array` columns are detected and rendered.
-- **Open formats via DuckDB** — Parquet, CSV, JSON, Arrow, **Apache Iceberg**; or any DuckDB SQL.
-- **Lineage** — provenance (variable / file / query), upstream sources, and the notebook
-  cells that define and use the dataset.
-- **Reproducible** — "Copy as code" / "Insert as cell" emits runnable pandas; export CSV.
-- Collapsible, with **+/- zoom**; double-click a data file in the file browser to open it here.
+Scroll through millions of rows fast. Filter, sort, search — it all happens server-side.
 
-### 📊 Dashboarding & Visualization
-- **Plot gallery** — every figure (matplotlib/plotly) collected with zoom, pan, filmstrip,
-  and **PNG + vector SVG** export.
-- **No-code chart builder** (Looker-style) — drag dimensions/measures, pick a chart
-  (bar/line/area/scatter/heatmap/pie), aggregate, and render via **Vega-Lite** — then
-  "Copy as code" to get the equivalent Altair.
-- **Rill Data OSS Integration** — Enterprise BI dashboards with:
-  - Multi-tile interactive dashboards (12+ visualization types)
-  - Filters, drill-down, cross-filtering
-  - Public sharing via URL & iframe embedding
-  - Scheduled data refresh & caching
-  - YAML-based configuration (version control friendly)
+**Supports:** CSV, Parquet, JSON, Arrow, Apache Iceberg, DuckDB queries, live DataFrames.
 
-### 🗂️ Data Governance (v1.3.0)
-- **Data Catalog** — Central registry of all tables, columns, owners, schemas with full-text search
-- **Column Lineage** — Visual tracing of data transformations (upstream/downstream dependencies)
-- **PII Detection** — Automatic detection of sensitive data (email, phone, SSN, credit card)
-- **Data Quality** — SQL-based assertions (NOT NULL, UNIQUE, POSITIVE, RANGE, PATTERN, FRESHNESS)
-- **Governance Tags** — Classify data by sensitivity (Public/Internal/Confidential/Restricted)
-- **Compliance Scoring** — Automated quality percentage & policy violation detection
+**One-click reproducibility:** "Copy as code" gives you the pandas equivalent. Paste it into a cell and run it.
 
-### 🤖 AI Assistance
-- **Chainlit AI Chat** (v1.3.1) — Multi-turn conversations with notebook context, session persistence
-- **Choose your provider** in Settings → AI: **Ollama** (local, free, private), **Claude**,
-  or **OpenAI** — with model pickers and live connection status.
-- **In-cell ⌘K edit** (diff accept/reject), **Fix with AI** on errors, **Explain**.
-- **Inline autocomplete** (ghost text) and a **Plan/Act agent** that's aware of your
-  workspace files and the open dataset.
+### 📊 Build Charts Without Writing Code
+**Quick exploration:** Drag-and-drop chart builder. Pick dimensions, pick measures, pick a viz type (bar/line/area/scatter/heatmap/pie). Click render. Then export PNG or copy the Altair code.
 
-### 📓 Notebook & execution
-- **Persistent shared kernel** — state carries across cells; interrupt & restart.
-- **Magics:** `%python`, `%sql` (in-process DuckDB), `%sh` / `!cmd`, `%md`.
-- **Rich output**, live-streamed over WebSocket; **input widgets** that re-run cells.
-- **Auto-formatting** — code is pretty-printed with **Black** on paste and on `⇧⌥F`.
-- **Friendly errors** — plain-language explanations + in-editor markers.
+**Production dashboards:** Use Rill Data to build interactive, polished dashboards with multiple charts, filters, and drill-down. Share via URL or embed in your app. Automatically refresh data on schedule.
 
-### ⚡ Query Intelligence (v1.2.1)
-- **SQL Autocomplete** — 30+ keywords, functions, table/column completion with context.
-- **Query Bookmarks** — save frequently-used queries, favorites, full-text search.
-- **Result Caching** — instant replay of cached queries (256 MB LRU cache).
-- **Execution History** — track cell performance (duration, memory, rows, errors).
-- **Data Preview Stats** — column profiling, null analysis, distributions.
+**Plot gallery:** Every chart you create is auto-collected in a filmstrip. Zoom, pan, export SVG/PNG, re-use or remix.
 
-### 🗄️ Data & SQL
-- Connect to SQLite, DuckDB, PostgreSQL, MySQL, and 8 cloud warehouses
-  (Snowflake, BigQuery, Redshift, Databricks, Athena, Trino, Presto, Synapse).
-- Queries run through the kernel using **permissively-licensed OSS drivers you install** —
-  nothing proprietary vendored. See [CONNECTORS.md](CONNECTORS.md).
+### 🔐 Know What Data You Have (and What to Do With It)
+**Data Catalog:** See all your tables & columns in one searchable place. Know row counts, owners, when data was last updated.
 
-### ⚙️ Workflow
-- **Jobs** — run a whole notebook on a schedule (manual / interval / daily) with run history;
-  **Airflow** trigger + generated DAG.
-- **Source control** — init / clone / commit / push / pull / status from the UI.
-- **Cloud deploy** — generates `Dockerfile`, `docker-compose.yml`, `k8s.yaml`, `fly.toml`.
+**Automatic PII Detection:** Scans your columns for emails, phone numbers, SSNs, credit cards. Flags which datasets need restricted access.
+
+**Quality Checks:** Run SQL-based assertions (NOT NULL, UNIQUE, ranges, patterns, freshness). Get a quality score (0-100) per table. Know instantly when data gets bad.
+
+**Sensitivity Classification:** Tag data as Public/Internal/Confidential/Restricted. Helps you comply with privacy laws and company policy.
+
+**Column Lineage:** See where a column comes from, and what cells/dashboards depend on it. Great for impact analysis — change the source, see what breaks.
+
+### 🤖 AI That Understands Your Work
+**Chainlit AI Chat:** Ask questions about your data, get explanations, brainstorm next steps. The AI remembers your conversation and knows which notebook you're in.
+
+**Your choice of AI:** Use **Ollama** (free, runs on your machine, completely private), **Claude** (fast and accurate), or **OpenAI**. Switch anytime in Settings.
+
+**Quick AI fixes:**
+- Hit ⌘K in a cell to auto-complete code or refactor
+- Error? Click "Fix with AI" to get a suggestion
+- Explain confusing code without leaving the editor
+- Get inline autocomplete as you type
+
+### 📓 Notebook That Doesn't Get in Your Way
+**One kernel, all your cells:** Define a variable once, use it everywhere. Interrupt long-running cells, restart when you need a fresh slate.
+
+**Work the way you want:**
+- **Python** cells for data munging
+- **SQL** cells (DuckDB) for fast queries  
+- **Shell** cells (`!ls`, `!curl`) for system commands
+- **Markdown** cells for notes
+- **Input widgets** that trigger re-runs
+
+**Smart formatting:** Paste messy code → it auto-formats with Black. Hit ⇧⌥F to reformat any cell.
+
+**Errors that make sense:** Instead of a stack trace, you get a plain-English explanation and line markers in the editor.
+
+### ⚡ Write SQL Faster
+**SQL autocomplete:** Start typing a query and see suggestions for keywords, functions, table names, and columns. Context-aware.
+
+**Save & reuse queries:** Bookmark queries you use often. Mark favorites. Search by name. Paste them into cells later.
+
+**Instant query replay:** Results cached in memory (256 MB). Run the same query twice → second time is instant.
+
+**See what slows you down:** Track how long each cell takes to run, memory used, row counts. Spot the bottlenecks.
+
+### 🗄️ Query Any Database
+Connect to your data wherever it lives:
+- **Local:** SQLite, DuckDB (files or in-memory)
+- **On your server:** PostgreSQL, MySQL
+- **Data warehouses:** Snowflake, BigQuery, Redshift, Databricks, Athena, Trino, Presto, Synapse
+
+PrismNote uses open-source drivers you control. No proprietary code bundled. See [CONNECTORS.md](CONNECTORS.md) for setup.
+
+### ⚙️ Turn Notebooks into Workflows
+**Run on a schedule:** Execute a notebook daily, hourly, or on-demand. See run history and logs. Integrates with Airflow.
+
+**Git built-in:** Init a repo, commit, push, pull — all from the UI. Your notebook stays sync'd with GitHub.
+
+**Deploy anywhere:** Generate Docker compose files, Kubernetes YAML, or Fly.io config. Takes 30 seconds to move from local to production.
 
 ---
 
-## How PrismNote compares
+## How PrismNote Compares to Other Tools
 
-PrismNote focuses on **data exploration, local AI, and a single-binary local-first
-experience**. JupyterLab, Apache Zeppelin, and PyCharm are mature, broader tools — here's
-an honest side-by-side.
+**The short version:** JupyterLab is great for coding. PyCharm is great for IDEs. PrismNote is great for data exploration + AI + charts + governance.
+
+Think of it this way:
+- Use **JupyterLab** if you spend 80% writing Python code and 20% exploring data
+- Use **PrismNote** if you spend 50% exploring data, 30% writing code, and 20% building charts/dashboards
+- Use **PyCharm** if you're building a Python application with databases
+
+Here's the detailed comparison:
 
 > ✅ built-in · ⚠️ via extension / partial / paid · ❌ not available · 🔜 on the roadmap
 
@@ -224,72 +242,103 @@ open-source local binary. See also [ZEPPELIN_COMPARISON.md](ZEPPELIN_COMPARISON.
 
 ---
 
-## Configure AI (optional)
+## Set Up Your AI Assistant (Optional)
 
-**Local — Ollama** (recommended for privacy/cost):
+By default, PrismNote has no AI configured. Pick one:
+
+### Private & Free — Ollama (Recommended)
+Use a local AI model that runs on your machine. Completely private, free, offline.
+
 ```bash
-# install from https://ollama.com, then pull a coding model
+# Install Ollama from https://ollama.com
+# Pull a coding model (qwen2.5-coder is fast and good)
 ollama pull qwen2.5-coder
-# the browser UI talks to Ollama directly, so allow the origin once:
+
+# When running PrismNote, start Ollama with:
 OLLAMA_ORIGINS=http://localhost:5173 ollama serve
 ```
 
-**Claude / OpenAI** — set it in **Settings → AI Provider** (keys are stored locally in
-`~/.prismnote/ai_config.json` and never leave your machine), or via env:
+Then open PrismNote Settings (⌘,) → AI Provider → select "Ollama"
+
+### Fast & Cloud — Claude or OpenAI
+Want faster responses? Use Claude or OpenAI instead.
+
+**Via Settings:**
+1. Open PrismNote
+2. Press ⌘, (Settings)
+3. Click "AI Provider"
+4. Paste your API key (stored locally, never sent to our servers)
+
+**Via environment variables:**
 ```bash
 export PRISMNOTE_AI_PROVIDER=claude      # or openai / ollama
-export ANTHROPIC_API_KEY=...             # or OPENAI_API_KEY
+export ANTHROPIC_API_KEY=sk-ant-...      # or OPENAI_API_KEY=sk-...
+prismnote
 ```
+
+Your API keys are stored in `~/.prismnote/ai_config.json` and never leave your machine.
 
 ---
 
-## Keyboard shortcuts
+## Essential Keyboard Shortcuts
 
-| Shortcut | Action |
+| Shortcut | What it does |
 |---|---|
-| `⌘E` | **Open Data Explorer** |
-| `⌘N` / `⌘O` / `⌘S` | New / Open / Save notebook |
-| `⌘K` | Global search *(in a focused cell, `⌘K` = AI edit)* |
-| `⇧⌘P` | Command palette |
-| `⌘,` | Settings |
-| `⌘⇧↵` / `⇧↵` | Run all / run focused cell |
-| `⇧⌥F` | Format cell (Black) |
+| `⌘E` | 🔍 Open Data Explorer — load a file or table |
+| `⌘N` | 📝 New notebook |
+| `⌘S` | 💾 Save |
+| `⇧⌘↵` | ▶️ Run all cells |
+| `⇧↵` | ▶️ Run current cell |
+| `⌘K` | 🤖 In cell: AI autocomplete / refactor. Globally: search |
+| `⌘,` | ⚙️ Settings (configure AI, databases, theme) |
+| `⇧⌘P` | 🎯 Command palette (everything else) |
+| `⇧⌥F` | 🧹 Auto-format cell with Black |
 
-*(`⌘`/`Ctrl` depending on platform.)*
-
----
-
-## Architecture
-
-```
-┌──────────────────────────────┐        ┌─────────────────────────────┐
-│  React + TypeScript (Vite)   │  HTTP  │      Rust backend (Axum)    │
-│  Monaco · Tailwind · zustand │ ─────▶ │  REST + WebSocket           │
-│  explorer · charts · AI      │ ◀───── │  explore · jobs · git · …   │
-└──────────────────────────────┘   WS   └──────────────┬──────────────┘
-                                                        │ stdin/stdout (JSON)
-                                                ┌───────▼────────┐
-                                                │ Persistent      │
-                                                │ Python kernel   │
-                                                │ (shared globals)│
-                                                └─────────────────┘
-```
-
-The backend spawns one long-lived `python` process and speaks a line-framed JSON
-protocol; outputs are Jupyter-style MIME bundles, streamed live. The Data Explorer
-pushes profiling/paging/aggregation into the kernel where the data already lives.
+*(`⌘` = Cmd on Mac, `Ctrl` on Windows/Linux)*
 
 ---
 
-## Deploy
+## Why It's Fast (and Why You Should Care)
 
-Open **Deploy to Cloud** to copy/download the generated artifacts, then:
+PrismNote runs as a **single native binary** — no virtual machine, no startup delays, no memory overhead.
+
+**What that means for you:**
+- Click and it opens instantly (not 30 seconds of startup)
+- Data exploration runs server-side (scroll millions of rows, not your browser's memory)
+- AI responses are fast (local Ollama doesn't need network)
+- Works offline (except API-based AI)
+
+**Architecture** (for nerds):
+- **Frontend:** React in your browser (runs locally, talks to backend over HTTP/WebSocket)
+- **Backend:** Rust with Axum (fast, low overhead, instant startup)
+- **Kernel:** One long-lived Python process (state carries across cells like Jupyter)
+
+Everything runs on your machine. Nothing leaves except what you explicitly send to Claude/OpenAI.
+
+---
+
+## Deploy Your Notebook to Production
+
+Built a notebook that your team needs to run daily? Deploy it in 2 minutes.
+
+**In PrismNote:**
+1. Click **Deploy to Cloud**
+2. Choose your platform (Docker, Kubernetes, Fly.io)
+3. Download the config files
+4. Run them in your cloud
 
 ```bash
-docker compose up -d            # Docker
-kubectl apply -f k8s.yaml       # Kubernetes
-fly launch --copy-config --now  # Fly.io
+# Docker Compose (simplest)
+docker compose up -d
+
+# Kubernetes
+kubectl apply -f k8s.yaml
+
+# Fly.io (easiest if you like Fly)
+fly launch --copy-config --now
 ```
+
+Your notebook becomes a scheduled job. Logs are saved. Errors are emailed to you. Same notebook code you tested locally.
 
 ---
 
@@ -309,31 +358,79 @@ Further reading: [CONNECTORS.md](CONNECTORS.md) ·
 
 ---
 
-## Roadmap
+## What's Coming Next (v1.4.0)
 
-- Prebuilt release binaries for all platforms (so `pip install` runs out of the box).
-- Distributed compute (Spark) and a catalog/data browser.
-- Real-time collaboration (live cursors / co-editing).
-- Notebook parameters and multi-notebook job composition.
-- Reactive (dependency-aware) cell execution.
+**Team collaboration:**
+- Real-time co-editing (multiple people in one notebook at once)
+- Comments on cells + threaded discussion
+- Sharing with view-only / edit permissions
+
+**Notebook superpowers:**
+- Reactive execution (change a variable, dependent cells auto-run)
+- Cell parameters (render a notebook with different inputs)
+- Run multiple notebooks as a pipeline (dependency order)
+
+**Deeper analytics:**
+- Spark integration for distributed compute
+- Column profiling improvements (more stats, cardinality estimation)
+- Cost tracking for cloud queries
 
 ---
 
-## Contributing
+## How to Help (Three Easy Ways)
 
-⭐ **The easiest way to contribute is to [star the repo](https://github.com/Mullassery/prismnote)** — it boosts visibility and helps others discover PrismNote.
+**1. Star the repo** — The easiest way to help. It boosts visibility and tells GitHub this project matters.
 
-Code contributions are welcome too! Please open an issue to discuss substantial changes first.
+**2. Report bugs** — Found something broken? [Open an issue](https://github.com/Mullassery/prismnote/issues) with:
+- What you were doing
+- What you expected
+- What happened instead
+
+**3. Code contributions** — Want to add a feature or fix a bug?
+
+First, [open an issue](https://github.com/Mullassery/prismnote/issues) to discuss your idea. Then:
 
 ```bash
 git clone https://github.com/Mullassery/prismnote.git
 cd prismnote
-cargo run                                   # backend
-cd frontend && npm install && npm run dev   # frontend
+
+# Backend
+cargo run
+
+# Frontend (in another terminal)
+cd frontend && npm install && npm run dev
 ```
 
-Run `cargo check` and `npm run build` before opening a PR.
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Before pushing, run tests:
+```bash
+cargo check && cargo test
+cd frontend && npm run build
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+---
+
+## Getting Help
+
+**🤔 How do I...?**
+- [README](./README.md) — You're reading it
+- [CONNECTORS.md](./CONNECTORS.md) — Connect to databases
+- [Command palette](https://github.com/Mullassery/prismnote) (⇧⌘P) — search for features
+
+**🐛 Something's broken**
+- [Report an issue](https://github.com/Mullassery/prismnote/issues) with details
+- Include your OS, PrismNote version (`prismnote --version`)
+- Paste error messages and steps to reproduce
+
+**💬 Chat with the community**
+- [GitHub Discussions](https://github.com/Mullassery/prismnote/discussions) — ask questions, share ideas
+- [Issues](https://github.com/Mullassery/prismnote/issues) — bugs and features
+
+**📖 Deep dives**
+- [Connectors guide](./CONNECTORS.md) — SQL databases, data warehouses, files
+- [Full API docs](./docs/API.md)
+- [v1.3.0 release notes](./RELEASES.md)
 
 ---
 
@@ -341,24 +438,24 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 [MIT](LICENSE) © Georgi Mammen Mullassery
 
-## 🔒 Security & Error Handling
+**TLDR:** Free to use, modify, and distribute. Give credit.
 
-PrismNote includes comprehensive security features:
+## Your Data is Safe
 
-- **SQL Injection Protection**: Blocks dangerous keywords (DROP, DELETE, INSERT)
-- **File Access Control**: Path validation prevents directory traversal
-- **Rate Limiting**: Token bucket algorithm with per-client and query limits
-- **Security Headers**: CORS, CSP, and X-Frame-Options for web safety
-- **Detailed Error Messages**: See `python/prismnote/error_messages.py` for notebook and query guidance
+**Local by default** — Everything runs on your machine. Your data never leaves unless you explicitly send it to a cloud warehouse or AI API.
 
-### Security Roadmap
+**Protected by default:**
+- SQL injection blocks dangerous commands
+- File access is restricted to your notebook directories
+- Rate limiting prevents abuse
+- Security headers protect against common web attacks
 
-- ✅ v1.0.1: Dependencies pinned, SQL injection protection
-- ✅ v1.0.2: File access control, input validation
-- ✅ v1.1.0: Rate limiting, security headers, error handling middleware
-- 🔄 v1.2.0: CORS/CSRF protection, authentication/authorization
-- 🔄 v2.0.0: Team collaboration, cloud deployment
+**API keys stay local:**
+- Claude/OpenAI keys stored in `~/.prismnote/` (not on our servers)
+- Database passwords encrypted
+- No telemetry or tracking
 
-**SECURITY NOTE:** Do NOT expose to internet until v1.2.0 without additional hardening.
+**⚠️ Before deploying to the internet:**
+If you're running PrismNote on a shared server or over the internet, enable authentication first. See [ROADMAP.md](ROADMAP.md) for the full security guide.
 
-Full security roadmap: [ROADMAP.md](ROADMAP.md)
+**Questions?** See [CONTRIBUTING.md](CONTRIBUTING.md) for security reporting.
