@@ -456,35 +456,84 @@ function App() {
             {currentNotebookId ? (
               <Notebook />
             ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center max-w-[30rem]">
-                  <div className="mx-auto mb-5 w-16 h-16 rounded-2xl prism-bg rotate-45 flex items-center justify-center shadow-[0_8px_40px_-6px_rgba(139,92,246,0.7)]">
-                    <BookOpen size={28} className="-rotate-45 text-white" />
+              <div className="h-full flex flex-col overflow-auto bg-gradient-to-b from-slate-900/30 to-slate-900/5">
+                {/* Hero Section */}
+                <div className="flex-1 flex items-center justify-center px-6 pt-20 pb-10">
+                  <div className="max-w-3xl w-full">
+                    {/* Logo & Title */}
+                    <div className="text-center mb-12">
+                      <div className="mx-auto mb-6 w-20 h-20 rounded-3xl prism-bg flex items-center justify-center shadow-[0_20px_60px_-12px_rgba(139,92,246,0.4)]">
+                        <BookOpen size={40} className="text-white" />
+                      </div>
+                      <h1 className="text-5xl font-bold mb-4 tracking-tight">
+                        <span className="prism-text">Prism</span><span className="pn-text">Note</span>
+                      </h1>
+                      <p className="text-xl pn-muted mb-2">Data science notebook. Fast. Open source. Works locally.</p>
+                      <p className="text-sm pn-faint">No cloud. No accounts. No waiting.</p>
+                    </div>
+
+                    {/* CTA Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
+                      <button
+                        onClick={() => { closeCenterOverlays(); setExplorerPicker(true) }}
+                        className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl prism-bg text-white font-semibold text-base hover:brightness-110 transition shadow-lg shadow-purple-500/20"
+                      >
+                        <Table2 size={20} /> Explore Data
+                      </button>
+                      <button
+                        onClick={newNotebook}
+                        className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border pn-bd pn-text font-semibold text-base transition"
+                      >
+                        <Plus size={20} /> New Notebook
+                      </button>
+                    </div>
+
+                    {/* Features Grid */}
+                    <div className="grid grid-cols-3 gap-3 mb-12">
+                      <div className="p-4 rounded-lg bg-white/5 border pn-bd/30 text-center">
+                        <div className="text-2xl mb-2">📊</div>
+                        <p className="text-xs font-medium pn-text mb-1">Explore</p>
+                        <p className="text-[11px] pn-faint">Browse data files visually</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-white/5 border pn-bd/30 text-center">
+                        <div className="text-2xl mb-2">📈</div>
+                        <p className="text-xs font-medium pn-text mb-1">Visualize</p>
+                        <p className="text-[11px] pn-faint">Build charts without code</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-white/5 border pn-bd/30 text-center">
+                        <div className="text-2xl mb-2">🤖</div>
+                        <p className="text-xs font-medium pn-text mb-1">AI</p>
+                        <p className="text-[11px] pn-faint">Get help from Claude/Ollama</p>
+                      </div>
+                    </div>
+
+                    {/* Quick Tips */}
+                    <div className="space-y-2 text-center">
+                      <p className="text-sm pn-faint flex items-center justify-center gap-2">
+                        <kbd className="px-2 py-1 rounded bg-white/10 border pn-bd font-mono text-[12px]">⌘E</kbd>
+                        <span>Open Data Explorer anytime</span>
+                      </p>
+                      <p className="text-sm pn-faint flex items-center justify-center gap-2">
+                        <kbd className="px-2 py-1 rounded bg-white/10 border pn-bd font-mono text-[12px]">⌘N</kbd>
+                        <span>Create new notebook</span>
+                      </p>
+                      {notebooks.length > 0 && (
+                        <p className="text-sm text-blue-400 pt-2">Pick a notebook from the Files panel on the left →</p>
+                      )}
+                    </div>
                   </div>
-                  <h1 className="text-4xl font-bold mb-2 tracking-tight">
-                    <span className="prism-text">Prism</span><span className="pn-text">Note</span>
-                  </h1>
-                  <p className="pn-muted mb-7 text-[15px]">A fast, modern, open-source data-science notebook.</p>
-                  <div className="flex items-center justify-center gap-3">
-                    <button
-                      onClick={() => { closeCenterOverlays(); setExplorerPicker(true) }}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl prism-bg text-white font-medium glow-accent hover:brightness-110 transition"
-                    >
-                      <Table2 size={18} /> Open Data Explorer
-                    </button>
-                    <button
-                      onClick={newNotebook}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 pn-text font-medium transition"
-                    >
-                      <Plus size={18} /> New Notebook
-                    </button>
+                </div>
+
+                {/* Footer Info */}
+                <div className="px-6 py-4 border-t pn-bd/30 bg-white/2">
+                  <div className="max-w-3xl mx-auto flex items-center justify-between text-xs pn-faint">
+                    <div>
+                      <p>✨ <span className="pn-text font-medium">No setup required.</span> Everything works locally.</p>
+                    </div>
+                    <a href="https://github.com/Mullassery/prismnote" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 font-medium">
+                      GitHub →
+                    </a>
                   </div>
-                  {notebooks.length > 0 && (
-                    <p className="mt-4 text-sm pn-faint">…or pick a notebook from the Explorer on the left.</p>
-                  )}
-                  <p className="mt-5 text-xs pn-faint">
-                    Tip — press <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[11px]">⌘E</kbd> anytime to explore data files, DataFrames, or run SQL.
-                  </p>
                 </div>
               </div>
             )}
