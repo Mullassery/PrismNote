@@ -133,6 +133,117 @@ Based on analysis of data notebooks market (Jupyter, Databricks, Hex, Observable
 
 ---
 
+## 🎨 Data Explorer UX Audit (v1.1.0 → v1.1.1)
+
+### Critical UX Gaps Identified
+
+The Data Explorer currently feels "scary" rather than intuitive due to several design issues that create cognitive overload for new users:
+
+#### **1. Visual Overwhelm — Dense Column Grid**
+- Desktop grid uses `minmax(260px, 1fr)` resulting in 5+ cramped columns at 1440px
+- Each card has multiple layers: header, stats, buttons, metadata (no clear hierarchy)
+- **Impact:** New users see a wall of data cards with unclear entry point
+- **Severity:** HIGH (blocks adoption)
+
+#### **2. Unclear Information Hierarchy**
+- Dataset name, row count, column count, modified date all mixed on card header
+- No visual distinction between "main info" (name) and "metadata" (modified)
+- Buttons (Preview, SQL, Edit, Delete) all equal visual weight but different importance
+- **Impact:** Users don't know what to look at or click first
+- **Severity:** HIGH
+
+#### **3. Scary Action Complexity**
+- 3–4 action buttons per card with no primary CTA designation
+- No inline help text explaining what each button does
+- Hovering reveals nothing; clicking is only exploration method
+- **Impact:** Users fear clicking the wrong button and "breaking" something
+- **Severity:** HIGH
+
+#### **4. Poor First-Time User Experience**
+- No empty state message if no datasets loaded
+- No inline guidance ("Click Preview to see data", "Run SQL to query")
+- "+" button to add datasets is tiny and at bottom of view
+- **Impact:** Users land on explorer with zero clues how to start
+- **Severity:** CRITICAL (first impression)
+
+#### **5. Dense Metadata Display**
+- Stats "Rows: 150K | Columns: 42" crammed into single line
+- No visual breathing room between information layers
+- Long dataset names truncated with no tooltip fallback
+- **Impact:** Illegible on small screens; cluttered on large screens
+- **Severity:** MEDIUM
+
+#### **6. Confusing SQL vs Preview Distinction**
+- Both "Preview" and "Run SQL" buttons on same card
+- No guidance on when to use each
+- Users might expect SQL to be a tab/panel, not a modal
+- **Impact:** Cognitive load on decision-making
+- **Severity:** MEDIUM
+
+#### **7. Silent Search Filtering**
+- Search bar at top with no results count or feedback
+- No "0 results" message when filtering returns nothing
+- Doesn't feel responsive or working
+- **Impact:** Users wonder if search is broken
+- **Severity:** MEDIUM
+
+#### **8. No Visual Dataset Type Distinction**
+- All datasets look identical (CSV, Parquet, SQL query, DataFrame)
+- No icons or badges to distinguish them
+- **Impact:** Users can't scan and find what they want quickly
+- **Severity:** MEDIUM
+
+### Recommended Fixes (Priority Order)
+
+#### **Phase 1: Quick Wins** (High Impact, Low Effort) — v1.1.1
+1. **Clearer visual hierarchy** — name larger + bold, metadata smaller + gray (10 min)
+2. **Primary CTA per card** — make "Preview" prominent (blue), hide others in ⋮ menu (30 min)
+3. **Inline help tooltips** — hover shows "Preview — See first 100 rows" (20 min)
+4. **Search feedback** — show "3 datasets found" or "No results for 'xyz'" (15 min)
+
+#### **Phase 2: Medium Effort** (High Impact) — v1.1.2 or v1.2.0
+5. **Dataset type badges** — 📄 CSV, 🗃️ Parquet, 🔗 SQL Table, 🐼 DataFrame (45 min)
+6. **Card spacing** — increase gap to 24px, more vertical padding (15 min)
+7. **Empty state design** — large illustration + "No data sources" + CTA (30 min)
+
+#### **Phase 3: Polish** (Nice-to-Have) — v1.2.0+
+8. **Action menu redesign** — Preview (primary) + "More actions" (⋮) with Edit, Delete, Share (30 min)
+9. **Column name tooltips** — show full name on truncated columns (15 min)
+10. **Result count in cards** — "15 columns" label under dataset name (10 min)
+
+### Implementation Plan
+
+**v1.1.1 (Week of July 14, 2026)**
+- [ ] Update DataExplorer.tsx card component with semantic hierarchy
+  - Move stats to secondary position with smaller text
+  - Make Preview button prominent (primary color)
+  - Move Edit/Delete to ⋮ menu
+- [ ] Add aria-label descriptions to all action buttons
+- [ ] Add 3 tooltip descriptions (Preview, SQL, Menu)
+- [ ] Update search logic to show result count
+- [ ] Add "no results" empty state for search
+
+**v1.1.2 (Optional – Week of July 21, 2026)**
+- [ ] Add dataset type detection and badges
+- [ ] Increase card spacing (gap-6)
+- [ ] Design + implement empty state screen
+- [ ] Add column count to card
+
+**v1.2.0 (Q4 2026)**
+- [ ] Full action menu redesign (Preview + More)
+- [ ] Column name tooltips with full text
+- [ ] Accessibility audit (WCAG 2.1 AA compliance)
+
+### Estimate
+
+| Phase | Effort | Timeline |
+|-------|--------|----------|
+| Phase 1 (Quick Wins) | 1.5 hours | v1.1.1 (same release) |
+| Phase 2 (Medium) | 1.5 hours | v1.1.2 or v1.2.0 |
+| Phase 3 (Polish) | 1 hour | v1.2.0+ |
+
+---
+
 ## 📋 Roadmap
 
 ### v1.1.0 (Q3 2026) — Documentation + UX
