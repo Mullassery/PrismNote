@@ -4948,3 +4948,157 @@ pub async fn get_notebook_execution_stats(
         }
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Query History & Bookmarks — v1.2.1
+// ════════════════════════════════════════════════════════════════════════════
+
+#[derive(Deserialize)]
+pub struct SaveQueryRequest {
+    pub title: String,
+    pub query_text: String,
+    pub query_type: String, // "sql" or "python"
+    pub description: Option<String>,
+    pub tags: Option<Vec<String>>,
+}
+
+/// Save a query for later use
+pub async fn save_query(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SaveQueryRequest>,
+) -> Result<(StatusCode, Json<crate::query_manager::SavedQuery>), (StatusCode, String)> {
+    let mut query = crate::query_manager::SavedQuery::new(
+        user.user_id.clone(),
+        req.title,
+        req.query_text,
+        req.query_type,
+    );
+
+    if let Some(desc) = req.description {
+        query = query.with_description(desc);
+    }
+    if let Some(tags) = req.tags {
+        query = query.with_tags(tags);
+    }
+
+    match crate::query_manager::save_query(&state.db_pool, &query).await {
+        Ok(_) => {
+            tracing::info!("User {} saved query {}", user.user_id, query.query_id);
+            Ok((StatusCode::CREATED, Json(query)))
+        }
+        Err(e) => {
+            tracing::error!("Failed to save query: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to save query".to_string()))
+        }
+    }
+}
+
+/// Get user's saved queries
+pub async fn list_saved_queries(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let limit = params
+        .get("limit")
+        .and_then(|l| l.parse::<i64>().ok())
+        .unwrap_or(50);
+    let offset = params
+        .get("offset")
+        .and_then(|o| o.parse::<i64>().ok())
+        .unwrap_or(0);
+
+    match crate::query_manager::get_user_queries(&state.db_pool, &user.user_id, limit, offset).await {
+        Ok((queries, total)) => {
+            Ok(Json(json!({
+                "queries": queries,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            })))
+        }
+        Err(e) => {
+            tracing::error!("Failed to list queries: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to list queries".to_string()))
+        }
+    }
+}
+
+/// Get favorite queries only
+pub async fn get_favorite_queries(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<crate::query_manager::SavedQuery>>, (StatusCode, String)> {
+    match crate::query_manager::get_favorite_queries(&state.db_pool, &user.user_id).await {
+        Ok(queries) => Ok(Json(queries)),
+        Err(e) => {
+            tracing::error!("Failed to get favorite queries: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to get favorites".to_string()))
+        }
+    }
+}
+
+/// Toggle favorite status
+pub async fn toggle_query_favorite(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Path(query_id): Path<String>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    match crate::query_manager::toggle_favorite(&state.db_pool, &query_id).await {
+        Ok(_) => {
+            tracing::info!("User {} toggled favorite for query {}", user.user_id, query_id);
+            Ok(StatusCode::OK)
+        }
+        Err(e) => {
+            tracing::error!("Failed to toggle favorite: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to toggle favorite".to_string()))
+        }
+    }
+}
+
+/// Search queries by title, description, or tags
+pub async fn search_saved_queries(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<Vec<crate::query_manager::SavedQuery>>, (StatusCode, String)> {
+    let search_term = params.get("q").cloned().unwrap_or_default();
+    if search_term.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "Search term required".to_string()));
+    }
+
+    let limit = params
+        .get("limit")
+        .and_then(|l| l.parse::<i64>().ok())
+        .unwrap_or(20);
+
+    match crate::query_manager::search_queries(&state.db_pool, &user.user_id, &search_term, limit).await {
+        Ok(queries) => {
+            tracing::info!("User {} searched queries with term: {}", user.user_id, search_term);
+            Ok(Json(queries))
+        }
+        Err(e) => {
+            tracing::error!("Failed to search queries: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to search queries".to_string()))
+        }
+    }
+}
+
+/// Delete a saved query
+pub async fn delete_saved_query(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Path(query_id): Path<String>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    match crate::query_manager::delete_query(&state.db_pool, &query_id).await {
+        Ok(_) => {
+            tracing::info!("User {} deleted query {}", user.user_id, query_id);
+            Ok(StatusCode::NO_CONTENT)
+        }
+        Err(e) => {
+            tracing::error!("Failed to delete query: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to delete query".to_string()))
+        }
+    }
+}

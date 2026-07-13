@@ -114,6 +114,23 @@ CREATE TABLE IF NOT EXISTS execution_history (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
+-- Saved queries: bookmarks for frequently used queries (v1.2.1)
+CREATE TABLE IF NOT EXISTS saved_queries (
+    query_id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    query_text TEXT NOT NULL,
+    query_type TEXT NOT NULL DEFAULT 'sql', -- 'sql', 'python'
+    tags TEXT, -- JSON array of tags
+    is_favorite BOOLEAN NOT NULL DEFAULT 0,
+    last_used DATETIME,
+    run_count INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
 -- Create indices for performance
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
@@ -132,3 +149,7 @@ CREATE INDEX IF NOT EXISTS idx_execution_history_cell_id ON execution_history(ce
 CREATE INDEX IF NOT EXISTS idx_execution_history_user_id ON execution_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_execution_history_start_time ON execution_history(start_time);
 CREATE INDEX IF NOT EXISTS idx_execution_history_status ON execution_history(execution_status);
+CREATE INDEX IF NOT EXISTS idx_saved_queries_user_id ON saved_queries(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_queries_is_favorite ON saved_queries(is_favorite);
+CREATE INDEX IF NOT EXISTS idx_saved_queries_created_at ON saved_queries(created_at);
+CREATE INDEX IF NOT EXISTS idx_saved_queries_last_used ON saved_queries(last_used);

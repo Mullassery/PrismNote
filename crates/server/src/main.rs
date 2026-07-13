@@ -25,6 +25,7 @@ mod middleware;
 mod models;
 mod output_renderer;
 mod platform;
+mod query_manager;
 mod query_validator;
 mod rbac;
 mod realtime_collab;
@@ -465,6 +466,12 @@ async fn main() -> anyhow::Result<()> {
         // Execution History (v1.2.1)
         .route("/notebooks/:notebook_id/cells/:cell_id/executions", get(api::get_cell_execution_history))
         .route("/notebooks/:notebook_id/execution-stats", get(api::get_notebook_execution_stats))
+        // Query History & Bookmarks (v1.2.1)
+        .route("/queries", post(api::save_query).get(api::list_saved_queries))
+        .route("/queries/favorites", get(api::get_favorite_queries))
+        .route("/queries/search", get(api::search_saved_queries))
+        .route("/queries/:query_id", delete(api::delete_saved_query))
+        .route("/queries/:query_id/favorite", post(api::toggle_query_favorite))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
