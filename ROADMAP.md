@@ -213,12 +213,17 @@ Phase 3 enhancements (optional polish):
 **Shipping Status:** v1.2.0-beta ✅ Ready NOW (fully functional, audit-compliant)
 
 ### v1.2.1 (Q4 2026) — Premium UX Features
-**~12 hours | Databricks gap-closing sprint**
-- [ ] **Rich Cell Execution History** — execution time, timestamp, duration, memory/CPU
-- [ ] **Result Caching** — automatic memoization of query results
-- [ ] **SQL Editor Autocomplete** — table, column, function autocomplete
-- [ ] **Query History & Bookmarks** — save/recall queries, execution timeline
-- [ ] **Enhanced Data Preview** — column statistics, null analysis, distributions
+**Status: 41% Complete (5/12 hours) — ACTIVE**
+
+#### ✅ Completed
+- ✅ **Result Caching** (2h) — in-memory query memoization with TTL + LRU eviction
+- ✅ **SQL Editor Autocomplete** (3h) — 30+ keywords, functions, table/column completion
+- ✅ **Cell Execution History** (3h) — track duration, memory, error, rows, status
+
+#### ⏳ Remaining (7 hours)
+- [ ] **Query History & Bookmarks** (2h) — save/recall, search, statistics
+- [ ] **Enhanced Data Preview** (2h) — column stats, null %, distributions
+- [ ] **Polish & Integration** (3h) — UI components, edge cases, documentation
 
 ### v1.3.0 (Q1 2027) — AI & Productivity
 **~16 hours | Databricks Copilot-inspired**
