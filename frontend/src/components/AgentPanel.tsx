@@ -418,7 +418,14 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
           </button>
           {modelOpen && (
             <div className="absolute right-0 top-11 z-20 w-full max-h-60 overflow-auto pn-surface border pn-bd rounded-lg shadow-xl py-1">
-              {models.length === 0 && <div className="px-3 py-2 text-[12px] pn-faint">No models found</div>}
+              {models.length === 0 && connected && (
+                <div className="px-3 py-3 text-[11px] space-y-1.5 pn-faint">
+                  <div className="text-amber-300 font-semibold">Pull a model first</div>
+                  <code className="block text-[9px] bg-black/20 p-1 rounded font-mono">ollama pull mistral</code>
+                  <div className="text-[10px]">Then refresh here</div>
+                </div>
+              )}
+              {models.length === 0 && !connected && <div className="px-3 py-2 text-[12px] pn-faint">Start Ollama to continue</div>}
               {models.map((m) => (
                 <button
                   key={m}
