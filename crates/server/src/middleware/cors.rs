@@ -14,7 +14,6 @@ pub fn cors_layer() -> CorsLayer {
             Method::OPTIONS,
         ])
         .allow_headers(tower_http::cors::Any)
-        .allow_credentials(true)
         .max_age(std::time::Duration::from_secs(3600))
 }
 

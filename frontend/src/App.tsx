@@ -286,7 +286,7 @@ function App() {
     { id: 'jobs', category: 'Run', title: 'Jobs…', icon: <Briefcase size={14} />, keywords: 'schedule cron airflow', run: () => { closeCenterOverlays(); setJobsOpen(true) } },
     { id: 'git', category: 'Run', title: 'Source Control…', icon: <GitBranch size={14} />, keywords: 'git github commit push pull clone', run: () => { closeCenterOverlays(); setGitOpen(true) } },
     { id: 'deploy', category: 'Run', title: 'Deploy to Cloud…', icon: <Rocket size={14} />, keywords: 'docker kubernetes k8s fly deploy cloud', run: () => { closeCenterOverlays(); setDeployOpen(true) } },
-    { id: 'data', category: 'Run', title: 'Data & SQL…', icon: <Database size={14} />, keywords: 'database sql query warehouse connection', run: () => { closeCenterOverlays(); setDataOpen(true) } },
+    { id: 'data', category: 'Run', title: 'Data Querying…', icon: <Database size={14} />, keywords: 'database sql query warehouse connection', run: () => { closeCenterOverlays(); setDataOpen(true) } },
     { id: 'toggle-files', category: 'View', title: 'Toggle File Explorer', icon: <PanelLeft size={14} />, run: () => togglePanel('files') },
     { id: 'toggle-term', category: 'View', title: 'Toggle Terminal', icon: <PanelBottom size={14} />, run: () => togglePanel('terminal') },
     { id: 'toggle-ai', category: 'View', title: 'Toggle AI Assistant', icon: <PanelRight size={14} />, run: () => togglePanel('ai') },
@@ -338,7 +338,7 @@ function App() {
         <div className="w-12 shrink-0 pn-bar border-r pn-bd flex flex-col items-center py-1">
           {/* Data surfaces — the product's focus */}
           {railBtn(!!explorer || explorerPicker, openExplorer, 'Data Explorer  ⌘E', Table2)}
-          {railBtn(dataOpen, () => toggleCenter(dataOpen, () => setDataOpen(true)), 'Data & SQL', Database)}
+          {railBtn(dataOpen, () => toggleCenter(dataOpen, () => setDataOpen(true)), 'Data Querying', Database)}
           <div className="w-7 my-1 border-t pn-bd" />
           {/* Workspace */}
           {railBtn(panels.files, () => togglePanel('files'), 'Files', Files)}

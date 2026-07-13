@@ -110,22 +110,32 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
 
   // Load conversation history from session storage on mount
   useEffect(() => {
-    const sessionKey = `pn-ai-session-${currentNotebook?.id}`
-    const saved = sessionKey && localStorage.getItem(sessionKey)
+    if (!currentNotebook?.id) {
+      setMessages([])
+      return
+    }
+    const sessionKey = `pn-ai-session-${currentNotebook.id}`
+    const saved = localStorage.getItem(sessionKey)
     if (saved) {
       try {
         setMessages(JSON.parse(saved))
       } catch {
         // Session corrupted, start fresh
+        setMessages([])
       }
+    } else {
+      setMessages([])
     }
   }, [currentNotebook?.id])
 
   // Save conversation history to session storage
   useEffect(() => {
-    const sessionKey = `pn-ai-session-${currentNotebook?.id}`
-    if (sessionKey && messages.length > 0) {
+    if (!currentNotebook?.id || messages.length === 0) return
+    const sessionKey = `pn-ai-session-${currentNotebook.id}`
+    try {
       localStorage.setItem(sessionKey, JSON.stringify(messages))
+    } catch {
+      // Storage full or other error, continue silently
     }
   }, [messages, currentNotebook?.id])
 
@@ -313,6 +323,25 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
     edit_cell: { icon: Pencil, label: 'Edit cell', color: 'text-amber-400' },
     run_cell: { icon: Play, label: 'Run cell', color: 'text-blue-400' },
   } as const
+
+  // Guard: ensure we have currentNotebook before rendering
+  if (!currentNotebook) {
+    return (
+      <aside className="w-96 shrink-0 pn-surface border-l pn-bd flex flex-col overflow-hidden">
+        <div className="px-3 py-2.5 border-b pn-bd flex items-center justify-between">
+          <span className="flex items-center gap-2 text-[12px] font-bold pn-text">
+            <Sparkles size={15} className="text-sky-400" /> Chat with AI
+          </span>
+          <button onClick={onClose} className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5 transition">
+            <X size={14} />
+          </button>
+        </div>
+        <div className="flex-1 flex items-center justify-center pn-faint text-sm">
+          Open a notebook to use AI
+        </div>
+      </aside>
+    )
+  }
 
   return (
     <aside className="w-96 shrink-0 pn-surface border-l pn-bd flex flex-col overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950">

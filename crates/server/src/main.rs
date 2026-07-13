@@ -244,10 +244,6 @@ async fn main() -> anyhow::Result<()> {
             "/notebooks/:id/execution-plan",
             post(api::build_execution_plan),
         )
-        .route(
-            "/notebooks/:id/execution-stats",
-            get(api::get_execution_statistics),
-        )
         .route("/ai/explain", post(api::ai_explain))
         .route("/ai/fix", post(api::ai_fix))
         .route("/ai/complete", post(api::ai_complete))

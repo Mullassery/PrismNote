@@ -169,7 +169,7 @@ export default function MenuBar({ theme, onToggleTheme, panels, onTogglePanel, o
     ],
     View: [
       { label: 'Data Explorer', shortcut: '⌘E', action: () => onOpenDataExplorer?.() },
-      { label: 'Data & SQL', action: () => onOpenData?.(), separatorAfter: true },
+      { label: 'Data Querying', action: () => onOpenData?.(), separatorAfter: true },
       { label: 'Files', checked: panels.files, action: () => onTogglePanel('files') },
       { label: 'Terminal & Console', checked: panels.terminal, action: () => onTogglePanel('terminal') },
       { label: 'AI Assistant', checked: panels.ai, action: () => onTogglePanel('ai') },
