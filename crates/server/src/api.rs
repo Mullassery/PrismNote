@@ -5102,3 +5102,85 @@ pub async fn delete_saved_query(
         }
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Data Preview & Profiling — v1.2.1
+// ════════════════════════════════════════════════════════════════════════════
+
+#[derive(Deserialize)]
+pub struct DataPreviewRequest {
+    pub data_source: String, // table name, file path, query
+    pub limit: Option<usize>,
+}
+
+/// Get enhanced data preview with statistics
+pub async fn get_data_preview_with_stats(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<DataPreviewRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    tracing::info!("User {} requested data preview for: {}", user.user_id, req.data_source);
+
+    // For now, return a template showing what enhanced preview would include
+    // In production, this would query the actual data and compute statistics
+    Ok(Json(json!({
+        "data_source": req.data_source,
+        "statistics": {
+            "total_rows": 0,
+            "total_columns": 0,
+            "memory_mb": 0.0,
+        },
+        "columns": [],
+        "preview": {
+            "head": [],
+            "tail": [],
+        },
+        "quality_metrics": {
+            "null_percent": 0.0,
+            "duplicate_rows": 0,
+            "data_quality_score": 100,
+        },
+        "message": "Data preview endpoint ready for integration with DuckDB/data sources"
+    })))
+}
+
+/// Get column statistics for data profiling
+pub async fn get_column_statistics(
+    _user: CurrentUser,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let column_name = params.get("column")
+        .ok_or((StatusCode::BAD_REQUEST, "Column parameter required".to_string()))?;
+
+    // Template response showing what column stats would include
+    Ok(Json(json!({
+        "column": column_name,
+        "statistics": {
+            "data_type": "unknown",
+            "null_count": 0,
+            "null_percent": 0.0,
+            "unique_count": 0,
+            "unique_percent": 0.0,
+            "numeric": {
+                "min": null,
+                "max": null,
+                "mean": null,
+                "median": null,
+                "std_dev": null,
+                "p25": null,
+                "p75": null,
+                "p95": null,
+            },
+            "string": {
+                "min_length": null,
+                "max_length": null,
+                "avg_length": null,
+                "top_values": [],
+            }
+        },
+        "distribution": {
+            "histogram": [],
+            "value_counts": [],
+        }
+    })))
+}

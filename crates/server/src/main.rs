@@ -472,6 +472,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/queries/search", get(api::search_saved_queries))
         .route("/queries/:query_id", delete(api::delete_saved_query))
         .route("/queries/:query_id/favorite", post(api::toggle_query_favorite))
+        // Data Preview & Profiling (v1.2.1)
+        .route("/data/preview", post(api::get_data_preview_with_stats))
+        .route("/data/column-stats", get(api::get_column_statistics))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
