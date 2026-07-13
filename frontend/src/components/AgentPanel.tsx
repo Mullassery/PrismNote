@@ -239,7 +239,8 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
       } catch (e: any) {
         setMessages((ms) => {
           const copy = [...ms]
-          copy[copy.length - 1] = { role: 'assistant', text: `⚠️ ${PROVIDER_LABEL[provider]} request failed: ${e?.response?.data?.error || e?.message || 'check your API key in Settings → AI'}` }
+          const errorMsg = e?.response?.data?.error || e?.message || 'Check your API key in Settings → AI'
+          copy[copy.length - 1] = { role: 'assistant', text: `**Error:** ${PROVIDER_LABEL[provider]} request failed\n\n\`${errorMsg}\`` }
           return copy
         })
       } finally {
@@ -298,7 +299,7 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
         const copy = [...ms]
         copy[copy.length - 1] = {
           role: 'assistant',
-          text: `⚠️ Couldn't reach Ollama at ${ollamaEndpoint()}. Make sure it's running (\`ollama serve\`) and that browser requests are allowed:\n\nOLLAMA_ORIGINS=http://localhost:5173 ollama serve`,
+          text: `**Error:** Couldn't reach Ollama at \`${ollamaEndpoint()}\`\n\nMake sure it's running:\n\`\`\`\nOLLAMA_ORIGINS=http://localhost:5173 ollama serve\n\`\`\``,
         }
         return copy
       })
@@ -314,7 +315,7 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
   } as const
 
   return (
-    <aside className="w-96 shrink-0 pn-surface border-l pn-bd flex flex-col overflow-hidden">
+    <aside className="w-96 shrink-0 pn-surface border-l pn-bd flex flex-col overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950">
       {/* header */}
       <div className="px-3 py-2.5 border-b pn-bd space-y-2">
         <div className="flex items-center justify-between">
