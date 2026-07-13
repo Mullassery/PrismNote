@@ -4876,3 +4876,29 @@ pub async fn clear_cache(
         "message": "All cached results have been cleared"
     })))
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// SQL Autocomplete — v1.2.1
+// ════════════════════════════════════════════════════════════════════════════
+
+#[derive(Deserialize)]
+pub struct AutocompleteRequest {
+    pub prefix: String,
+}
+
+/// Get SQL autocomplete suggestions
+pub async fn sql_complete(
+    Json(req): Json<AutocompleteRequest>,
+) -> Json<Vec<crate::sql_schema::CompletionSuggestion>> {
+    // Get current database schema (empty for now, will integrate with DuckDB later)
+    let schema = match crate::sql_schema::get_database_schema().await {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::error!("Failed to get database schema: {}", e);
+            crate::sql_schema::SchemaInfo { tables: vec![] }
+        }
+    };
+
+    let suggestions = crate::sql_schema::generate_suggestions(&schema, &req.prefix);
+    Json(suggestions)
+}

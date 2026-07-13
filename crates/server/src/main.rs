@@ -32,6 +32,7 @@ mod search_engine;
 mod session;
 mod spark_manager;
 mod sql_executor;
+mod sql_schema;
 mod versioning;
 mod ws;
 
@@ -458,6 +459,8 @@ async fn main() -> anyhow::Result<()> {
         // Query Result Caching endpoints (v1.2.1)
         .route("/cache/stats", get(api::get_cache_stats))
         .route("/cache/clear", post(api::clear_cache))
+        // SQL Autocomplete (v1.2.1)
+        .route("/sql/complete", post(api::sql_complete))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
