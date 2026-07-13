@@ -341,80 +341,46 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
   return (
     <aside className={`${inBottomPanel ? 'flex-1' : 'w-96 shrink-0'} pn-surface ${!inBottomPanel ? 'border-l' : ''} pn-bd flex flex-col overflow-hidden`}>
       {/* header */}
-      <div className="px-4 py-3 border-b pn-bd space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-[14px] font-bold pn-text">
-            <Sparkles size={16} className="text-indigo-600" /> Chat
-          </span>
-          <div className="flex items-center gap-0.5">
-            <button
-              onClick={() => { setMessages([]); localStorage.removeItem(`pn-ai-session-${currentNotebook?.id}`) }}
-              title="Start new conversation"
-              className="pn-muted hover:pn-text p-1.5 rounded-lg hover:bg-white/10 transition"
-            >
-              <Plus size={14} />
-            </button>
-            <button onClick={dec} title="Decrease font size" className="pn-muted hover:pn-text p-1.5 rounded-lg hover:bg-white/10 transition"><Minus size={14} /></button>
-            <span className="text-[10px] tabular-nums w-3 text-center pn-faint" title="Panel font size">{fontSize}</span>
-            <button onClick={inc} title="Increase font size" className="pn-muted hover:pn-text p-1.5 rounded-lg hover:bg-white/10 transition"><Plus size={14} /></button>
-            <button onClick={onClose} className="pn-muted hover:pn-text p-1.5 rounded-lg hover:bg-white/10 transition">
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center justify-between text-[11px]">
-          <span
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${
-              connected === false ? 'bg-red-500/20 text-red-400' : connected ? 'bg-green-500/20 text-green-400' : 'bg-white/10 pn-faint'
-            }`}
-            title={`${PROVIDER_LABEL[provider]} connection`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${connected === false ? 'bg-red-500' : connected ? 'bg-green-500' : 'bg-white/40'}`} />
-            {connected === false
-              ? `${PROVIDER_LABEL[provider]}: ${provider === 'ollama' ? 'offline' : 'no key'}`
-              : connected
-              ? `${PROVIDER_LABEL[provider]} connected`
-              : 'checking…'}
-          </span>
-          {currentNotebook && <span className="pn-faint text-[10px]">{currentNotebook.cells.length} cells in notebook</span>}
+      <div className="px-3 py-1.5 border-b pn-bd flex items-center justify-between gap-1">
+        <span className="text-[12px] font-semibold pn-text">Chat</span>
+        <div className="flex items-center gap-0.5">
+          <button onClick={dec} className="pn-muted p-0.5 hover:pn-text" title="Decrease"><Minus size={12} /></button>
+          <span className="text-[9px] pn-faint w-2 text-center">{fontSize}</span>
+          <button onClick={inc} className="pn-muted p-0.5 hover:pn-text" title="Increase"><Plus size={12} /></button>
+          <button onClick={onClose} className="pn-muted p-0.5 hover:pn-text" title="Close">
+            <X size={12} />
+          </button>
         </div>
       </div>
 
-      {/* mode toggle + model picker */}
-      <div className="px-4 py-2.5 border-b pn-bd space-y-2.5">
-        <div className="flex rounded-lg bg-white/10 p-1 text-[12px] gap-1">
+      {/* controls */}
+      <div className="px-3 py-1.5 border-b pn-bd space-y-1">
+        <div className="flex gap-1 text-[11px]">
           {(['plan', 'act'] as Mode[]).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md capitalize font-semibold transition ${
-                mode === m ? 'pn-surface text-indigo-400 shadow-sm' : 'pn-faint hover:pn-text'
+              className={`px-2 py-1 rounded capitalize font-medium transition ${
+                mode === m ? 'pn-text bg-indigo-500/20' : 'pn-faint hover:pn-text'
               }`}
+              title={m}
             >
-              {m === 'plan' ? <Wand2 size={13} /> : <Play size={13} />}
               {m}
             </button>
           ))}
         </div>
 
-        <div className="relative min-w-0">
+        <div className="relative">
           {provider !== 'ollama' ? (
-            <div className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-[12px] pn-text" title="Set in Settings → AI">
-              <Code size={13} className="text-indigo-400 shrink-0" />
-              <span className="text-[11px] px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-300 font-medium">{PROVIDER_LABEL[provider]}</span>
-              <span className="truncate pn-muted flex-1">{cloudModel || '—'}</span>
-            </div>
+            <div className="px-2 py-1 rounded text-[10px] bg-indigo-500/15 pn-text truncate">{PROVIDER_LABEL[provider]} • {cloudModel}</div>
           ) : (
           <>
           <button
             onClick={() => setModelOpen((o) => !o)}
-            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg pn-surface border pn-bd hover:border-indigo-500/40 text-[12px] pn-text transition"
+            className="w-full px-2 py-1 rounded text-[10px] pn-text bg-white/5 hover:bg-white/10 text-left flex items-center justify-between gap-1 transition"
           >
-            <span className="truncate flex items-center gap-2">
-              <Code size={13} className="text-indigo-400 shrink-0" />
-              <span className="pn-muted">{model || (connected === false ? '⚠ No Ollama' : 'Select model')}</span>
-            </span>
-            <ChevronDown size={13} className={`shrink-0 pn-faint transition ${modelOpen ? 'rotate-180' : ''}`} />
+            <span className="truncate pn-faint">{model || 'Select model'}</span>
+            <ChevronDown size={12} className={`pn-faint shrink-0 transition ${modelOpen ? 'rotate-180' : ''}`} />
           </button>
           {modelOpen && (
             <div className="absolute right-0 top-11 z-20 w-full max-h-60 overflow-auto pn-surface border pn-bd rounded-lg shadow-xl py-1">
@@ -452,29 +418,12 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
         </div>
       </div>
 
-      {/* context panel — collapsible */}
-      <div className="border-b pn-bd bg-white/5">
-        <button
-          onClick={() => setContextOpen(!contextOpen)}
-          className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/10 transition text-[12px]"
-        >
-          <span className="flex items-center gap-2 pn-text font-semibold">
-            <Eye size={13} /> Context
-          </span>
-          <ChevronDown size={13} className={`transition pn-faint ${contextOpen ? 'rotate-180' : ''}`} />
-        </button>
-        {contextOpen && (
-          <div className="px-4 py-2.5 space-y-1.5 border-t pn-bd text-[10px]">
-            {currentNotebook ? (
-              <div className="pn-faint space-y-1">
-                <div className="truncate"><strong>{currentNotebook.name}</strong> • {currentNotebook.cells.length} cells</div>
-              </div>
-            ) : (
-              <div className="pn-faint">No notebook open</div>
-            )}
-          </div>
-        )}
-      </div>
+      {/* context — inline */}
+      {currentNotebook && (
+        <div className="px-3 py-1 border-b pn-bd text-[9px] pn-faint truncate">
+          {currentNotebook.name} • {currentNotebook.cells.length} cells
+        </div>
+      )}
 
       {/* conversation — Chainlit style */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-w-0" style={{ fontSize }}>
