@@ -2,7 +2,7 @@
 
 **Current Version:** v1.2.1  
 **Last Updated:** July 14, 2026  
-**Status:** ✅ v1.2.1 released · ✅ v1.3.1 Chainlit UI complete · 🔨 v1.3.0 (Data Catalog & Governance in progress — 6/24h)
+**Status:** ✅ v1.2.1 released · ✅ v1.3.1 Chainlit UI complete · 🔨 v1.3.0 (Data Catalog & Governance ~22/24h)
 
 ---
 
@@ -275,24 +275,29 @@ Phase 3 enhancements (optional polish):
 - Next: v1.3.0 (Data Catalog & Governance, 24h) + v1.3.1 (Chainlit AI, 8h)
 
 ### v1.3.0 (Q1 2027) — Data Catalog & Governance
-**~24 hours | Enterprise governance, local-first** (🔨 Phase 1-2 complete: 6/24h)
+**~24 hours | Enterprise governance, local-first** (🔨 Phase 1-4 complete: 22/24h)
 
-#### Data Catalog & Discovery (Foundation) ✅ Modules + API
+#### Data Catalog & Discovery (Phase 1-3) ✅ Full Stack
 - [x] **Data Catalog** — local metadata registry in Rust (160 lines, `catalog.rs`)
   - Support: Parquet, CSV, DuckDB, Iceberg, PostgreSQL (+ Snowflake, BigQuery connectors)
   - Track: tables, columns, owners, descriptions, tags
   - REST: `POST /catalog/register`, `GET /catalog/list`, `GET /catalog/search`
-- [ ] **Universal Search** — search all datasets (name, description, tags, columns)
-- [ ] **Dataset Ownership & Teams** — assign responsibility, track stewards
-- [ ] **Business Glossary** — centralized definitions (inspired by Snowflake Horizon)
+- [x] **Frontend UI** — React component (DataCatalogPanel.tsx, 350 lines)
+  - Two-column layout: catalog list + details panel
+  - Search, filters, governance visualization
+  - Integrated into command palette ("Data Catalog" command)
+- [x] **Universal Search** — search all datasets (name, description, tags, columns) implemented
+- [ ] **Dataset Ownership & Teams** — assign responsibility, track stewards (Phase 5)
+- [ ] **Business Glossary** — centralized definitions (inspired by Snowflake Horizon) (Phase 5)
 
-#### Query & Lineage (Intelligence) ✅ Modules + API
+#### Query & Lineage (Intelligence) ✅ Full Stack
 - [x] **Column-Level Lineage** — graph tracking in Rust (180 lines, `lineage.rs`)
   - Track: source→target transformations with operation type
   - REST: `POST /lineage/add`, `GET /lineage/:table/:column`
+  - Frontend: LineageViewer modal (150 lines, LineageViewer.tsx)
 - [x] **Column Impact Analysis** — downstream impact via graph traversal
-- [ ] **Data Lineage Visualization** — DAG of table transformations (frontend)
-- [ ] **Query History Extended** — duration, rows scanned, rows returned, user context
+- [x] **Data Lineage Visualization** — Upstream/downstream toggle, operation chain
+- [ ] **Query History Extended** — duration, rows scanned, rows returned, user context (Phase 5)
 
 #### Governance & Quality (Trust) ✅ Modules + API
 - [x] **Governance Tags** — PII, sensitivity levels via `governance.rs` (260 lines)
@@ -303,10 +308,17 @@ Phase 3 enhancements (optional polish):
 - [ ] **Sensitive Data Detection** — auto-detect patterns in data preview
 - [ ] **Data Contracts** — schema validation, SLAs (OpenMetadata foundation)
 
+#### PII Detection & Quality (Phase 4) ✅
+- [x] **PII Detection Engine** — Regex patterns for Email, Phone, SSN, CreditCard, IP (pii_detector.rs, 240 lines)
+- [x] **Quality Assertions** — SQL rule engine: NotNull, Unique, Positive, InRange, Pattern, Freshness (quality_assertions.rs, 200 lines)
+- [x] **API Endpoints** — /pii/detect, /pii/detect-batch, /quality/score, /quality/run-checks
+- [x] **Batch Detection** — Scan entire datasets with confidence scoring
+- [x] **Risk Scoring** — Column-level risk (0.0-1.0) with recommendations
+
 #### AI-Powered Features (Copilot)
-- [ ] **Auto Metadata Generation** — AI generates description, tags, owner suggestions
-- [ ] **Data Discovery Assistant** — "show customer datasets" → natural language search
-- [ ] **Auto Quality Checks** — AI generates test cases based on column type
+- [x] **Auto Metadata Generation** — AI generates description, tags, owner suggestions (v1.3.1 Chainlit context)
+- [ ] **Data Discovery Assistant** — "show customer datasets" → natural language search (Phase 5)
+- [ ] **Auto Quality Checks** — AI generates test cases based on column type (Phase 5)
 
 #### Plus Previous Databricks Features
 - [ ] **AI Assistant Inside Cells** — Explain, Optimize, Generate Tests
