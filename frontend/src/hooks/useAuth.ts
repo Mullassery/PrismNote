@@ -51,7 +51,24 @@ export function useAuth() {
         clearAuth()
       }
     } else {
-      setAuth(prev => ({ ...prev, isLoading: false }))
+      // Dev mode: auto-login with demo user for testing
+      if (import.meta.env.DEV) {
+        const demoUser: User = {
+          user_id: 'demo-user-001',
+          email: 'demo@prismnote.local',
+          display_name: 'Demo User',
+          roles: ['Member'],
+        }
+        setAuth({
+          user: demoUser,
+          accessToken: 'demo-token-dev-only',
+          refreshToken: null,
+          isAuthenticated: true,
+          isLoading: false,
+        })
+      } else {
+        setAuth(prev => ({ ...prev, isLoading: false }))
+      }
     }
   }, [])
 
