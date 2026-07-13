@@ -212,22 +212,46 @@ Phase 3 enhancements (optional polish):
 
 **Shipping Status:** v1.2.0-beta ✅ Ready NOW (fully functional, audit-compliant)
 
-### v1.3.0 (Q1 2027) — Cloud Integration
+### v1.2.1 (Q4 2026) — Premium UX Features
+**~12 hours | Databricks gap-closing sprint**
+- [ ] **Rich Cell Execution History** — execution time, timestamp, duration, memory/CPU
+- [ ] **Result Caching** — automatic memoization of query results
+- [ ] **SQL Editor Autocomplete** — table, column, function autocomplete
+- [ ] **Query History & Bookmarks** — save/recall queries, execution timeline
+- [ ] **Enhanced Data Preview** — column statistics, null analysis, distributions
+
+### v1.3.0 (Q1 2027) — AI & Productivity
+**~16 hours | Databricks Copilot-inspired**
+- [ ] **AI Assistant Inside Cells** — Explain, Optimize, Generate Tests, Document
+- [ ] **Notebook Versioning** — Git-style diffs, cell history, rollback
+- [ ] **Query Plan Visualizer** — DuckDB EXPLAIN as interactive DAG
+- [ ] **Multi-language Cells** — SQL, Python, Bash, JavaScript in one notebook
 - [ ] BigQuery connection (read-only)
 - [ ] Snowflake connection (read-only)
-- [ ] Cloud sync (optional)
 
-### v1.4.0 (Q2 2027) — Advanced Features
+### v1.4.0 (Q2 2027) — Advanced Analysis & Applications
+**~20 hours | Enterprise feature parity**
+- [ ] **Notebook as Application** — input widgets, dropdowns, date selectors, parameters
+- [ ] **Notebook Dependency Graph** — visual cell dependency DAG
+- [ ] **Data Lineage Tracking** — CSV → transform → metric → dashboard visualization
+- [ ] **Reusable Components Library** — SQL/Python snippets, viz templates, ETL blocks
+- [ ] **Job Scheduling with Notifications** — daily/hourly runs, retry policies, email alerts
 - [ ] Git integration (version history)
 - [ ] Iceberg dataset support
+
+### v1.5.0 (Q3 2027) — Publishing & Reports
+**~12 hours | Knowledge sharing**
+- [ ] **Notebook Publishing** — one-click export to HTML, PDF, dashboard
+- [ ] **Notebook as Interactive Report** — read-only sharing with parameter controls
 - [ ] Global cross-file search
 - [ ] Spark integration (if demand exists)
 
-### v2.0.0 (Q2 2027) — Team & Sharing
-- [ ] Notebook sharing
-- [ ] Real-time collaboration
-- [ ] Team access control
-- [ ] Notebook organization (folders, tags)
+### v2.0.0 (Q3 2027) — Real-time & Collaboration
+**Future | Team-scale analytics**
+- [ ] **AI Data Analyst Mode** — natural language → SQL → insights → visualizations
+- [ ] Real-time collaboration (concurrent editing)
+- [ ] Notebook organization (folders, tags, collections)
+- [ ] Team management and workspaces
 
 ---
 
@@ -249,6 +273,45 @@ Required for internet-safe deployment:
 
 **Shipping ready:** v1.2.0 Phase 4 (audit logging complete)  
 **Full v1.2.0:** All phases complete with OAuth/LDAP/SAML
+
+---
+
+## 🎯 Databricks Feature Parity Roadmap
+
+### Features Under Consideration (Prioritized)
+
+| # | Databricks Feature | PrismNote Status | Priority | Version | Effort |
+|---|---|---|---|---|---|
+| 1 | Rich Cell Execution History | ⏳ Planned | 🔴 High | v1.2.1 | 3h |
+| 2 | Data Preview Experience | 🟢 Partial | 🔴 High | v1.2.1 | 2h |
+| 3 | AI Assistant (Explain/Optimize/Generate) | ⏳ Planned | 🔴 High | v1.3.0 | 6h |
+| 4 | Notebook as Application (widgets) | ⏳ Planned | 🟡 Medium | v1.4.0 | 8h |
+| 5 | SQL Editor Experience | ⏳ Planned | 🔴 High | v1.2.1 | 3h |
+| 6 | Built-in Visualization Builder | 🟢 Partial | 🟡 Medium | v1.2.1 | 2h |
+| 7 | Notebook Versioning (Git-style diffs) | ⏳ Planned | 🟡 Medium | v1.3.0 | 4h |
+| 8 | Reusable Components Library | ⏳ Planned | 🟡 Medium | v1.4.0 | 5h |
+| 9 | Job Scheduling | 🟢 Partial | 🟡 Medium | v1.4.0 | 4h |
+| 10 | Notebook Dependency Graph | ⏳ Planned | 🟡 Medium | v1.4.0 | 3h |
+| 11 | Data Lineage (automatic) | ⏳ Planned | 🟡 Medium | v1.4.0 | 5h |
+| 12 | Query Plan Visualizer | ⏳ Planned | 🟡 Medium | v1.3.0 | 2h |
+| 13 | AI Data Analyst Mode | ⏳ Planned | 🟢 Low | v2.0.0 | 12h |
+| 14 | Multi-language Cells | 🟢 Partial | 🟡 Medium | v1.3.0 | 3h |
+| 15 | Notebook Publishing | ⏳ Planned | 🟢 Low | v1.5.0 | 4h |
+| 16 | Result Caching | ⏳ Planned | 🔴 High | v1.2.1 | 2h |
+
+### Implementation Status Legend
+- 🟢 **Partial** — some features already implemented or scaffolded
+- 🟡 **Planned** — designed, ready to build next
+- 🔴 **Not Started** — high priority, planned soon
+- 🟠 **Investigating** — technical approach being evaluated
+
+### Quick Win Features (v1.2.1 — Next Sprint, 12 hours)
+These can ship quickly and provide immediate value:
+1. **Result Caching** (2h) — wrap DuckDB results with TTL
+2. **SQL Autocomplete** (3h) — extend Monaco editor with DuckDB schema
+3. **Execution History** (3h) — store cell run times, durations, memory
+4. **Query History** (2h) — save/recall SQL queries
+5. **Enhanced Preview** (2h) — add nulls %, distributions to Data Explorer
 
 ---
 
