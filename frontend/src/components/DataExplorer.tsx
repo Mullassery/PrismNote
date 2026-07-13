@@ -137,16 +137,16 @@ export function ExplorerPicker({
             </div>
           </div>
           {vars.length ? (
-            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
               {vars.map((v) => (
                 <button key={v.name} onClick={() => onPick({ var: v.name }, v.name)}
-                  className="text-left p-4 rounded-lg border pn-bd bg-white/[0.02] hover:bg-white/[0.06] hover:border-blue-400/50 transition-all">
+                  className="text-left p-4 rounded-lg border pn-bd bg-white/[0.02] hover:bg-white/[0.08] hover:border-emerald-400/60 hover:shadow-lg transition-all duration-200 group cursor-pointer">
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="font-mono text-[13px] font-semibold pn-text truncate flex-1" title={v.name}>{v.name}</div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-300 whitespace-nowrap shrink-0">🐼 DataFrame</span>
+                    <div className="font-mono text-[13px] font-semibold pn-text truncate flex-1 group-hover:text-emerald-300 transition-colors" title={v.name}>{v.name}</div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-300 whitespace-nowrap shrink-0 group-hover:bg-emerald-500/30 transition-colors">🐼 DataFrame</span>
                   </div>
-                  <div className="text-[11px] pn-faint truncate">{v.preview || v.type}</div>
-                  <div className="text-[10px] pn-faint mt-2 opacity-60">Click to explore →</div>
+                  <div className="text-[11px] pn-faint truncate group-hover:pn-text transition-colors">{v.preview || v.type}</div>
+                  <div className="text-[10px] pn-faint mt-2 opacity-60 group-hover:opacity-100 group-hover:text-blue-300 transition-all">Click to explore →</div>
                 </button>
               ))}
             </div>
@@ -727,11 +727,11 @@ function StatsTab({ target, cols, profiles }: { target: ExplorerTarget; cols: Co
             gap: '1.5rem'
           }}>
             {cols.map((c) => (
-              <div key={c.name} className="rounded-lg border pn-bd p-4 bg-white/[0.02] hover:bg-white/5 transition-colors">
+              <div key={c.name} className="rounded-lg border pn-bd p-4 bg-white/[0.02] hover:bg-white/[0.06] hover:border-blue-400/50 transition-all duration-200 group">
                 <div className="mb-3">
                   <div className="flex items-start gap-2 mb-1">
-                    {(() => { const I = typeIcon(c.logical); return <I size={14} className={typeColor(c.logical)} /> })()}
-                    <span className="font-mono text-[14px] font-semibold pn-text truncate" title={c.name}>{c.name}</span>
+                    {(() => { const I = typeIcon(c.logical); return <I size={14} className={`${typeColor(c.logical)} group-hover:scale-110 transition-transform`} /> })()}
+                    <span className="font-mono text-[14px] font-semibold pn-text truncate group-hover:text-blue-300 transition-colors" title={c.name}>{c.name}</span>
                   </div>
                   <div className="text-[11px] pn-faint ml-6">{c.dtype}</div>
                 </div>
