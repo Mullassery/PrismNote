@@ -2,9 +2,9 @@
 
 # ◆ PrismNote
 
-**The fast, local-first data-science notebook — with a warehouse-grade Data Explorer built in.**
+**Enterprise data science notebook with built-in governance, BI dashboards, and warehouse-grade data exploration.**
 
-Python + SQL · a BigQuery/Snowflake-style Data Explorer · no-code charts · local AI · jobs · git — all on your machine.
+Python + SQL · Data Catalog & Governance · Rill Data BI dashboards · Chainlit AI · local first — all on your machine.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/prismnote.svg)](https://pypi.org/project/prismnote/)
@@ -34,6 +34,22 @@ and **AI-native** (local via Ollama, or Claude/OpenAI).
 - 🦀 **Fast** — a Rust + Axum engine driving a persistent Python kernel.
 - 🔗 **Open formats** — Parquet, CSV, JSON, Arrow, **Apache Iceberg** via DuckDB.
 - 🧩 **Batteries included** — kernel, SQL, charts, AI, jobs, git, deploy, search, terminal.
+
+---
+
+## What's New in v1.3.0
+
+🎯 **Data Governance & Enterprise BI**
+
+- **📊 Rill Data Dashboards** — Replace static plots with interactive multi-tile dashboards (12+ viz types)
+- **🗂️ Data Catalog** — Central metadata registry with full-text search, lineage tracking, ownership
+- **🔐 PII Detection** — Automatic detection of sensitive data across all columns (email, phone, SSN, credit card)
+- **✅ Quality Assertions** — SQL-based quality rules with automated scoring (0-100)
+- **🎯 Governance Tags** — Sensitivity classification (Public/Internal/Confidential/Restricted)
+- **🤖 Chainlit AI** — Modern conversational interface with session persistence and notebook context
+- **📈 Impact Analysis** — Trace which cells/dashboards depend on specific columns
+
+[See full changelog →](./RELEASES.md)
 
 ---
 
@@ -125,7 +141,16 @@ Open a live DataFrame, a file, or a DuckDB query in a warehouse-style explorer:
   - Scheduled data refresh & caching
   - YAML-based configuration (version control friendly)
 
-### 🤖 AI assistance
+### 🗂️ Data Governance (v1.3.0)
+- **Data Catalog** — Central registry of all tables, columns, owners, schemas with full-text search
+- **Column Lineage** — Visual tracing of data transformations (upstream/downstream dependencies)
+- **PII Detection** — Automatic detection of sensitive data (email, phone, SSN, credit card)
+- **Data Quality** — SQL-based assertions (NOT NULL, UNIQUE, POSITIVE, RANGE, PATTERN, FRESHNESS)
+- **Governance Tags** — Classify data by sensitivity (Public/Internal/Confidential/Restricted)
+- **Compliance Scoring** — Automated quality percentage & policy violation detection
+
+### 🤖 AI Assistance
+- **Chainlit AI Chat** (v1.3.1) — Multi-turn conversations with notebook context, session persistence
 - **Choose your provider** in Settings → AI: **Ollama** (local, free, private), **Claude**,
   or **OpenAI** — with model pickers and live connection status.
 - **In-cell ⌘K edit** (diff accept/reject), **Fix with AI** on errors, **Explain**.

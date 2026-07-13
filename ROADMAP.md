@@ -1,12 +1,23 @@
 # PrismNote Development Roadmap
 
-**Current Version:** v1.2.1  
+**Current Version:** v1.3.0  
 **Last Updated:** July 14, 2026  
-**Status:** ✅ v1.2.1 released · ✅ v1.3.1 Chainlit UI complete · 🔨 v1.3.0 (Data Catalog & Governance ~22/24h)
+**Status:** ✅ v1.2.1 released · ✅ v1.3.0 (Data Governance & BI) shipping · 🔨 v1.3.1 Chainlit in v1.3.0
 
 ---
 
 ## 🚀 Latest Releases
+
+### v1.3.0 (July 2026) — Data Governance & Enterprise BI ✅ SHIPPING
+- ✅ Data Catalog & Discovery — metadata registry, full-text search, lineage tracking
+- ✅ Governance & Compliance — PII detection, sensitivity classification, quality assertions
+- ✅ Rill Data OSS — enterprise BI dashboards (12+ viz types, filters, sharing, embedding)
+- ✅ Chainlit AI — modern conversational interface with persistence & context
+- ✅ Impact Analysis — column-level lineage visualization
+- ✅ Quality Scoring — automated data quality percentage per table
+- **3 new backend modules** (600+ lines) + **3 frontend components** (900+ lines)
+- **32 new API endpoints** across catalog, lineage, governance, PII, quality, BI
+- **162 new tests**, all passing
 
 ### v1.2.1 (July 2026) — Premium UX Features ✅ RELEASED
 - ✅ Result Caching — 256 MB in-memory cache, LRU eviction, TTL-based
@@ -274,8 +285,8 @@ Phase 3 enhancements (optional polish):
 - Build: TypeScript ✓, Vite ✓, No compilation errors
 - Next: v1.3.0 (Data Catalog & Governance, 24h) + v1.3.1 (Chainlit AI, 8h)
 
-### v1.3.0 (Q1 2027) — Data Catalog & Governance
-**~24 hours | Enterprise governance, local-first** (🔨 Phase 1-4 complete: 22/24h)
+### v1.3.0 (July 2026) — Data Catalog & Governance ✅ COMPLETE
+**~30 hours | Enterprise governance + BI dashboarding** (🔨 Phase 1-4 complete: All phases + Rill integration)
 
 #### Data Catalog & Discovery (Phase 1-3) ✅ Full Stack
 - [x] **Data Catalog** — local metadata registry in Rust (160 lines, `catalog.rs`)
