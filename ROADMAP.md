@@ -189,13 +189,26 @@ Phase 3 enhancements (optional polish):
 - [ ] Enhanced error messages
 - [ ] User guides for common workflows
 
-### v1.2.0 (Q4 2026) — CRITICAL: Remote Deployment Ready
-- [ ] CORS/CSRF protection (currently missing)
-- [ ] Authentication/authorization system
-- [ ] Notebook access control
-- [ ] User session management
-- [ ] Audit trails for all changes
-- **Then and only then: Safe for internet exposure**
+### v1.2.0 (Q4 2026) — Remote Deployment Ready
+**Status: 56% Complete (28/50 hours) — Active Development**
+
+#### ✅ Completed Features
+- ✅ **Phase 1.1** JWT authentication (15-min access tokens, 7-day refresh, RS256)
+- ✅ **Phase 1.2** Local auth (register + login endpoints, bcrypt 12-round hashing)
+- ✅ **Phase 1.3** Middleware (CurrentUser extractor, 401 error handling)
+- ✅ **Phase 3.1** Database schema (users, sessions, notebooks, notebook_access, audit_logs)
+- ✅ **Phase 5** Frontend login/register (React + TypeScript, useAuth hook, AppWrapper)
+- ✅ **Phase 2.3** Session management (concurrent limit enforcement, revocation)
+- ✅ **Phase 3.2** Notebook ownership (NotebookPermission enum, access control)
+- ✅ **Phase 2.1** CORS protection (SameSite=Strict, HttpOnly, Secure flags)
+
+#### ⏳ Remaining Work
+- [ ] **Phase 4** Audit logging (8 hours) — all user actions + compliance reports
+- [ ] **Phase 3.3** Notebook sharing (3 hours) — email invitations, access links
+- [ ] **Phase 3.4** RBAC integration (3 hours) — directory groups → role mapping
+- [ ] **Phase 6** Advanced auth (8 hours) — OAuth 2.0, LDAP, SAML
+
+**Shipping Threshold:** Phase 4 = v1.2.0-beta (audit-ready, safe for internet)
 
 ### v1.3.0 (Q1 2027) — Cloud Integration
 - [ ] BigQuery connection (read-only)
@@ -226,11 +239,14 @@ Required for internet-safe deployment:
 - ✅ Input validation (v1.0.2)
 - ✅ Rate limiting (v1.0.2)
 - ✅ Error handling (v1.0.2)
-- ⏳ CORS/CSRF protection (v1.2.0)
-- ⏳ Authentication (v1.2.0)
-- ⏳ Authorization (v1.2.0)
+- ✅ CORS/CSRF protection (v1.2.0 Phase 2.1)
+- ✅ Authentication (v1.2.0 Phase 1.1-1.3)
+- ✅ Authorization (v1.2.0 Phase 3.2)
+- ⏳ Audit logging (v1.2.0 Phase 4)
+- ⏳ Advanced auth (v1.2.0 Phase 6)
 
-**Safe to deploy:** v1.2.0 and later
+**Shipping ready:** v1.2.0 Phase 4 (audit logging complete)  
+**Full v1.2.0:** All phases complete with OAuth/LDAP/SAML
 
 ---
 
