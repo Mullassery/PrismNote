@@ -105,7 +105,29 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [contextOpen, setContextOpen] = useState(true)
+  const sessionIdRef = useRef(Date.now().toString())
   const endRef = useRef<HTMLDivElement>(null)
+
+  // Load conversation history from session storage on mount
+  useEffect(() => {
+    const sessionKey = `pn-ai-session-${currentNotebook?.id}`
+    const saved = sessionKey && localStorage.getItem(sessionKey)
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved))
+      } catch {
+        // Session corrupted, start fresh
+      }
+    }
+  }, [currentNotebook?.id])
+
+  // Save conversation history to session storage
+  useEffect(() => {
+    const sessionKey = `pn-ai-session-${currentNotebook?.id}`
+    if (sessionKey && messages.length > 0) {
+      localStorage.setItem(sessionKey, JSON.stringify(messages))
+    }
+  }, [messages, currentNotebook?.id])
 
   useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages, streaming])
 
@@ -300,6 +322,13 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
             <Sparkles size={15} className="text-sky-400" /> Chat with AI
           </span>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => { setMessages([]); localStorage.removeItem(`pn-ai-session-${currentNotebook?.id}`) }}
+              title="Start new conversation"
+              className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5 transition"
+            >
+              <Plus size={12} />
+            </button>
             <button onClick={dec} title="Decrease font size" className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5 transition"><Minus size={12} /></button>
             <span className="text-[10px] tabular-nums w-4 text-center pn-faint" title="Panel font size">{fontSize}</span>
             <button onClick={inc} title="Increase font size" className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5 transition"><Plus size={12} /></button>
@@ -491,6 +520,14 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
               </div>
             </div>
             <p className="text-slate-400">I can see your whole notebook. Ask me to load data, build charts, debug errors, or optimize queries.</p>
+          </div>
+        )}
+
+        {messages.length > 0 && (
+          <div className="text-[11px] pn-faint flex items-center justify-center gap-2 py-2">
+            <div className="flex-1 h-px bg-slate-700/30" />
+            <span>Conversation context</span>
+            <div className="flex-1 h-px bg-slate-700/30" />
           </div>
         )}
 
