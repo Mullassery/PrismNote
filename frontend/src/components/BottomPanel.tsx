@@ -1,24 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { TerminalSquare, BarChart3, ListChecks, ChevronDown, X, Minus, SquareTerminal, Plus, Variable, RefreshCw, Table2, List } from 'lucide-react'
+import { TerminalSquare, ListChecks, ChevronDown, X, Minus, SquareTerminal, Plus, Variable, RefreshCw, Table2, List, GitBranch, Sparkles } from 'lucide-react'
 import { useNotebookStore } from '../hooks/useNotebook'
 import { useFontSize } from '../hooks/useFontSize'
-import { useViz } from '../hooks/useViz'
-import VizPane from './VizPane'
 import TableOfContents from './TableOfContents'
+import LineageViewer from './LineageViewer'
+import AgentPanel from './AgentPanel'
 import type { ExplorerTarget } from './DataExplorer'
 
-type Tab = 'terminal' | 'output' | 'plots' | 'console' | 'variables' | 'contents'
+type Tab = 'terminal' | 'output' | 'lineage' | 'variables' | 'contents' | 'ai'
 
 interface BottomPanelProps {
+  notebookVisible?: boolean
   onClose: () => void
   onOpenExplorer?: (target: ExplorerTarget, title: string) => void
 }
 
-export default function BottomPanel({ onClose, onOpenExplorer }: BottomPanelProps) {
+export default function BottomPanel({ notebookVisible = true, onClose, onOpenExplorer }: BottomPanelProps) {
   const { currentNotebook } = useNotebookStore()
   const [tab, setTab] = useState<Tab>('output')
   const [collapsed, setCollapsed] = useState(false)
   const [height, setHeight] = useState(240)
+  const [selectedTable, setSelectedTable] = useState<string | null>(null)
+  const [selectedColumn, setSelectedColumn] = useState<string | null>(null)
   const dragging = useRef(false)
   const { size: fontSize, inc, dec } = useFontSize('pn-bottom-font', 13)
 
@@ -74,44 +77,6 @@ export default function BottomPanel({ onClose, onOpenExplorer }: BottomPanelProp
     setHistory((h) => [...h, { cmd: c, out }])
   }
 
-  // ---- Python console: runs against the SAME persistent kernel as the cells,
-  // so it shares variables/imports defined anywhere in the notebook. ----
-  const [consoleHist, setConsoleHist] = useState<{ code: string; out: string; err?: boolean }[]>([
-    { code: '', out: 'Python console — runs in the notebook kernel. Try a variable name from any cell.' },
-  ])
-  const [pyCode, setPyCode] = useState('')
-  const [pyBusy, setPyBusy] = useState(false)
-  const consoleEndRef = useRef<HTMLDivElement>(null)
-  useEffect(() => consoleEndRef.current?.scrollIntoView(), [consoleHist, tab])
-
-  const runPy = async () => {
-    const c = pyCode.trim()
-    if (!c || pyBusy) return
-    if (!currentNotebook) {
-      setConsoleHist((h) => [...h, { code: c, out: 'Open a notebook first.', err: true }])
-      setPyCode('')
-      return
-    }
-    setPyCode('')
-    setPyBusy(true)
-    try {
-      const res = await fetch(`/api/notebooks/${currentNotebook.id}/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cell_id: '__console__', code: c }),
-      })
-      const data = await res.json().catch(() => null)
-      const outs = data?.outputs ?? []
-      const text = outs
-        .map((o: any) => (Array.isArray(o.text) ? o.text.join('') : o.text ?? ''))
-        .join('')
-      setConsoleHist((h) => [...h, { code: c, out: text || (res.ok ? '' : `error (${res.status})`), err: !res.ok }])
-    } catch {
-      setConsoleHist((h) => [...h, { code: c, out: 'kernel unavailable', err: true }])
-    } finally {
-      setPyBusy(false)
-    }
-  }
 
   // ---- variable explorer (introspects the live kernel namespace) ----
   const [variables, setVariables] = useState<any[]>([])
@@ -128,6 +93,11 @@ export default function BottomPanel({ onClose, onOpenExplorer }: BottomPanelProp
       setVarsLoading(false)
     }
   }
+  // Clear variables when notebook is closed
+  useEffect(() => {
+    if (!currentNotebook) setVariables([])
+  }, [currentNotebook])
+
   useEffect(() => {
     if (tab === 'variables' && !collapsed) loadVariables()
     // refresh when the active notebook's outputs change while the tab is open
@@ -141,30 +111,20 @@ export default function BottomPanel({ onClose, onOpenExplorer }: BottomPanelProp
   const textOutputs = outputs.filter(
     ({ o }) => o.output_type === 'stream' || o.output_type === 'execute_result' || o.output_type === 'error'
   )
-  const imageOutputs = outputs.filter(({ o }) => o.data?.['image/png'] || o.data?.['image/svg+xml'])
-
-  // The Data Explorer's "Visualize" button bumps the viz nonce — jump to Plots.
-  const vizNonce = useViz((s) => s.nonce)
-  useEffect(() => {
-    if (vizNonce > 0) {
-      setTab('plots')
-      setCollapsed(false)
-    }
-  }, [vizNonce])
 
   const tabs: { id: Tab; label: string; icon: any; badge?: number }[] = [
     { id: 'output', label: 'Output', icon: ListChecks, badge: textOutputs.length || undefined },
     { id: 'variables', label: 'Variables', icon: Variable, badge: variables.length || undefined },
-    { id: 'console', label: 'Console', icon: SquareTerminal },
-    { id: 'plots', label: 'Plots', icon: BarChart3, badge: imageOutputs.length || undefined },
+    { id: 'lineage', label: 'Lineage', icon: GitBranch },
     { id: 'contents', label: 'Contents', icon: List },
+    { id: 'ai', label: 'AI', icon: Sparkles },
     { id: 'terminal', label: 'Terminal', icon: TerminalSquare },
   ]
 
   return (
     <div
-      className="shrink-0 pn-surface border-t pn-bd flex flex-col"
-      style={{ height: collapsed ? 32 : height }}
+      className={`pn-surface border-t pn-bd flex flex-col ${notebookVisible ? 'shrink-0' : 'flex-1'}`}
+      style={notebookVisible ? { height: collapsed ? 32 : height } : {}}
     >
       {/* drag handle */}
       {!collapsed && <div onMouseDown={onMouseDown} className="h-1 -mt-1 cursor-row-resize hover:bg-blue-500/60 transition-colors" />}
@@ -305,44 +265,69 @@ export default function BottomPanel({ onClose, onOpenExplorer }: BottomPanelProp
             </div>
           )}
 
-          {tab === 'console' && (
-            <div className="p-2 pn-text">
-              {consoleHist.map((h, i) => (
-                <div key={i}>
-                  {h.code && (
-                    <div className="text-blue-300">
-                      <span className="pn-faint">&gt;&gt;&gt;</span> {h.code}
+          {tab === 'lineage' && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {selectedTable && selectedColumn ? (
+                <LineageViewer
+                  table={selectedTable}
+                  column={selectedColumn}
+                  onClose={() => {
+                    setSelectedTable(null)
+                    setSelectedColumn(null)
+                  }}
+                />
+              ) : (
+                <div className="p-4 pn-text space-y-3 overflow-auto">
+                  <div>
+                    <label className="text-xs pn-faint">Select a datasource to view lineage:</label>
+                    <select
+                      value={selectedTable || ''}
+                      onChange={(e) => {
+                        setSelectedTable(e.target.value || null)
+                        setSelectedColumn(null)
+                      }}
+                      className="w-full mt-1 px-2 py-1 rounded bg-white/5 border pn-bd pn-text text-sm outline-none focus:border-blue-500"
+                    >
+                      <option value="">Choose a table or dataset...</option>
+                      <option value="notebook_output">Notebook Outputs</option>
+                    </select>
+                  </div>
+                  {selectedTable && (
+                    <div>
+                      <label className="text-xs pn-faint">Select a column:</label>
+                      <select
+                        value={selectedColumn || ''}
+                        onChange={(e) => setSelectedColumn(e.target.value || null)}
+                        className="w-full mt-1 px-2 py-1 rounded bg-white/5 border pn-bd pn-text text-sm outline-none focus:border-blue-500"
+                      >
+                        <option value="">Choose a column...</option>
+                        <option value="sample_column_1">Column 1</option>
+                        <option value="sample_column_2">Column 2</option>
+                      </select>
                     </div>
                   )}
-                  {h.out && (
-                    <div className={`whitespace-pre-wrap ${h.err ? 'text-red-400' : 'pn-muted'}`}>{h.out}</div>
-                  )}
+                  <div className="text-xs pn-faint pt-4">
+                    <p>Column lineage tracking shows:</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Upstream sources (where data originates)</li>
+                      <li>Transformations applied</li>
+                      <li>Downstream usage</li>
+                    </ul>
+                  </div>
                 </div>
-              ))}
-              <div className="flex items-center gap-1 text-blue-300">
-                <span className="pn-faint">&gt;&gt;&gt;</span>
-                <input
-                  value={pyCode}
-                  onChange={(e) => setPyCode(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && runPy()}
-                  disabled={pyBusy}
-                  className="flex-1 bg-transparent outline-none pn-text disabled:opacity-50"
-                  placeholder={pyBusy ? 'running…' : 'evaluate Python in the kernel…'}
-                />
-              </div>
-              <div ref={consoleEndRef} />
-            </div>
-          )}
-
-          {tab === 'plots' && (
-            <div className="h-full">
-              <VizPane />
+              )}
             </div>
           )}
 
           {tab === 'contents' && (
             <div className="flex-1 overflow-auto">
               <TableOfContents cells={currentNotebook?.cells} />
+            </div>
+          )}
+
+          {tab === 'ai' && (
+            <div className="flex-1 overflow-hidden">
+              <AgentPanel onClose={() => setTab('output')} inBottomPanel={true} />
             </div>
           )}
         </div>
