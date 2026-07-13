@@ -18,6 +18,9 @@ import {
   Minus,
   Copy,
   Code,
+  FileText,
+  Database,
+  Eye,
 } from 'lucide-react'
 import MDPreview from '@uiw/react-markdown-preview'
 import { useNotebookStore } from '../hooks/useNotebook'
@@ -101,6 +104,7 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
+  const [contextOpen, setContextOpen] = useState(true)
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages, streaming])
@@ -380,6 +384,43 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
           </>
           )}
         </div>
+      </div>
+
+      {/* context panel — collapsible */}
+      <div className="border-b pn-bd">
+        <button
+          onClick={() => setContextOpen(!contextOpen)}
+          className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-800/50 transition text-[12px]"
+        >
+          <span className="flex items-center gap-1.5 pn-text font-medium">
+            <Eye size={13} /> Context
+          </span>
+          <ChevronDown size={13} className={`transition ${contextOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {contextOpen && (
+          <div className="px-3 py-2 space-y-2 border-t pn-bd bg-slate-900/30 text-[11px]">
+            {currentNotebook && (
+              <div className="flex items-start gap-2">
+                <FileText size={12} className="text-blue-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <div className="pn-text font-medium truncate">{currentNotebook.name}</div>
+                  <div className="pn-faint text-[10px]">{currentNotebook.cells.length} cells</div>
+                </div>
+              </div>
+            )}
+            {currentNotebook && currentNotebook.cells.length > 0 && (
+              <div className="flex items-start gap-2 pt-1 border-t pn-bd">
+                <Code size={12} className="text-emerald-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <div className="pn-text font-medium">Last cell</div>
+                  <div className="pn-faint text-[10px] truncate">
+                    {currentNotebook.cells[currentNotebook.cells.length - 1].cell_type}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* conversation — Chainlit style */}
