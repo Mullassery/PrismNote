@@ -117,42 +117,72 @@ export function ExplorerPicker({
         <div className="flex-1" />
         <button onClick={onClose} className="p-1 rounded pn-hover pn-muted"><X size={16} /></button>
       </div>
-      <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto w-full space-y-7">
+      <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto w-full space-y-8">
         <section>
-          <div className="text-[11px] uppercase tracking-wide pn-faint mb-2">DataFrames in the kernel</div>
+          <div className="flex items-center gap-2 mb-4">
+            <VariableIcon size={16} className="text-emerald-400" />
+            <div>
+              <h3 className="text-[13px] font-semibold pn-text">DataFrames in the kernel</h3>
+              <p className="text-[11px] pn-faint">Explore live data from your notebook cells</p>
+            </div>
+          </div>
           {vars.length ? (
-            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
               {vars.map((v) => (
                 <button key={v.name} onClick={() => onPick({ var: v.name }, v.name)}
-                  className="text-left p-3 rounded-lg border pn-bd bg-white/[0.02] hover:bg-white/5">
-                  <div className="font-mono text-[13px] pn-text truncate">{v.name}</div>
-                  <div className="text-[11px] pn-faint truncate mt-0.5">{v.preview || v.type}</div>
+                  className="text-left p-4 rounded-lg border pn-bd bg-white/[0.02] hover:bg-white/[0.06] hover:border-blue-400/50 transition-all">
+                  <div className="font-mono text-[13px] font-semibold pn-text truncate" title={v.name}>{v.name}</div>
+                  <div className="text-[11px] pn-faint truncate mt-1">{v.preview || v.type}</div>
+                  <div className="text-[10px] pn-faint mt-2 opacity-60">Click to explore →</div>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="text-[12px] pn-faint">No DataFrames yet. Run a cell that creates one, or open a file below.</div>
+            <div className="p-4 rounded-lg bg-white/[0.01] border pn-bd/50 border-dashed">
+              <div className="text-[12px] pn-faint">No DataFrames yet.</div>
+              <div className="text-[11px] pn-faint mt-1">Run a Python cell that creates a DataFrame, then open Data Explorer again.</div>
+            </div>
           )}
         </section>
         <section>
-          <div className="text-[11px] uppercase tracking-wide pn-faint mb-2">Open a file (DuckDB)</div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText size={16} className="text-blue-400" />
+            <div>
+              <h3 className="text-[13px] font-semibold pn-text">Open a file</h3>
+              <p className="text-[11px] pn-faint">Read local or remote data via DuckDB</p>
+            </div>
+          </div>
+          <div className="space-y-3">
             <input autoFocus value={path} onChange={(e) => setPath(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && path.trim() && onPick({ source: { kind: 'file', path: path.trim() } }, path.trim().split('/').pop() || path)}
-              placeholder="path/to/data.parquet · .csv · .json · Iceberg dir"
-              className="flex-1 px-3 py-2 rounded bg-white/5 border pn-bd pn-text text-[13px] font-mono outline-none focus:border-blue-500" />
+              placeholder="e.g. data.parquet · sales.csv · data/ · s3://bucket/file.json"
+              className="w-full px-3 py-2 rounded bg-white/5 border pn-bd pn-text text-[13px] font-mono outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30" />
             <button onClick={() => path.trim() && onPick({ source: { kind: 'file', path: path.trim() } }, path.trim().split('/').pop() || path)}
-              className="px-4 py-2 rounded prism-bg text-white text-[13px]">Open</button>
+              disabled={!path.trim()}
+              className="w-full px-4 py-2.5 rounded prism-bg text-white text-[13px] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+              Open file →
+            </button>
+            <div className="text-[11px] pn-faint">Supports: Parquet, CSV, JSON, Arrow, Iceberg, Netcdf, and more</div>
           </div>
-          <div className="text-[11px] pn-faint mt-1">Parquet, CSV, JSON, Arrow, and Apache Iceberg are read natively via DuckDB.</div>
         </section>
         <section>
-          <div className="text-[11px] uppercase tracking-wide pn-faint mb-2">DuckDB query</div>
-          <textarea value={sql} onChange={(e) => setSql(e.target.value)} rows={3} spellCheck={false}
-            placeholder="SELECT * FROM read_parquet('s3://bucket/*.parquet')"
-            className="w-full px-3 py-2 rounded bg-white/5 border pn-bd pn-text text-[13px] font-mono outline-none focus:border-blue-500" />
-          <button onClick={() => sql.trim() && onPick({ source: { kind: 'sql', query: sql.trim() } }, 'query')}
-            className="mt-2 px-4 py-2 rounded prism-bg text-white text-[13px]">Run &amp; explore</button>
+          <div className="flex items-center gap-2 mb-4">
+            <Database size={16} className="text-amber-400" />
+            <div>
+              <h3 className="text-[13px] font-semibold pn-text">DuckDB query</h3>
+              <p className="text-[11px] pn-faint">Run a SQL query and explore the results</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <textarea value={sql} onChange={(e) => setSql(e.target.value)} rows={3} spellCheck={false}
+              placeholder="SELECT * FROM read_parquet('file.parquet') LIMIT 1000"
+              className="w-full px-3 py-2 rounded bg-white/5 border pn-bd pn-text text-[13px] font-mono outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30" />
+            <button onClick={() => sql.trim() && onPick({ source: { kind: 'sql', query: sql.trim() } }, 'query')}
+              disabled={!sql.trim()}
+              className="w-full px-4 py-2.5 rounded prism-bg text-white text-[13px] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+              Run query →
+            </button>
+          </div>
         </section>
       </div>
     </div>
@@ -426,10 +456,12 @@ export default function DataExplorer({
         ))}
         {tab === 'preview' && (
           <>
-            <div className="mx-2 flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 border pn-bd">
+            <div className="mx-2 flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 border pn-bd hover:border-blue-500/50 transition-colors">
               <Search size={12} className="pn-faint" />
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search all columns…"
                 className="bg-transparent outline-none text-[12px] pn-text w-44" />
+              {search && total === 0 && <span className="text-[10px] text-rose-400 font-medium">No results</span>}
+              {search && total > 0 && <span className="text-[10px] text-emerald-400 font-medium">{total.toLocaleString()} found</span>}
             </div>
             <button onClick={() => setShowFilters((s) => !s)}
               className={`flex items-center gap-1 px-2 py-1 rounded text-[12px] ${showFilters || activeFilterCount ? 'bg-blue-500/20 text-blue-200' : 'pn-muted hover:pn-text'}`}>
@@ -438,9 +470,12 @@ export default function DataExplorer({
           </>
         )}
         <div className="flex-1" />
-        <span className="text-[11px] pn-faint">
-          {tab === 'preview' ? `${total.toLocaleString()}${activeFilterCount || search ? ' filtered' : ''} rows` : ''}
-        </span>
+        {tab === 'preview' && (
+          <div className="text-[11px] pn-faint flex items-center gap-3">
+            <span>{total.toLocaleString()} row{total !== 1 ? 's' : ''}</span>
+            {(activeFilterCount || search) && <span className="text-[10px] bg-blue-500/15 px-2 py-0.5 rounded text-blue-200">filtered</span>}
+          </div>
+        )}
       </div>
 
       {error && (
@@ -652,21 +687,31 @@ function StatsTab({ target, cols, profiles }: { target: ExplorerTarget; cols: Co
           <StatsTable stats={stats} />
         )
       ) : (
-        <div className="p-4" style={{
-          display: 'grid',
-          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))',
-          gap: '0.75rem'
-        }}>
-          {cols.map((c) => (
-            <div key={c.name} className="rounded-lg border pn-bd p-3 bg-white/[0.02]">
-              <div className="flex items-center gap-1.5 mb-2">
-                {(() => { const I = typeIcon(c.logical); return <I size={13} className={typeColor(c.logical)} /> })()}
-                <span className="font-mono text-[13px] pn-text truncate">{c.name}</span>
-                <span className="ml-auto text-[10px] pn-faint">{c.dtype}</span>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-4 text-sm pn-faint">
+            <Sigma size={14} />
+            <span>{cols.length} columns · Showing distributions for each field</span>
+          </div>
+          <div className="px-4" style={{
+            display: 'grid',
+            gridTemplateColumns: window.innerWidth < 768 ? '1fr' : window.innerWidth < 1200 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+            gap: '1.5rem'
+          }}>
+            {cols.map((c) => (
+              <div key={c.name} className="rounded-lg border pn-bd p-4 bg-white/[0.02] hover:bg-white/5 transition-colors">
+                <div className="mb-3">
+                  <div className="flex items-start gap-2 mb-1">
+                    {(() => { const I = typeIcon(c.logical); return <I size={14} className={typeColor(c.logical)} /> })()}
+                    <span className="font-mono text-[14px] font-semibold pn-text truncate" title={c.name}>{c.name}</span>
+                  </div>
+                  <div className="text-[11px] pn-faint ml-6">{c.dtype}</div>
+                </div>
+                <div className="border-t pn-bd/50 pt-3">
+                  <ProfileBody profile={profiles[c.name]} />
+                </div>
               </div>
-              <ProfileBody profile={profiles[c.name]} />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
