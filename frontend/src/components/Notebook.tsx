@@ -26,12 +26,12 @@ export default function Notebook() {
     return () => window.removeEventListener('pn-notebook-zoom', handleZoomChange)
   }, [])
 
-  // Initialize refs for all cells
+  // Initialize refs for all cells (without calling useRef in effect)
   useEffect(() => {
     if (currentNotebook) {
       currentNotebook.cells.forEach((cell) => {
         if (!cellRefsMap.has(cell.id)) {
-          cellRefsMap.set(cell.id, useRef<HTMLDivElement>(null))
+          cellRefsMap.set(cell.id, { current: null })
         }
       })
     }
