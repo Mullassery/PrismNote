@@ -133,6 +133,13 @@ Open a live DataFrame, a file, or a DuckDB query in a warehouse-style explorer:
 - **Auto-formatting** — code is pretty-printed with **Black** on paste and on `⇧⌥F`.
 - **Friendly errors** — plain-language explanations + in-editor markers.
 
+### ⚡ Query Intelligence (v1.2.1)
+- **SQL Autocomplete** — 30+ keywords, functions, table/column completion with context.
+- **Query Bookmarks** — save frequently-used queries, favorites, full-text search.
+- **Result Caching** — instant replay of cached queries (256 MB LRU cache).
+- **Execution History** — track cell performance (duration, memory, rows, errors).
+- **Data Preview Stats** — column profiling, null analysis, distributions.
+
 ### 🗄️ Data & SQL
 - Connect to SQLite, DuckDB, PostgreSQL, MySQL, and 8 cloud warehouses
   (Snowflake, BigQuery, Redshift, Databricks, Athena, Trino, Presto, Synapse).

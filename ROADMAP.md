@@ -1,8 +1,30 @@
 # PrismNote Development Roadmap
 
-**Current Version:** v1.0.0  
-**Last Updated:** July 2026  
-**Status:** Local data exploration notebook; remote deployment in development
+**Current Version:** v1.2.1  
+**Last Updated:** July 14, 2026  
+**Status:** ✅ v1.2.0-BETA shipping ready · ✅ v1.2.1 released · 🔜 v1.3.0 planned (Data Catalog & Governance)
+
+---
+
+## 🚀 Latest Releases
+
+### v1.2.1 (July 2026) — Premium UX Features ✅ RELEASED
+- ✅ Result Caching — 256 MB in-memory cache, LRU eviction, TTL-based
+- ✅ SQL Autocomplete — 30+ keywords, functions, table/column completion
+- ✅ Execution History — track cell performance (duration, memory, errors)
+- ✅ Query Bookmarks — save, favorite, search queries with run statistics
+- ✅ Data Preview Stats — column profiling, null analysis, distributions
+- ✅ Frontend Components — ExecutionHistoryPanel, QueryBookmarksPanel
+- ✅ 10 new API endpoints for query intelligence
+
+### v1.2.0 (July 2026) — Remote Deployment Ready ✅ SHIPPING
+- ✅ Multi-user JWT authentication (15-min access, 7-day refresh)
+- ✅ Session management with concurrent limits
+- ✅ Notebook ownership & permission controls
+- ✅ Email-based sharing with revocation
+- ✅ RBAC with teams/groups
+- ✅ Comprehensive audit logging (90-day retention)
+- ✅ CORS/CSRF protection with secure cookies
 
 ---
 

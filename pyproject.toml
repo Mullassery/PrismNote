@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prismnote"
-version = "1.0.0"
+version = "1.2.1"
 description = "Modern data-science notebook with Rust performance. SQL execution, Spark integration, 8 cloud warehouse connectors. Real-time collaboration, global search, VSCode-inspired layout. Jupyter-compatible with AI assistant built-in."
 readme = "README.md"
 license = { text = "MIT" }
