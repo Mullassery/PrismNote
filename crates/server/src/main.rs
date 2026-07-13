@@ -28,6 +28,8 @@ mod middleware;
 mod models;
 mod output_renderer;
 mod platform;
+mod pii_detector;
+mod quality_assertions;
 mod query_manager;
 mod query_validator;
 mod rbac;
@@ -486,6 +488,12 @@ async fn main() -> anyhow::Result<()> {
         .route("/lineage/:table/:column", get(api::get_lineage))
         .route("/governance/set", post(api::set_governance))
         .route("/governance/pii-columns", get(api::get_pii_columns))
+        // PII Detection & Quality Assertions (v1.3.0 Phase 4)
+        .route("/pii/detect", post(api::detect_pii))
+        .route("/pii/detect-batch", post(api::detect_batch_pii))
+        .route("/quality/assertion", post(api::create_quality_assertion))
+        .route("/quality/score", get(api::get_quality_score))
+        .route("/quality/run-checks", get(api::run_quality_checks))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
