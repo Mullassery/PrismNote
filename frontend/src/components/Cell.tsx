@@ -7,7 +7,7 @@ import { useNotebookStore } from '../hooks/useNotebook'
 import { aiEdit, aiFix, aiExplain } from '../api/ai'
 import { interruptKernel } from '../api/kernel'
 import { subscribeCellStream } from '../api/stream'
-import { registerOllamaCompletions } from '../api/autocomplete'
+import { registerOllamaCompletions, registerSqlCompletions } from '../api/autocomplete'
 import { registerPythonFormatter } from '../api/format'
 import { parseTraceback } from '../lib/pyerror'
 
@@ -368,6 +368,7 @@ export default function Cell({ cell, cellIndex }: CellProps) {
               editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, openAi)
               editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => handleRun())
               registerOllamaCompletions(monaco) // ghost-text suggestions when Ollama is up
+              registerSqlCompletions(monaco) // SQL keyword + table + column completions
               registerPythonFormatter(monaco) // Black-powered pretty-printing / indentation
               // ⇧⌥F formats the cell on demand (format-on-paste handles the rest)
               editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () =>
