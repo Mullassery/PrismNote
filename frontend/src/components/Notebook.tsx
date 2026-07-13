@@ -12,7 +12,7 @@ export default function Notebook() {
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [notebookZoom, setNotebookZoom] = useState(14)
-  const cellRefsMap = useRef(new Map<string, React.RefObject<HTMLDivElement | null>>()).current
+  const cellRefsMap = useRef(new Map<string, { current: HTMLDivElement | null }>())
   // Code editor font, live across all cells via a window event each Cell listens to.
   const { size: codeFont, inc, dec } = useFontSize('pn-code-size', 16, 9, 40)
 
@@ -30,8 +30,8 @@ export default function Notebook() {
   useEffect(() => {
     if (currentNotebook) {
       currentNotebook.cells.forEach((cell) => {
-        if (!cellRefsMap.has(cell.id)) {
-          cellRefsMap.set(cell.id, { current: null })
+        if (!cellRefsMap.current.has(cell.id)) {
+          cellRefsMap.current.set(cell.id, { current: null })
         }
       })
     }
@@ -112,7 +112,7 @@ export default function Notebook() {
               className={`transition ${dragFrom === idx ? 'opacity-40' : ''} ${dragOver === idx && dragFrom !== idx ? 'border-t-2 border-blue-500' : ''}`}
             >
               <div
-                ref={cellRefsMap.get(cell.id)}
+                ref={cellRefsMap.current.get(cell.id)}
                 onClick={() => setSelectedCell(idx)}
                 className={`cursor-text transition rounded-lg ${
                   selectedCellIndex === idx ? 'ring-2 ring-blue-500/70' : 'ring-1 ring-transparent hover:ring-slate-700'
@@ -140,7 +140,7 @@ export default function Notebook() {
           </div>
           </div>
         </div>
-        <ExecutionMinimap cells={currentNotebook.cells} cellRefs={cellRefsMap} />
+        <ExecutionMinimap cells={currentNotebook.cells} cellRefs={cellRefsMap.current} />
       </div>
       )}
     </div>
