@@ -212,18 +212,33 @@ Phase 3 enhancements (optional polish):
 
 **Shipping Status:** v1.2.0-beta ✅ Ready NOW (fully functional, audit-compliant)
 
-### v1.2.1 (Q4 2026) — Premium UX Features
-**Status: 41% Complete (5/12 hours) — ACTIVE**
+### v1.2.1 (Q4 2026) — Premium UX Features  
+**Status: 75% Complete (9/12 hours) — FEATURES DONE**
 
-#### ✅ Completed
-- ✅ **Result Caching** (2h) — in-memory query memoization with TTL + LRU eviction
-- ✅ **SQL Editor Autocomplete** (3h) — 30+ keywords, functions, table/column completion
-- ✅ **Cell Execution History** (3h) — track duration, memory, error, rows, status
+#### ✅ All 5 Quick Wins Complete
+- ✅ **Result Caching** (2h) — in-memory query memoization, 256 MB, LRU eviction
+- ✅ **SQL Autocomplete** (3h) — 30+ keywords, functions, smart completions
+- ✅ **Execution History** (3h) — duration, memory, errors, statistics
+- ✅ **Query Bookmarks** (2h) — save, favorites, search, history tracking
+- ✅ **Data Preview Stats** (2h) — column profiling, null analysis, distributions
 
-#### ⏳ Remaining (7 hours)
-- [ ] **Query History & Bookmarks** (2h) — save/recall, search, statistics
-- [ ] **Enhanced Data Preview** (2h) — column stats, null %, distributions
-- [ ] **Polish & Integration** (3h) — UI components, edge cases, documentation
+#### ⏳ Remaining (3 hours)
+- [ ] **UI Integration** (2h) — Monaco editor hooks, frontend components
+- [ ] **Testing & Documentation** (1h) — edge cases, examples, usage guide
+
+#### API Endpoints Added (v1.2.1)
+- `/cache/stats` — cache utilization
+- `/cache/clear` — invalidate all cached results
+- `/sql/complete` — SQL autocomplete suggestions
+- `/notebooks/:id/cells/:cell_id/executions` — execution history per cell
+- `/notebooks/:id/execution-stats` — aggregated statistics
+- `/queries` — save, list saved queries
+- `/queries/favorites` — favorite queries only
+- `/queries/search` — full-text search
+- `/data/preview` — data profiling endpoint
+- `/data/column-stats` — column statistics
+
+**Shipping Status:** v1.2.1 features 100% built, ready for UI integration
 
 ### v1.3.0 (Q1 2027) — AI & Productivity
 **~16 hours | Databricks Copilot-inspired**
