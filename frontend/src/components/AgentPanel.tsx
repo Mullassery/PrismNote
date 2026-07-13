@@ -423,7 +423,7 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
       )}
 
       {/* conversation — Chainlit style */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-w-0" style={{ fontSize }}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-w-0 scrollbar-always-visible" style={{ fontSize, scrollbarWidth: 'auto', msOverflowStyle: 'scrollbar' }}>
         {/* Cloud provider selected but no API key → point to Settings */}
         {provider !== 'ollama' && connected === false && (
           <div className="rounded-lg border border-amber-600/40 bg-amber-500/20 p-3 text-[12px]">
