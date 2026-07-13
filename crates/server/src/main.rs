@@ -27,6 +27,7 @@ mod rbac;
 mod realtime_collab;
 mod scheduler;
 mod search_engine;
+mod session;
 mod spark_manager;
 mod sql_executor;
 mod versioning;
@@ -422,6 +423,8 @@ async fn main() -> anyhow::Result<()> {
         // Protected endpoints (require JWT)
         .route("/auth/me", get(api::get_me))
         .route("/auth/logout", post(api::logout))
+        .route("/auth/sessions", get(api::list_sessions))
+        .route("/auth/sessions/:session_id", delete(api::revoke_session_endpoint))
         .with_state(state.clone());
 
     let ws_routes = Router::new()

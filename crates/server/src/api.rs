@@ -4031,6 +4031,7 @@ pub async fn logout(
     Json(_req): Json<LogoutRequest>,
 ) -> (StatusCode, Json<LogoutResponse>) {
     // Future: Invalidate JWT/session in database
+    // When database integration complete, this will revoke the session
     tracing::info!("User {} logged out", user.user_id);
 
     (
@@ -4039,5 +4040,50 @@ pub async fn logout(
             message: "Successfully logged out".to_string(),
             user_id: user.user_id,
         }),
+    )
+}
+
+#[derive(Serialize)]
+pub struct SessionInfo {
+    pub session_id: String,
+    pub user_id: String,
+    pub created_at: String,
+    pub expires_at: String,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+}
+
+/// List user's active sessions
+pub async fn list_sessions(
+    user: CurrentUser,
+) -> (StatusCode, Json<Vec<SessionInfo>>) {
+    // Future: Query sessions from database
+    // For now, return a mock response showing current session
+    let session = SessionInfo {
+        session_id: format!("sess-{}", Uuid::new_v4()),
+        user_id: user.user_id,
+        created_at: chrono::Local::now().to_rfc3339(),
+        expires_at: (chrono::Local::now() + chrono::Duration::hours(8)).to_rfc3339(),
+        ip_address: None,
+        user_agent: None,
+    };
+
+    (StatusCode::OK, Json(vec![session]))
+}
+
+/// Revoke a specific session
+pub async fn revoke_session_endpoint(
+    user: CurrentUser,
+    Path(session_id): Path<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    // Future: Revoke session from database
+    tracing::info!("User {} revoked session {}", user.user_id, session_id);
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "message": "Session revoked",
+            "session_id": session_id,
+        })),
     )
 }
