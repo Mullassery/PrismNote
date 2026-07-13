@@ -4,7 +4,8 @@ import App from './App'
 
 /**
  * Wrapper component that handles authentication
- * Shows Login page if not authenticated, otherwise shows App
+ * Shows homepage for everyone, but full app only for authenticated users
+ * Unauthenticated users see homepage + can click to login
  */
 export default function AppWrapper() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -22,9 +23,7 @@ export default function AppWrapper() {
     )
   }
 
-  if (!isAuthenticated) {
-    return <Login />
-  }
-
+  // Show App for authenticated users (includes homepage)
+  // Show App for everyone - homepage is public, login overlay appears for protected features
   return <App />
 }

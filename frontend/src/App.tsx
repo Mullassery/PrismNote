@@ -38,12 +38,14 @@ import MenuBar from './components/MenuBar'
 import UnifiedSearch from './components/UnifiedSearch'
 import CommandPalette, { type Command } from './components/CommandPalette'
 import SettingsModal from './components/SettingsModal'
+import Login from './pages/Login'
 import { useNotebookStore } from './hooks/useNotebook'
 import { useWorkspace, openNotebookFile, saveJsonAs } from './hooks/useWorkspace'
 import { useAuth } from './hooks/useAuth'
 
 function App() {
   const auth = useAuth()
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
   const [panels, setPanels] = useState({ files: true, terminal: true, ai: true })
   const [searchOpen, setSearchOpen] = useState(false)
@@ -221,6 +223,14 @@ function App() {
   // window.prompt, which is silently suppressed in embedded browsers, PWAs,
   // and after Chrome's "prevent additional dialogs" — a common reason the
   // button appeared to do nothing.
+  const requireAuth = (action: () => void) => {
+    if (!auth.isAuthenticated) {
+      setShowLoginPrompt(true)
+      return
+    }
+    action()
+  }
+
   const newNotebook = () => {
     const existing = (useNotebookStore.getState() as any).notebooks as { name: string }[]
     let name = 'Untitled'
@@ -475,13 +485,13 @@ function App() {
                     {/* CTA Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
                       <button
-                        onClick={() => { closeCenterOverlays(); setExplorerPicker(true) }}
+                        onClick={() => requireAuth(() => { closeCenterOverlays(); setExplorerPicker(true) })}
                         className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl prism-bg text-white font-semibold text-base hover:brightness-110 transition shadow-lg shadow-purple-500/20"
                       >
                         <Table2 size={20} /> Explore Data
                       </button>
                       <button
-                        onClick={newNotebook}
+                        onClick={() => requireAuth(newNotebook)}
                         className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border pn-bd pn-text font-semibold text-base transition"
                       >
                         <Plus size={20} /> New Notebook
@@ -569,6 +579,24 @@ function App() {
       )}
       {overlay === 'settings' && (
         <SettingsModal onClose={() => setOverlay(null)} theme={theme} setTheme={applyTheme} panels={panels} togglePanel={togglePanel} />
+      )}
+
+      {/* Login Modal for Unauthenticated Users */}
+      {showLoginPrompt && !auth.isAuthenticated && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-slate-900 rounded-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-900 border-b pn-bd p-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold pn-text">Sign In Required</h2>
+              <button onClick={() => setShowLoginPrompt(false)} className="text-slate-400 hover:text-white">
+                ✕
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="pn-faint mb-6">Sign in to start using PrismNote and create notebooks, explore data, and more.</p>
+              <Login />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
