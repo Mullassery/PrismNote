@@ -3976,7 +3976,7 @@ pub async fn get_csrf_token() -> Json<CsrfTokenResponse> {
 // Authenticated Endpoint Examples (v1.2.0)
 // ════════════════════════════════════════════════════════════════════════════
 
-use crate::middleware::CurrentUser;
+use crate::middleware::{CurrentUser, check_notebook_owner, check_notebook_permission, NotebookPermission};
 
 #[derive(Serialize)]
 pub struct AuthenticatedResponse {
@@ -4086,4 +4086,199 @@ pub async fn revoke_session_endpoint(
             "session_id": session_id,
         })),
     )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Ownership-Protected Notebook Endpoints (Phase 3.2)
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Get a notebook (requires read permission)
+pub async fn get_notebook_secure(
+    user: CurrentUser,
+    Path(id): Path<String>,
+    State(state): State<Arc<AppState>>,
+) -> Result<(StatusCode, Json<Option<Notebook>>), (StatusCode, String)> {
+    // Check permission
+    match check_notebook_permission(&user.user_id, &id).await {
+        Ok(perm) if perm.can_read() => {
+            tracing::info!("User {} reading notebook {}", user.user_id, id);
+
+            // Fetch notebook (same logic as before)
+            let path = format!("{}/{}.ipynb", state.notebooks_dir, id);
+            match std::fs::read_to_string(&path) {
+                Ok(content) => match serde_json::from_str::<serde_json::Value>(&content) {
+                    Ok(ipynb) => match crate::files::from_ipynb(ipynb) {
+                        Ok(nb) => Ok((StatusCode::OK, Json(Some(nb)))),
+                        Err(_) => Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(None))),
+                    },
+                    Err(_) => Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(None))),
+                },
+                Err(_) => Ok((StatusCode::NOT_FOUND, Json(None))),
+            }
+        }
+        _ => {
+            tracing::warn!("User {} denied access to notebook {}", user.user_id, id);
+            Err((StatusCode::FORBIDDEN, "Access denied".to_string()))
+        }
+    }
+}
+
+/// Update a notebook (requires write permission)
+pub async fn update_notebook_secure(
+    user: CurrentUser,
+    Path(id): Path<String>,
+    State(state): State<Arc<AppState>>,
+    Json(notebook): Json<Notebook>,
+) -> Result<(StatusCode, Json<Notebook>), (StatusCode, String)> {
+    // Check permission
+    match check_notebook_permission(&user.user_id, &id).await {
+        Ok(perm) if perm.can_write() => {
+            tracing::info!("User {} updating notebook {}", user.user_id, id);
+
+            // Save notebook (same logic as before)
+            let path = format!("{}/{}.ipynb", state.notebooks_dir, id);
+            let ipynb = crate::files::to_ipynb(&notebook);
+            std::fs::write(&path, serde_json::to_string_pretty(&ipynb).unwrap_or_default())
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            Ok((StatusCode::OK, Json(notebook)))
+        }
+        _ => {
+            tracing::warn!("User {} denied write access to notebook {}", user.user_id, id);
+            Err((StatusCode::FORBIDDEN, "Access denied".to_string()))
+        }
+    }
+}
+
+/// Delete a notebook (requires owner permission)
+pub async fn delete_notebook_secure(
+    user: CurrentUser,
+    Path(id): Path<String>,
+    State(state): State<Arc<AppState>>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    // Check permission (only owner can delete)
+    match check_notebook_owner(&user.user_id, &id).await {
+        Ok(true) => {
+            tracing::info!("User {} deleting notebook {}", user.user_id, id);
+
+            let path = format!("{}/{}.ipynb", state.notebooks_dir, id);
+            std::fs::remove_file(&path)
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            Ok(StatusCode::NO_CONTENT)
+        }
+        _ => {
+            tracing::warn!("User {} denied delete access to notebook {}", user.user_id, id);
+            Err((StatusCode::FORBIDDEN, "Only owner can delete notebooks".to_string()))
+        }
+    }
+}
+
+/// Execute a cell (requires write permission)
+pub async fn execute_cell_secure(
+    user: CurrentUser,
+    Path(notebook_id): Path<String>,
+    State(_state): State<Arc<AppState>>,
+    Json(_req): Json<ExecuteCellRequest>,
+) -> Result<Json<ExecuteCellResponse>, (StatusCode, String)> {
+    // Check permission
+    match check_notebook_permission(&user.user_id, &notebook_id).await {
+        Ok(perm) if perm.can_write() => {
+            tracing::info!("User {} executing cell in notebook {}", user.user_id, notebook_id);
+
+            // Execute cell (placeholder)
+            Ok(Json(ExecuteCellResponse {
+                execution_count: 0,
+                outputs: vec![],
+            }))
+        }
+        _ => {
+            tracing::warn!("User {} denied execution in notebook {}", user.user_id, notebook_id);
+            Err((StatusCode::FORBIDDEN, "Access denied".to_string()))
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct NotebookAccessInfo {
+    pub notebook_id: String,
+    pub permission: String,
+    pub granted_at: String,
+}
+
+/// List notebooks accessible by user (read, write, or owned)
+pub async fn list_accessible_notebooks(
+    user: CurrentUser,
+) -> Json<Vec<NotebookAccessInfo>> {
+    tracing::info!("User {} listing accessible notebooks", user.user_id);
+
+    // TODO: Query notebook_access table for all accessible notebooks
+    // For now, return empty (implement with DB query later)
+    Json(vec![])
+}
+
+/// Share a notebook with another user (owner only)
+pub async fn share_notebook(
+    user: CurrentUser,
+    Path(notebook_id): Path<String>,
+    Json(req): Json<ShareNotebookRequest>,
+) -> Result<(StatusCode, Json<NotebookAccessInfo>), (StatusCode, String)> {
+    // Check ownership
+    match check_notebook_owner(&user.user_id, &notebook_id).await {
+        Ok(true) => {
+            tracing::info!(
+                "User {} sharing notebook {} with {}",
+                user.user_id,
+                notebook_id,
+                req.email
+            );
+
+            // TODO: Create entry in notebook_access table
+            // For now, return success
+            Ok((
+                StatusCode::CREATED,
+                Json(NotebookAccessInfo {
+                    notebook_id,
+                    permission: req.permission,
+                    granted_at: chrono::Local::now().to_rfc3339(),
+                }),
+            ))
+        }
+        _ => {
+            tracing::warn!(
+                "User {} denied sharing notebook {}",
+                user.user_id,
+                notebook_id
+            );
+            Err((StatusCode::FORBIDDEN, "Only owner can share notebooks".to_string()))
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct ShareNotebookRequest {
+    pub email: String,
+    pub permission: String, // "editor" or "viewer"
+}
+
+/// Revoke access to a notebook (owner only)
+pub async fn revoke_notebook_access(
+    user: CurrentUser,
+    Path((notebook_id, user_email)): Path<(String, String)>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    // Check ownership
+    match check_notebook_owner(&user.user_id, &notebook_id).await {
+        Ok(true) => {
+            tracing::info!(
+                "User {} revoking access to notebook {} for {}",
+                user.user_id,
+                notebook_id,
+                user_email
+            );
+
+            // TODO: Remove from notebook_access table
+            Ok(StatusCode::NO_CONTENT)
+        }
+        _ => Err((StatusCode::FORBIDDEN, "Only owner can revoke access".to_string())),
+    }
 }

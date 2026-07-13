@@ -425,6 +425,12 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/logout", post(api::logout))
         .route("/auth/sessions", get(api::list_sessions))
         .route("/auth/sessions/:session_id", delete(api::revoke_session_endpoint))
+        // Ownership-protected notebook endpoints
+        .route("/notebooks/secure/:id", get(api::get_notebook_secure).put(api::update_notebook_secure).delete(api::delete_notebook_secure))
+        .route("/notebooks/secure/:id/execute", post(api::execute_cell_secure))
+        .route("/notebooks/accessible", get(api::list_accessible_notebooks))
+        .route("/notebooks/:id/share", post(api::share_notebook))
+        .route("/notebooks/:id/access/:user_email", delete(api::revoke_notebook_access))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
