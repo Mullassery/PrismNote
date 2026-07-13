@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { TerminalSquare, BarChart3, ListChecks, ChevronDown, X, Minus, SquareTerminal, Plus, Variable, RefreshCw, Table2 } from 'lucide-react'
+import { TerminalSquare, BarChart3, ListChecks, ChevronDown, X, Minus, SquareTerminal, Plus, Variable, RefreshCw, Table2, List } from 'lucide-react'
 import { useNotebookStore } from '../hooks/useNotebook'
 import { useFontSize } from '../hooks/useFontSize'
 import { useViz } from '../hooks/useViz'
 import VizPane from './VizPane'
+import TableOfContents from './TableOfContents'
 import type { ExplorerTarget } from './DataExplorer'
 
-type Tab = 'terminal' | 'output' | 'plots' | 'console' | 'variables'
+type Tab = 'terminal' | 'output' | 'plots' | 'console' | 'variables' | 'contents'
 
 interface BottomPanelProps {
   onClose: () => void
@@ -156,6 +157,7 @@ export default function BottomPanel({ onClose, onOpenExplorer }: BottomPanelProp
     { id: 'variables', label: 'Variables', icon: Variable, badge: variables.length || undefined },
     { id: 'console', label: 'Console', icon: SquareTerminal },
     { id: 'plots', label: 'Plots', icon: BarChart3, badge: imageOutputs.length || undefined },
+    { id: 'contents', label: 'Contents', icon: List },
     { id: 'terminal', label: 'Terminal', icon: TerminalSquare },
   ]
 
@@ -335,6 +337,12 @@ export default function BottomPanel({ onClose, onOpenExplorer }: BottomPanelProp
           {tab === 'plots' && (
             <div className="h-full">
               <VizPane />
+            </div>
+          )}
+
+          {tab === 'contents' && (
+            <div className="flex-1 overflow-auto">
+              <TableOfContents cells={currentNotebook?.cells} />
             </div>
           )}
         </div>

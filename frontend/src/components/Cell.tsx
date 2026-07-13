@@ -1,7 +1,7 @@
 import Editor, { DiffEditor } from '@monaco-editor/react'
 import MDPreview from '@uiw/react-markdown-preview'
 import { useEffect, useRef, useState } from 'react'
-import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square } from 'lucide-react'
+import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown } from 'lucide-react'
 import Output from './Output'
 import { useNotebookStore } from '../hooks/useNotebook'
 import { aiEdit, aiFix, aiExplain } from '../api/ai'
@@ -33,6 +33,7 @@ function errorFromOutputs(outputs: any[]): string | null {
 
 export default function Cell({ cell, cellIndex }: CellProps) {
   const [isEditing, setIsEditing] = useState(!cell.source.length)
+  const [collapsed, setCollapsed] = useState(false)
   const { updateCell, deleteCell, executeCell, currentNotebook } = useNotebookStore()
   const [isExecuting, setIsExecuting] = useState(false)
   const [liveOut, setLiveOut] = useState('')
@@ -196,6 +197,18 @@ export default function Cell({ cell, cellIndex }: CellProps) {
     <div className="pn-solid-bg rounded-lg border pn-bd overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-[var(--pn-hover)]">
         <div className="flex items-center gap-2">
+          {/* Collapse button */}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-0 rounded hover:bg-slate-700 transition-colors"
+            title={collapsed ? 'Expand cell' : 'Collapse cell'}
+          >
+            <ChevronDown
+              size={16}
+              className={`transition-transform ${collapsed ? '-rotate-90' : ''}`}
+            />
+          </button>
+
           <div className="w-5 text-center">
             {isExecuting ? (
               <span className="text-xs text-blue-400">*</span>
@@ -253,8 +266,22 @@ export default function Cell({ cell, cellIndex }: CellProps) {
         </div>
       </div>
 
-      {/* AI command bar (Cmd+K) */}
-      {cell.cell_type === 'code' && aiOpen && (
+      {/* Collapsed preview */}
+      {collapsed && (
+        <div className="px-4 py-2 text-xs pn-faint bg-slate-800/50 border-t pn-bd">
+          {cell.cell_type === 'code' ? (
+            <code className="font-mono">{sourceText.split('\n')[0].slice(0, 80)}…</code>
+          ) : (
+            '# Markdown cell'
+          )}
+        </div>
+      )}
+
+      {/* Content (shown only if not collapsed) */}
+      {!collapsed && (
+        <>
+          {/* AI command bar (Cmd+K) */}
+          {cell.cell_type === 'code' && aiOpen && (
         <div className="border-t pn-bd bg-blue-500/5 px-3 py-2">
           <div className="flex items-center gap-2">
             <Sparkles size={15} className="text-blue-400 shrink-0" />
@@ -419,6 +446,8 @@ export default function Cell({ cell, cellIndex }: CellProps) {
             </div>
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   )

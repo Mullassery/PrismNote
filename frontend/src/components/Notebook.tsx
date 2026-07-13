@@ -69,7 +69,7 @@ export default function Notebook() {
         <div className="w-full min-w-0">
           <Inserter at={0} />
           {currentNotebook.cells.map((cell, idx) => (
-            <div key={cell.id}>
+            <div key={cell.id} data-cell-index={idx}>
               <div
                 onClick={() => setSelectedCell(idx)}
                 className={`cursor-text transition rounded-lg ${

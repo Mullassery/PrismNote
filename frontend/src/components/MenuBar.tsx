@@ -4,6 +4,7 @@ import { useNotebookStore } from '../hooks/useNotebook'
 import { useWorkspace, openNotebookFile, saveJsonAs, saveTextAs } from '../hooks/useWorkspace'
 import { restartKernel, interruptKernel } from '../api/kernel'
 import FindReplace from './FindReplace'
+import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 
 interface MenuBarProps {
   theme: 'light' | 'dark'
@@ -30,6 +31,7 @@ interface MenuItem {
 export default function MenuBar({ theme, onToggleTheme, panels, onTogglePanel, onOpenSearch, onOpenJobs, onOpenGit, onOpenCommandPalette, onOpenDataExplorer, onOpenData }: MenuBarProps) {
   const [open, setOpen] = useState<string | null>(null)
   const [findOpen, setFindOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const barRef = useRef<HTMLDivElement>(null)
   const {
     currentNotebook,
@@ -200,7 +202,7 @@ export default function MenuBar({ theme, onToggleTheme, panels, onTogglePanel, o
     Help: [
       { label: 'About PrismNote', action: () => window.alert('PrismNote — a modern, open-source data-science notebook.\nRust engine · React UI.') },
       { label: 'Documentation', action: () => window.open('https://github.com/Mullassery/prismnote#readme', '_blank') },
-      { label: 'Keyboard Shortcuts', action: () => window.alert('⌘E Data Explorer · ⌘N New · ⌘O Open · ⌘S Save · ⌘K Search · ⇧⌘P Command Palette · ⌘⇧⏎ Run All · ⇧⏎ Run Cell · ⌘K (in cell) AI edit') },
+      { label: 'Keyboard Shortcuts', action: () => setShortcutsOpen(true) },
     ],
   }
 
@@ -261,6 +263,7 @@ export default function MenuBar({ theme, onToggleTheme, panels, onTogglePanel, o
       </button>
 
       {findOpen && <FindReplace onClose={() => setFindOpen(false)} />}
+      {shortcutsOpen && <KeyboardShortcutsModal onClose={() => setShortcutsOpen(false)} />}
     </div>
   )
 }
