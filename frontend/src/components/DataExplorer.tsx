@@ -35,6 +35,16 @@ const typeColor = (lg: LogicalType) =>
     : lg === 'struct' ? 'text-violet-400'
     : 'text-emerald-400'
 
+const getSourceType = (path: string): { label: string; icon: string; color: string } => {
+  const lower = path.toLowerCase()
+  if (lower.endsWith('.parquet')) return { label: '📦 Parquet', icon: '📦', color: 'bg-amber-500/15 text-amber-300' }
+  if (lower.endsWith('.csv')) return { label: '📄 CSV', icon: '📄', color: 'bg-blue-500/15 text-blue-300' }
+  if (lower.endsWith('.json')) return { label: '{ } JSON', icon: '{}', color: 'bg-yellow-500/15 text-yellow-300' }
+  if (lower.endsWith('.arrow') || lower.endsWith('.feather')) return { label: '🔀 Arrow', icon: '🔀', color: 'bg-purple-500/15 text-purple-300' }
+  if (lower.includes('iceberg')) return { label: '❄️ Iceberg', icon: '❄️', color: 'bg-cyan-500/15 text-cyan-300' }
+  return { label: '📁 File', icon: '📁', color: 'bg-slate-500/15 text-slate-300' }
+}
+
 function fmtBytes(n: number) {
   if (n < 1024) return `${n} B`
   if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)} KB`
@@ -131,8 +141,11 @@ export function ExplorerPicker({
               {vars.map((v) => (
                 <button key={v.name} onClick={() => onPick({ var: v.name }, v.name)}
                   className="text-left p-4 rounded-lg border pn-bd bg-white/[0.02] hover:bg-white/[0.06] hover:border-blue-400/50 transition-all">
-                  <div className="font-mono text-[13px] font-semibold pn-text truncate" title={v.name}>{v.name}</div>
-                  <div className="text-[11px] pn-faint truncate mt-1">{v.preview || v.type}</div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="font-mono text-[13px] font-semibold pn-text truncate flex-1" title={v.name}>{v.name}</div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-300 whitespace-nowrap shrink-0">🐼 DataFrame</span>
+                  </div>
+                  <div className="text-[11px] pn-faint truncate">{v.preview || v.type}</div>
                   <div className="text-[10px] pn-faint mt-2 opacity-60">Click to explore →</div>
                 </button>
               ))}
@@ -153,10 +166,19 @@ export function ExplorerPicker({
             </div>
           </div>
           <div className="space-y-3">
-            <input autoFocus value={path} onChange={(e) => setPath(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && path.trim() && onPick({ source: { kind: 'file', path: path.trim() } }, path.trim().split('/').pop() || path)}
-              placeholder="e.g. data.parquet · sales.csv · data/ · s3://bucket/file.json"
-              className="w-full px-3 py-2 rounded bg-white/5 border pn-bd pn-text text-[13px] font-mono outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30" />
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <input autoFocus value={path} onChange={(e) => setPath(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && path.trim() && onPick({ source: { kind: 'file', path: path.trim() } }, path.trim().split('/').pop() || path)}
+                  placeholder="e.g. data.parquet · sales.csv · data/ · s3://bucket/file.json"
+                  className="w-full px-3 py-2 rounded bg-white/5 border pn-bd pn-text text-[13px] font-mono outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30" />
+              </div>
+              {path.trim() && (
+                <div className={`px-2 py-1.5 rounded-full text-[10px] font-medium whitespace-nowrap ${getSourceType(path).color}`}>
+                  {getSourceType(path).label}
+                </div>
+              )}
+            </div>
             <button onClick={() => path.trim() && onPick({ source: { kind: 'file', path: path.trim() } }, path.trim().split('/').pop() || path)}
               disabled={!path.trim()}
               className="w-full px-4 py-2.5 rounded prism-bg text-white text-[13px] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
@@ -174,9 +196,16 @@ export function ExplorerPicker({
             </div>
           </div>
           <div className="space-y-3">
-            <textarea value={sql} onChange={(e) => setSql(e.target.value)} rows={3} spellCheck={false}
-              placeholder="SELECT * FROM read_parquet('file.parquet') LIMIT 1000"
-              className="w-full px-3 py-2 rounded bg-white/5 border pn-bd pn-text text-[13px] font-mono outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30" />
+            <div className="relative">
+              <textarea value={sql} onChange={(e) => setSql(e.target.value)} rows={3} spellCheck={false}
+                placeholder="SELECT * FROM read_parquet('file.parquet') LIMIT 1000"
+                className="w-full px-3 py-2 rounded bg-white/5 border pn-bd pn-text text-[13px] font-mono outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30" />
+              {sql.trim() && (
+                <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/15 text-purple-300">
+                  🔗 SQL
+                </div>
+              )}
+            </div>
             <button onClick={() => sql.trim() && onPick({ source: { kind: 'sql', query: sql.trim() } }, 'query')}
               disabled={!sql.trim()}
               className="w-full px-4 py-2.5 rounded prism-bg text-white text-[13px] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
