@@ -350,16 +350,10 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
   return (
     <aside className={`${inBottomPanel ? 'flex-1' : 'w-96 shrink-0'} pn-surface ${!inBottomPanel ? 'border-l' : ''} pn-bd flex flex-col overflow-hidden`}>
       {/* header */}
-      <div className="px-3 py-1.5 border-b pn-bd flex items-center justify-between gap-1">
-        <span className="text-[12px] font-semibold pn-text">Chat</span>
-        <div className="flex items-center gap-0.5">
-          <button onClick={dec} className="pn-muted p-0.5 hover:pn-text" title="Decrease"><Minus size={12} /></button>
-          <span className="text-[9px] pn-faint w-2 text-center">{fontSize}</span>
-          <button onClick={inc} className="pn-muted p-0.5 hover:pn-text" title="Increase"><Plus size={12} /></button>
-          <button onClick={onClose} className="pn-muted p-0.5 hover:pn-text" title="Close">
-            <X size={12} />
-          </button>
-        </div>
+      <div className="px-3 py-1.5 border-b pn-bd flex justify-end">
+        <button onClick={onClose} className="pn-muted p-0.5 hover:pn-text" title="Close">
+          <X size={12} />
+        </button>
       </div>
 
       {/* controls */}
