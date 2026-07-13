@@ -272,7 +272,7 @@ Phase 3 enhancements (optional polish):
 - Backend: 10 API endpoints fully implemented
 - Frontend: SQL autocomplete + 2 new panel components
 - Build: TypeScript ✓, Vite ✓, No compilation errors
-- Next: v1.3.0 (Data Catalog & Governance)
+- Next: v1.3.0 (Data Catalog & Governance, 24h) + v1.3.1 (Chainlit AI, 8h)
 
 ### v1.3.0 (Q1 2027) — Data Catalog & Governance
 **~24 hours | Enterprise governance, local-first**
@@ -308,6 +308,38 @@ Phase 3 enhancements (optional polish):
 - [ ] **Notebook Versioning** — Git-style diffs
 - [ ] **Query Plan Visualizer** — DuckDB EXPLAIN as DAG
 - [ ] **Multi-language Cells** — SQL, Python, Bash, JavaScript
+
+### v1.3.1 (Q2 2027) — AI Assistant Polish with Chainlit
+**~8 hours | Conversational AI interface upgrade**
+
+#### Chainlit Integration
+- [ ] **Chainlit UI Foundation** — replace RHS AI panel with Chainlit chat interface
+- [ ] **Multi-Provider LLMs** — Ollama (local), Anthropic Claude, OpenAI in unified Chainlit UI
+- [ ] **Conversational Interface** — multi-turn conversations with context preservation
+- [ ] **Notebook-Aware Context** — AI aware of current notebook, cells, and data
+- [ ] **Agent Capabilities** — streaming output, tool calling, memory management
+- [ ] **Message History** — persist conversations per notebook session
+
+#### Enhanced AI Features
+- [ ] **AI Chat Sidebar** — dedicated right panel for AI conversations
+- [ ] **Context Injection** — auto-inject current cell/DataFrame into prompts
+- [ ] **Code Explanation** — explain what code does in natural language
+- [ ] **Refactoring Assistant** — suggest optimizations, improvements
+- [ ] **Documentation Generator** — auto-generate cell/function docstrings
+- [ ] **Multi-Provider Support** — Ollama + Claude + OpenAI in Chainlit UI
+
+#### AI Agent Capabilities
+- [ ] **Data Exploration Agent** — ask questions about datasets
+- [ ] **Query Builder Agent** — "show me top 10 customers by revenue"
+- [ ] **Debugging Agent** — help diagnose cell errors
+- [ ] **Notebook Architect** — suggest notebook structure for tasks
+
+#### Integration with v1.3.0
+- [ ] Lineage-aware AI: "show me all datasets using this column"
+- [ ] Quality-aware AI: "what quality checks should we add?"
+- [ ] Governance-aware AI: "which PII columns need protection?"
+
+---
 
 ### v1.4.0 (Q2 2027) — Semantic Layer & Applications
 **~22 hours | Metrics, reusability, enterprise applications**
@@ -434,7 +466,7 @@ Required for internet-safe deployment:
 |---|---|---|---|---|---|
 | 1 | Rich Cell Execution History | ⏳ Planned | 🔴 High | v1.2.1 | 3h |
 | 2 | Data Preview Experience | 🟢 Partial | 🔴 High | v1.2.1 | 2h |
-| 3 | AI Assistant (Explain/Optimize/Generate) | ⏳ Planned | 🔴 High | v1.3.0 | 6h |
+| 3 | AI Assistant (Explain/Optimize/Generate) | ⏳ Planned | 🔴 High | v1.3.1 (Chainlit) | 8h |
 | 4 | Notebook as Application (widgets) | ⏳ Planned | 🟡 Medium | v1.4.0 | 8h |
 | 5 | SQL Editor Experience | ⏳ Planned | 🔴 High | v1.2.1 | 3h |
 | 6 | Built-in Visualization Builder | 🟢 Partial | 🟡 Medium | v1.2.1 | 2h |

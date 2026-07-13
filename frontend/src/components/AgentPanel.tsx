@@ -16,7 +16,10 @@ import {
   Download,
   RefreshCw,
   Minus,
+  Copy,
+  Code,
 } from 'lucide-react'
+import MDPreview from '@uiw/react-markdown-preview'
 import { useNotebookStore } from '../hooks/useNotebook'
 import { useFontSize } from '../hooks/useFontSize'
 import { ollamaEndpoint, getAiConfig, aiChat } from '../api/ai'
@@ -287,68 +290,76 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
   return (
     <aside className="w-96 shrink-0 pn-surface border-l pn-bd flex flex-col overflow-hidden">
       {/* header */}
-      <div className="h-9 flex items-center justify-between px-3 border-b pn-bd">
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider pn-text">
-          <Sparkles size={13} className="text-sky-400" /> PrismNote Agent
-        </span>
-        <div className="flex items-center gap-2">
+      <div className="px-3 py-2.5 border-b pn-bd space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-2 text-[12px] font-bold pn-text">
+            <Sparkles size={15} className="text-sky-400" /> Chat with AI
+          </span>
+          <div className="flex items-center gap-1">
+            <button onClick={dec} title="Decrease font size" className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5 transition"><Minus size={12} /></button>
+            <span className="text-[10px] tabular-nums w-4 text-center pn-faint" title="Panel font size">{fontSize}</span>
+            <button onClick={inc} title="Increase font size" className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5 transition"><Plus size={12} /></button>
+            <button onClick={onClose} className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5 transition">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-[11px]">
           <span
-            className={`flex items-center gap-1 text-[10px] ${
-              connected === false ? 'text-red-400' : connected ? 'text-emerald-400' : 'pn-faint'
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${
+              connected === false ? 'bg-red-500/20 text-red-300' : connected ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700 pn-faint'
             }`}
             title={`${PROVIDER_LABEL[provider]} connection`}
           >
-            <Plug size={11} />{' '}
+            <Plug size={10} />
             {connected === false
               ? `${PROVIDER_LABEL[provider]}: ${provider === 'ollama' ? 'offline' : 'no key'}`
               : connected
-              ? PROVIDER_LABEL[provider]
-              : '…'}
+              ? `${PROVIDER_LABEL[provider]} connected`
+              : 'checking…'}
           </span>
-          <button onClick={dec} title="Decrease font size" className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5"><Minus size={12} /></button>
-          <span className="text-[10px] tabular-nums w-4 text-center pn-faint" title="Panel font size">{fontSize}</span>
-          <button onClick={inc} title="Increase font size" className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5"><Plus size={12} /></button>
-          <button onClick={onClose} className="pn-muted hover:pn-text p-1 rounded hover:bg-white/5">
-            <X size={14} />
-          </button>
+          {currentNotebook && <span className="text-slate-500 text-[10px]">{currentNotebook.cells.length} cells</span>}
         </div>
       </div>
 
       {/* mode toggle + model picker */}
-      <div className="flex items-center gap-2 px-2 py-2 border-b pn-bd">
-        <div className="flex rounded-lg bg-white/5 p-0.5 text-[12px]">
+      <div className="px-3 py-2 border-b pn-bd space-y-2">
+        <div className="flex rounded-lg bg-slate-800/50 p-0.5 text-[12px] border border-slate-700/30">
           {(['plan', 'act'] as Mode[]).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md capitalize transition ${
-                mode === m ? 'prism-bg text-white' : 'pn-muted hover:pn-text'
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md capitalize font-medium transition ${
+                mode === m ? 'prism-bg text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              {m === 'plan' ? <Wand2 size={12} /> : <Play size={12} />}
+              {m === 'plan' ? <Wand2 size={13} /> : <Play size={13} />}
               {m}
             </button>
           ))}
         </div>
 
-        <div className="relative flex-1 min-w-0">
+        <div className="relative min-w-0">
           {provider !== 'ollama' ? (
-            // Cloud model is chosen in Settings → AI; show it read-only here.
-            <div className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-white/5 text-[12px] pn-text" title="Set in Settings → AI">
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-200">{PROVIDER_LABEL[provider]}</span>
-              <span className="truncate">{cloudModel || '—'}</span>
+            <div className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/30 text-[12px] pn-text" title="Set in Settings → AI">
+              <Code size={13} className="text-sky-400 shrink-0" />
+              <span className="text-[11px] px-2 py-1 rounded bg-sky-500/20 text-sky-200 font-medium">{PROVIDER_LABEL[provider]}</span>
+              <span className="truncate text-slate-300">{cloudModel || '—'}</span>
             </div>
           ) : (
           <>
           <button
             onClick={() => setModelOpen((o) => !o)}
-            className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[12px] pn-text"
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/30 hover:border-slate-600/50 text-[12px] pn-text transition"
           >
-            <span className="truncate">{model || (connected === false ? 'no Ollama' : 'select model')}</span>
-            <ChevronDown size={13} className="shrink-0" />
+            <span className="truncate flex items-center gap-2">
+              <Code size={13} className="text-emerald-400 shrink-0" />
+              {model || (connected === false ? '⚠ no Ollama' : 'select model')}
+            </span>
+            <ChevronDown size={14} className={`shrink-0 transition ${modelOpen ? 'rotate-180' : ''}`} />
           </button>
           {modelOpen && (
-            <div className="absolute right-0 top-9 z-20 w-full max-h-60 overflow-auto pn-solid-bg border border-white/10 rounded-lg shadow-2xl py-1">
+            <div className="absolute right-0 top-11 z-20 w-full max-h-60 overflow-auto bg-slate-950 border border-slate-700/50 rounded-lg shadow-2xl py-1.5">
               {models.length === 0 && <div className="px-3 py-2 text-[12px] pn-faint">No models found</div>}
               {models.map((m) => (
                 <button
@@ -357,8 +368,8 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
                     setModel(m)
                     setModelOpen(false)
                   }}
-                  className={`w-full text-left px-3 py-1.5 text-[12px] hover:bg-blue-500/20 ${
-                    m === model ? 'pn-text' : 'pn-muted'
+                  className={`w-full text-left px-3 py-2 text-[12px] hover:bg-slate-800/50 transition ${
+                    m === model ? 'pn-text font-medium bg-slate-800/30' : 'pn-muted hover:pn-text'
                   }`}
                 >
                   {m}
@@ -371,8 +382,8 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {/* conversation */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4 min-w-0" style={{ fontSize }}>
+      {/* conversation — Chainlit style */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-w-0 bg-gradient-to-b from-slate-900 to-slate-950" style={{ fontSize }}>
         {/* Cloud provider selected but no API key → point to Settings */}
         {provider !== 'ollama' && connected === false && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[12.5px] pn-muted">
@@ -427,66 +438,77 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
         )}
 
         {messages.length === 0 && connected !== false && (
-          <div className="text-[13px] pn-faint leading-relaxed">
-            <p className="mb-2">
-              <span className="text-blue-300 font-medium">Plan</span> mode discusses an approach;{' '}
-              <span className="text-sky-300 font-medium">Act</span> mode proposes cell edits you can run.
-            </p>
-            <p>The agent sees your whole notebook. Ask it to load data, write a chart, or debug an error.</p>
+          <div className="text-[13px] pn-faint leading-relaxed bg-slate-800/30 border border-slate-700/30 rounded-lg p-3 space-y-2">
+            <div className="flex gap-2">
+              <span className="text-sky-400 font-bold text-lg">✨</span>
+              <div>
+                <p className="pn-text font-medium mb-1">Welcome to PrismNote AI Chat</p>
+                <p>
+                  <span className="text-blue-300 font-medium">Plan</span> mode discusses your approach;{' '}
+                  <span className="text-sky-300 font-medium">Act</span> mode writes and runs cell code.
+                </p>
+              </div>
+            </div>
+            <p className="text-slate-400">I can see your whole notebook. Ask me to load data, build charts, debug errors, or optimize queries.</p>
           </div>
         )}
 
         {messages.map((m, i) => (
           <div key={i} className="min-w-0">
-            <div className="text-[10px] uppercase tracking-wide pn-faint mb-1">
-              {m.role === 'user' ? 'You' : 'Agent'}
-            </div>
             {m.text && (
-              <div
-                className={`text-[13px] whitespace-pre-wrap break-words rounded-lg p-2.5 ${
-                  m.role === 'user'
-                    ? 'bg-blue-500/10 border border-blue-500/20 text-blue-100'
-                    : 'bg-white/5 border pn-bd pn-text'
-                }`}
-              >
-                {m.role === 'assistant' ? stripActions(m.text) || (streaming && i === messages.length - 1 ? '…' : '') : m.text}
+              <div className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[85%] rounded-xl p-3 ${
+                    m.role === 'user'
+                      ? 'bg-blue-500/20 border border-blue-500/40 text-blue-50 rounded-br-none'
+                      : 'bg-slate-800/50 border border-slate-700/50 pn-text rounded-bl-none'
+                  }`}
+                >
+                  {m.role === 'assistant' ? (
+                    <div className="text-[13px] max-w-none [&_code]:bg-slate-900/50 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-emerald-300 [&_pre]:bg-slate-900/50 [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto">
+                      <MDPreview source={stripActions(m.text) || (streaming && i === messages.length - 1 ? '…' : '')} />
+                    </div>
+                  ) : (
+                    <div className="text-[13px] whitespace-pre-wrap break-words">{m.text}</div>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* action cards */}
+            {/* action cards — Chainlit style */}
             {m.actions?.map((a) => {
               const meta = actionMeta[a.kind]
               const Icon = meta.icon
               return (
-                <div key={a.id} className="mt-2 rounded-lg border border-white/10 pn-solid-bg overflow-hidden min-w-0">
-                  <div className="flex items-center justify-between px-2.5 py-1.5 bg-white/5">
-                    <span className={`flex items-center gap-1.5 text-[12px] ${meta.color}`}>
-                      <Icon size={13} /> {meta.label}
-                      {a.index !== undefined && <span className="pn-faint">· cell {a.index}</span>}
+                <div key={a.id} className="mt-3 rounded-xl border border-slate-700/50 bg-slate-900/30 overflow-hidden min-w-0">
+                  <div className="flex items-center justify-between px-3 py-2 bg-slate-800/50 border-b border-slate-700/30">
+                    <span className={`flex items-center gap-2 text-[12px] font-medium ${meta.color}`}>
+                      <Icon size={14} /> {meta.label}
+                      {a.index !== undefined && <span className="pn-faint text-[11px]">Cell {a.index}</span>}
                     </span>
                     {a.status === 'pending' ? (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1.5">
                         <button
                           onClick={() => runAction(i, a)}
-                          className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[11px]"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/25 text-emerald-300 hover:bg-emerald-500/35 text-[11px] font-medium transition"
                         >
-                          <Check size={11} /> Run
+                          <Check size={12} /> Run
                         </button>
                         <button
                           onClick={() => rejectAction(i, a.id)}
-                          className="flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 pn-muted hover:pn-text text-[11px]"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-700/50 text-slate-400 hover:text-slate-300 hover:bg-slate-700 text-[11px] font-medium transition"
                         >
-                          <Ban size={11} /> Skip
+                          <Ban size={12} /> Skip
                         </button>
                       </span>
                     ) : (
-                      <span className={`text-[11px] ${a.status === 'done' ? 'text-emerald-400' : 'pn-faint'}`}>
-                        {a.status === 'done' ? '✓ applied' : 'skipped'}
+                      <span className={`text-[11px] font-medium ${a.status === 'done' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        {a.status === 'done' ? '✓ Applied' : 'Skipped'}
                       </span>
                     )}
                   </div>
                   {a.code && (
-                    <pre className="px-2.5 py-2 text-[12px] pn-muted font-mono overflow-x-auto whitespace-pre min-w-0 max-w-full">{a.code}</pre>
+                    <pre className="px-3 py-2 text-[12px] pn-muted font-mono overflow-x-auto whitespace-pre min-w-0 max-w-full bg-slate-950/50 border-t border-slate-700/30">{a.code}</pre>
                   )}
                 </div>
               )
@@ -502,10 +524,10 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
         <div ref={endRef} />
       </div>
 
-      {/* prompt */}
-      <div className="p-2 border-t pn-bd">
-        <div className="flex items-end gap-1 pn-solid-bg border border-white/10 rounded-xl px-2 py-1 focus-within:border-blue-500/50">
-          <CircleDot size={14} className={`mb-2 shrink-0 ${mode === 'act' ? 'text-sky-400' : 'text-blue-400'}`} />
+      {/* prompt input — Chainlit style */}
+      <div className="p-3 border-t pn-bd">
+        <div className="flex items-end gap-2 bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2 focus-within:border-blue-500/70 focus-within:bg-slate-900/70 transition">
+          <CircleDot size={16} className={`mb-1.5 shrink-0 ${mode === 'act' ? 'text-sky-400' : 'text-blue-400'}`} />
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -516,15 +538,16 @@ export default function AgentPanel({ onClose }: { onClose: () => void }) {
               }
             }}
             rows={1}
-            placeholder={mode === 'plan' ? 'Ask the agent to plan…' : 'Tell the agent what to build…'}
-            className="flex-1 bg-transparent outline-none text-[13px] pn-text resize-none max-h-32 py-1.5"
+            placeholder={mode === 'plan' ? 'Ask me to plan something…' : 'Tell me what to build…'}
+            className="flex-1 bg-transparent outline-none text-[13px] pn-text resize-none max-h-32 py-1"
           />
           <button
             onClick={send}
             disabled={streaming || !input.trim()}
-            className="mb-1 text-blue-300 hover:text-blue-200 p-1 disabled:opacity-40"
+            className="mb-1 text-blue-300 hover:text-blue-100 p-1 disabled:opacity-40 transition hover:bg-blue-500/10 rounded-lg"
+            title="Send message (Shift+Enter for new line)"
           >
-            <Send size={15} />
+            <Send size={16} />
           </button>
         </div>
       </div>
