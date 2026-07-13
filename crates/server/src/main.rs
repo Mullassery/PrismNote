@@ -76,6 +76,7 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
     }
 }
 use tracing_subscriber;
+use sqlx::SqlitePool;
 
 pub struct AppState {
     notebooks_dir: String,
@@ -91,6 +92,8 @@ pub struct AppState {
     /// Live cell output stream (JSON {cell_id, text}) broadcast to WebSocket
     /// clients. Purely additive — the HTTP response is still authoritative.
     stream_tx: tokio::sync::broadcast::Sender<String>,
+    /// SQLite database pool for auth, sessions, notebooks, sharing
+    pub db_pool: SqlitePool,
 }
 
 #[tokio::main]
@@ -148,6 +151,10 @@ async fn main() -> anyhow::Result<()> {
         .map(|k| k.pid_handle())
         .unwrap_or_else(|| std::sync::Arc::new(std::sync::atomic::AtomicI32::new(0)));
 
+    // Initialize database
+    let db_path = format!("{}/.prismnote/prismnote.db", dirs::home_dir().unwrap().display());
+    let db_pool = db::init::initialize_database(&db_path).await?;
+
     let state = Arc::new(AppState {
         notebooks_dir,
         ai_engine: tokio::sync::RwLock::new(ai_engine),
@@ -156,6 +163,7 @@ async fn main() -> anyhow::Result<()> {
         kernel_pid,
         jobs: tokio::sync::Mutex::new(jobs::load_jobs()),
         stream_tx: tokio::sync::broadcast::channel(2048).0,
+        db_pool,
     });
 
     // Background scheduler: every 60s, run any jobs whose schedule is due.

@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
+use sqlx;
 
 #[derive(Serialize)]
 pub struct NotebookList {
@@ -4209,40 +4210,106 @@ pub struct NotebookAccessInfo {
 /// List notebooks accessible by user (read, write, or owned)
 pub async fn list_accessible_notebooks(
     user: CurrentUser,
+    State(state): State<Arc<AppState>>,
 ) -> Json<Vec<NotebookAccessInfo>> {
     tracing::info!("User {} listing accessible notebooks", user.user_id);
 
-    // TODO: Query notebook_access table for all accessible notebooks
-    // For now, return empty (implement with DB query later)
-    Json(vec![])
+    let query = "SELECT notebook_id, permission, granted_at FROM notebook_access WHERE user_id = ?";
+    match sqlx::query_as::<_, (String, String, String)>(query)
+        .bind(&user.user_id)
+        .fetch_all(&state.db_pool)
+        .await
+    {
+        Ok(rows) => {
+            let notebooks = rows.into_iter()
+                .map(|(notebook_id, permission, granted_at)| NotebookAccessInfo {
+                    notebook_id,
+                    permission,
+                    granted_at,
+                })
+                .collect();
+            Json(notebooks)
+        }
+        Err(e) => {
+            tracing::error!("Failed to list accessible notebooks: {}", e);
+            Json(vec![])
+        }
+    }
 }
 
 /// Share a notebook with another user (owner only)
 pub async fn share_notebook(
     user: CurrentUser,
+    State(state): State<Arc<AppState>>,
     Path(notebook_id): Path<String>,
     Json(req): Json<ShareNotebookRequest>,
 ) -> Result<(StatusCode, Json<NotebookAccessInfo>), (StatusCode, String)> {
     // Check ownership
     match check_notebook_owner(&user.user_id, &notebook_id).await {
         Ok(true) => {
-            tracing::info!(
-                "User {} sharing notebook {} with {}",
-                user.user_id,
-                notebook_id,
-                req.email
-            );
+            // Look up user by email
+            let target_user_query = "SELECT user_id FROM users WHERE email = ?";
+            let target_user: Option<(String,)> = match sqlx::query_as(target_user_query)
+                .bind(&req.email)
+                .fetch_optional(&state.db_pool)
+                .await
+            {
+                Ok(Some(row)) => Some(row),
+                Ok(None) => {
+                    return Err((StatusCode::NOT_FOUND, format!("User with email {} not found", req.email)))
+                }
+                Err(e) => {
+                    tracing::error!("Database error looking up user: {}", e);
+                    return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))
+                }
+            };
 
-            // TODO: Create entry in notebook_access table
-            // For now, return success
-            Ok((
-                StatusCode::CREATED,
-                Json(NotebookAccessInfo {
-                    notebook_id,
-                    permission: req.permission,
-                    granted_at: chrono::Local::now().to_rfc3339(),
-                }),
-            ))
+            let target_user_id = target_user.map(|(id,)| id).unwrap();
+
+            // Validate permission value
+            if !["viewer", "editor"].contains(&req.permission.as_str()) {
+                return Err((StatusCode::BAD_REQUEST, "Permission must be 'viewer' or 'editor'".to_string()));
+            }
+
+            // Create or update access entry
+            let access_id = Uuid::new_v4().to_string();
+            let now = chrono::Local::now().to_rfc3339();
+
+            let insert_query = "INSERT OR REPLACE INTO notebook_access (access_id, notebook_id, user_id, permission, granted_at, granted_by)
+                               VALUES (?, ?, ?, ?, ?, ?)";
+
+            match sqlx::query(insert_query)
+                .bind(&access_id)
+                .bind(&notebook_id)
+                .bind(&target_user_id)
+                .bind(&req.permission)
+                .bind(&now)
+                .bind(&user.user_id)
+                .execute(&state.db_pool)
+                .await
+            {
+                Ok(_) => {
+                    tracing::info!(
+                        "User {} shared notebook {} with {} ({})",
+                        user.user_id,
+                        notebook_id,
+                        req.email,
+                        req.permission
+                    );
+                    Ok((
+                        StatusCode::CREATED,
+                        Json(NotebookAccessInfo {
+                            notebook_id,
+                            permission: req.permission,
+                            granted_at: now,
+                        }),
+                    ))
+                }
+                Err(e) => {
+                    tracing::error!("Failed to share notebook: {}", e);
+                    Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to share notebook".to_string()))
+                }
+            }
         }
         _ => {
             tracing::warn!(
@@ -4264,20 +4331,62 @@ pub struct ShareNotebookRequest {
 /// Revoke access to a notebook (owner only)
 pub async fn revoke_notebook_access(
     user: CurrentUser,
+    State(state): State<Arc<AppState>>,
     Path((notebook_id, user_email)): Path<(String, String)>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     // Check ownership
     match check_notebook_owner(&user.user_id, &notebook_id).await {
         Ok(true) => {
-            tracing::info!(
-                "User {} revoking access to notebook {} for {}",
-                user.user_id,
-                notebook_id,
-                user_email
-            );
+            // Look up user by email
+            let target_user_query = "SELECT user_id FROM users WHERE email = ?";
+            let target_user: Option<(String,)> = match sqlx::query_as(target_user_query)
+                .bind(&user_email)
+                .fetch_optional(&state.db_pool)
+                .await
+            {
+                Ok(Some(row)) => Some(row),
+                Ok(None) => {
+                    return Err((StatusCode::NOT_FOUND, format!("User with email {} not found", user_email)))
+                }
+                Err(e) => {
+                    tracing::error!("Database error looking up user: {}", e);
+                    return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))
+                }
+            };
 
-            // TODO: Remove from notebook_access table
-            Ok(StatusCode::NO_CONTENT)
+            let target_user_id = target_user.map(|(id,)| id).unwrap();
+
+            let delete_query = "DELETE FROM notebook_access WHERE notebook_id = ? AND user_id = ?";
+            match sqlx::query(delete_query)
+                .bind(&notebook_id)
+                .bind(&target_user_id)
+                .execute(&state.db_pool)
+                .await
+            {
+                Ok(result) => {
+                    if result.rows_affected() == 0 {
+                        tracing::warn!(
+                            "User {} tried to revoke non-existent access to notebook {} for {}",
+                            user.user_id,
+                            notebook_id,
+                            user_email
+                        );
+                        return Err((StatusCode::NOT_FOUND, "Access not found".to_string()));
+                    }
+
+                    tracing::info!(
+                        "User {} revoked access to notebook {} for {}",
+                        user.user_id,
+                        notebook_id,
+                        user_email
+                    );
+                    Ok(StatusCode::NO_CONTENT)
+                }
+                Err(e) => {
+                    tracing::error!("Failed to revoke notebook access: {}", e);
+                    Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to revoke access".to_string()))
+                }
+            }
         }
         _ => Err((StatusCode::FORBIDDEN, "Only owner can revoke access".to_string())),
     }
