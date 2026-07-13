@@ -39,8 +39,10 @@ import CommandPalette, { type Command } from './components/CommandPalette'
 import SettingsModal from './components/SettingsModal'
 import { useNotebookStore } from './hooks/useNotebook'
 import { useWorkspace, openNotebookFile, saveJsonAs } from './hooks/useWorkspace'
+import { useAuth } from './hooks/useAuth'
 
 function App() {
+  const auth = useAuth()
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
   const [panels, setPanels] = useState({ files: true, terminal: true, ai: true })
   const [searchOpen, setSearchOpen] = useState(false)
@@ -376,16 +378,28 @@ function App() {
                 ))
               : (
                 <>
-                  <div className="px-3 py-2 flex items-center gap-2 border-b pn-bd">
-                    <div className="w-8 h-8 rounded-full prism-bg flex items-center justify-center text-white text-sm font-semibold">G</div>
-                    <div className="leading-tight">
-                      <div className="pn-text text-[13px] font-medium">Local workspace</div>
-                      <div className="pn-faint text-[11px]">No account required</div>
-                    </div>
-                  </div>
-                  <div className="px-3 py-2 text-[12px] pn-faint leading-relaxed border-b pn-bd">
-                    PrismNote runs entirely on your machine. Sign-in &amp; cloud sync aren&apos;t part of the open-source build.
-                  </div>
+                  {auth.user && (
+                    <>
+                      <div className="px-3 py-2 flex items-center gap-2 border-b pn-bd">
+                        <div className="w-8 h-8 rounded-full prism-bg flex items-center justify-center text-white text-sm font-semibold">
+                          {auth.user.display_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="leading-tight">
+                          <div className="pn-text text-[13px] font-medium">{auth.user.display_name}</div>
+                          <div className="pn-faint text-[11px]">{auth.user.email}</div>
+                        </div>
+                      </div>
+                      <div className="px-3 py-1">
+                        <button
+                          onClick={() => { auth.logout(); setRailMenu(null) }}
+                          className="w-full text-left px-3 py-1.5 rounded-md text-rose-400 hover:bg-rose-600/20 transition-colors text-sm"
+                        >
+                          Sign out
+                        </button>
+                      </div>
+                      <div className="my-1 border-t pn-bd" />
+                    </>
+                  )}
                   <button onClick={() => { setOverlay('settings'); setRailMenu(null) }} className="w-full text-left px-3 py-1.5 rounded-md hover:bg-blue-600 hover:text-white">
                     Open Settings…
                   </button>
