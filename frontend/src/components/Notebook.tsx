@@ -7,8 +7,10 @@ import { Plus, FileCode, Code2, Type, Minus, ChevronDown } from 'lucide-react'
 import { useFontSize } from '../hooks/useFontSize'
 
 export default function Notebook() {
-  const { currentNotebook, addCell, selectedCellIndex, setSelectedCell } = useNotebookStore()
+  const { currentNotebook, addCell, selectedCellIndex, setSelectedCell, reorderCell } = useNotebookStore()
   const [collapsed, setCollapsed] = useState(false)
+  const [dragFrom, setDragFrom] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
   const cellRefsMap = useRef(new Map<string, React.RefObject<HTMLDivElement | null>>()).current
   // Code editor font, live across all cells via a window event each Cell listens to.
   const { size: codeFont, inc, dec } = useFontSize('pn-code-size', 16, 9, 40)
@@ -83,7 +85,21 @@ export default function Notebook() {
           <div className="w-full min-w-0">
           <Inserter at={0} />
           {currentNotebook.cells.map((cell, idx) => (
-            <div key={cell.id} data-cell-index={idx}>
+            <div
+              key={cell.id}
+              data-cell-index={idx}
+              draggable
+              onDragStart={() => setDragFrom(idx)}
+              onDragEnd={() => { setDragFrom(null); setDragOver(null) }}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(idx) }}
+              onDrop={(e) => {
+                e.preventDefault()
+                if (dragFrom !== null && dragFrom !== idx) reorderCell(dragFrom, idx)
+                setDragFrom(null)
+                setDragOver(null)
+              }}
+              className={`transition ${dragFrom === idx ? 'opacity-40' : ''} ${dragOver === idx && dragFrom !== idx ? 'border-t-2 border-blue-500' : ''}`}
+            >
               <div
                 ref={cellRefsMap.get(cell.id)}
                 onClick={() => setSelectedCell(idx)}

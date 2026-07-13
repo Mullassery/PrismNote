@@ -1,7 +1,7 @@
 import Editor, { DiffEditor } from '@monaco-editor/react'
 import MDPreview from '@uiw/react-markdown-preview'
 import { useEffect, useRef, useState } from 'react'
-import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown } from 'lucide-react'
+import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown, GripVertical } from 'lucide-react'
 import Output from './Output'
 import { useNotebookStore } from '../hooks/useNotebook'
 import { aiEdit, aiFix, aiExplain } from '../api/ai'
@@ -197,6 +197,16 @@ export default function Cell({ cell, cellIndex }: CellProps) {
     <div className="pn-solid-bg rounded-lg border pn-bd overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-[var(--pn-hover)]">
         <div className="flex items-center gap-2">
+          {/* Drag handle */}
+          <div
+            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-slate-700 pn-faint hover:pn-text transition-colors"
+            title="Drag to reorder cells"
+            onMouseDown={(e) => e.stopPropagation()}
+            data-drag-handle
+          >
+            <GripVertical size={14} />
+          </div>
+
           {/* Collapse button */}
           <button
             onClick={() => setCollapsed(!collapsed)}
