@@ -1,17 +1,87 @@
-import { useState } from 'react'
-import { LogIn, Lock, Mail } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { LogIn, Lock, Mail, Globe } from 'lucide-react'
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void
+          renderButton: (element: Element, options: any) => void
+        }
+      }
+    }
+  }
+}
 
 export default function Login() {
-  const onLoginSuccess = () => {
-    // Trigger re-render in AppWrapper by reloading or by callback
-    window.location.href = '/'
-  }
+  useEffect(() => {
+    // Load Google Sign-In script
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    document.body.appendChild(script)
+
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
+          callback: handleGoogleResponse,
+        })
+      }
+    }
+
+    return () => {
+      document.body.removeChild(script)
+    }
+  }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isRegister, setIsRegister] = useState(false)
   const [displayName, setDisplayName] = useState('')
+
+  const onLoginSuccess = () => {
+    window.location.href = '/'
+  }
+
+  const handleGoogleResponse = async (response: any) => {
+    try {
+      setError(null)
+      setIsLoading(true)
+
+      // Send Google token to backend for verification and user creation
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          credential: response.credential,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.message || 'Google authentication failed')
+      }
+
+      const data = await res.json()
+
+      // Store tokens and user data
+      localStorage.setItem('access_token', data.access_token)
+      if (data.refresh_token) {
+        localStorage.setItem('refresh_token', data.refresh_token)
+      }
+      localStorage.setItem('user', JSON.stringify(data.user))
+
+      onLoginSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -158,9 +228,39 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Toggle Register/Login */}
+          {/* Divider */}
           <div className="mt-6 pt-6 border-t pn-bd/50">
-            <p className="text-sm pn-faint text-center">
+            <div className="flex items-center justify-center mb-6">
+              <span className="pn-faint text-xs">or continue with</span>
+            </div>
+
+            {/* Google Sign-In Button */}
+            <div className="mb-6">
+              <button
+                onClick={() => {
+                  if (window.google) {
+                    window.google.accounts.id.renderButton(
+                      document.getElementById('google-signin-button')!,
+                      {
+                        theme: 'dark',
+                        size: 'large',
+                        width: '100%',
+                      }
+                    )
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border pn-bd text-white font-medium text-sm transition-colors"
+              >
+                <Globe size={16} />
+                Sign in with Google
+              </button>
+              <div id="google-signin-button" className="mt-2" />
+            </div>
+          </div>
+
+          {/* Toggle Register/Login */}
+          <div className="text-center">
+            <p className="text-sm pn-faint">
               {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
               <button
                 onClick={() => {

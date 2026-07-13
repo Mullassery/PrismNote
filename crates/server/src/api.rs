@@ -3972,6 +3972,135 @@ pub async fn auth_login(
     }))
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// Google OAuth (v1.3.0)
+// ════════════════════════════════════════════════════════════════════════════
+
+#[derive(Deserialize)]
+pub struct GoogleOAuthRequest {
+    pub credential: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GoogleTokenPayload {
+    pub iss: String,
+    pub azp: Option<String>,
+    pub aud: String,
+    pub sub: String,
+    pub email: String,
+    pub email_verified: bool,
+    pub at_hash: Option<String>,
+    pub iat: i64,
+    pub exp: i64,
+    pub name: Option<String>,
+    pub picture: Option<String>,
+    pub given_name: Option<String>,
+    pub family_name: Option<String>,
+}
+
+pub async fn auth_google(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<GoogleOAuthRequest>,
+) -> Result<Json<AuthResponse>, (StatusCode, String)> {
+    // Decode and verify Google JWT token (ID token)
+    // For production, use Google's official verification: https://github.com/googleapis/google-api-rust-client
+    // For now, we'll do basic validation
+
+    use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+
+    // Get Google's public keys
+    let client = reqwest::Client::new();
+    let jwks_uri = "https://www.googleapis.com/oauth2/v3/certs";
+
+    let resp = client
+        .get(jwks_uri)
+        .send()
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let jwks: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Decode the JWT header to get the key ID
+    let header = jsonwebtoken::decode_header(&req.credential)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid token format".to_string()))?;
+
+    let kid = header.kid
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing key ID in token".to_string()))?;
+
+    // Find the matching public key
+    let keys = jwks.get("keys")
+        .and_then(|k| k.as_array())
+        .ok_or_else(|| (StatusCode::INTERNAL_SERVER_ERROR, "Invalid JWKS response".to_string()))?;
+
+    let key_data = keys
+        .iter()
+        .find(|k| k.get("kid").and_then(|v| v.as_str()) == Some(&kid))
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Key not found".to_string()))?;
+
+    // Build PEM key from JWK
+    let n = key_data.get("n")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Invalid key format".to_string()))?;
+    let e = key_data.get("e")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Invalid key format".to_string()))?;
+
+    // Create RSA key from n and e
+    let key_str = format!("-----BEGIN RSA PUBLIC KEY-----\n{}\n{}-----END RSA PUBLIC KEY-----", n, e);
+    let decoding_key = DecodingKey::from_rsa_components(n, e)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid RSA key".to_string()))?;
+
+    // Verify and decode the token
+    let token_data = decode::<GoogleTokenPayload>(
+        &req.credential,
+        &decoding_key,
+        &Validation::new(Algorithm::RS256),
+    ).map_err(|e| {
+        tracing::error!("Token verification failed: {}", e);
+        (StatusCode::UNAUTHORIZED, "Invalid token".to_string())
+    })?;
+
+    let payload = token_data.claims;
+
+    // Verify email is verified
+    if !payload.email_verified {
+        return Err((StatusCode::UNAUTHORIZED, "Email not verified".to_string()));
+    }
+
+    // Create or get user
+    let user_id = format!("google-{}", payload.sub);
+    let display_name = payload.name.clone()
+        .or(payload.given_name.clone())
+        .unwrap_or_else(|| payload.email.split('@').next().unwrap_or("User").to_string());
+
+    // Generate JWT
+    let auth_manager = EnterpriseAuthManager::new("default-secret".to_string());
+    let jwt_token = auth_manager
+        .generate_jwt(&user_id, &payload.email, &[UserRole::Member])
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Log successful login
+    let event = crate::audit::AuditEvent::new(user_id.clone(), crate::audit::ACTION_LOGIN.to_string())
+        .with_details(json!({ "email": &payload.email, "provider": "google" }));
+    let _ = crate::audit::log_event(&state.db_pool, event).await;
+
+    Ok(Json(AuthResponse {
+        access_token: jwt_token.access_token,
+        refresh_token: jwt_token.refresh_token,
+        token_type: jwt_token.token_type,
+        expires_in: jwt_token.expires_in,
+        user: UserResponse {
+            user_id,
+            email: payload.email,
+            display_name,
+            roles: vec!["Member".to_string()],
+        },
+    }))
+}
+
 #[derive(Serialize)]
 pub struct CsrfTokenResponse {
     pub token: String,

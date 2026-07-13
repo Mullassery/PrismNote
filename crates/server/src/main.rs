@@ -440,6 +440,7 @@ async fn main() -> anyhow::Result<()> {
         // Authentication endpoints (v1.2.0)
         .route("/auth/register", post(api::auth_register))
         .route("/auth/login", post(api::auth_login))
+        .route("/auth/google", post(api::auth_google))
         .route("/auth/csrf", get(api::get_csrf_token))
         // Protected endpoints (require JWT)
         .route("/auth/me", get(api::get_me))
