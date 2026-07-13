@@ -3,6 +3,7 @@ mod ai_training;
 mod airflow_integration;
 mod api;
 mod audit;
+mod cache;
 mod cell_executor;
 mod cloud_storage;
 mod cloud_warehouse;
@@ -95,6 +96,8 @@ pub struct AppState {
     stream_tx: tokio::sync::broadcast::Sender<String>,
     /// SQLite database pool for auth, sessions, notebooks, sharing
     pub db_pool: SqlitePool,
+    /// Query result cache (v1.2.1)
+    pub query_cache: cache::QueryCache,
 }
 
 #[tokio::main]
@@ -156,6 +159,9 @@ async fn main() -> anyhow::Result<()> {
     let db_path = format!("{}/.prismnote/prismnote.db", dirs::home_dir().unwrap().display());
     let db_pool = db::init::initialize_database(&db_path).await?;
 
+    // Initialize query cache (max 256 MB)
+    let query_cache = cache::QueryCache::new(256);
+
     let state = Arc::new(AppState {
         notebooks_dir,
         ai_engine: tokio::sync::RwLock::new(ai_engine),
@@ -165,6 +171,7 @@ async fn main() -> anyhow::Result<()> {
         jobs: tokio::sync::Mutex::new(jobs::load_jobs()),
         stream_tx: tokio::sync::broadcast::channel(2048).0,
         db_pool,
+        query_cache,
     });
 
     // Background scheduler: every 60s, run any jobs whose schedule is due.
@@ -448,6 +455,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/admin/audit/logs", post(api::query_audit_logs))
         .route("/admin/audit/stats", get(api::get_audit_stats))
         .route("/admin/audit/cleanup", post(api::cleanup_audit_logs))
+        // Query Result Caching endpoints (v1.2.1)
+        .route("/cache/stats", get(api::get_cache_stats))
+        .route("/cache/clear", post(api::clear_cache))
         .with_state(state.clone());
 
     let ws_routes = Router::new()

@@ -4846,3 +4846,33 @@ pub async fn cleanup_audit_logs(
         }
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Query Result Caching — v1.2.1
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Get cache statistics
+pub async fn get_cache_stats(
+    State(state): State<Arc<AppState>>,
+) -> Json<crate::cache::CacheStats> {
+    Json(state.query_cache.stats())
+}
+
+/// Clear all cached results
+pub async fn clear_cache(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    // Check if user is admin (or allow all users for now)
+    if !user.roles.contains(&"Admin".to_string()) && !user.roles.contains(&"Member".to_string()) {
+        return Err((StatusCode::FORBIDDEN, "Unauthorized".to_string()));
+    }
+
+    state.query_cache.clear();
+    tracing::info!("Query cache cleared by user {}", user.user_id);
+
+    Ok(Json(json!({
+        "status": "cleared",
+        "message": "All cached results have been cleared"
+    })))
+}
