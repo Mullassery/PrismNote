@@ -34,6 +34,7 @@ mod query_manager;
 mod query_validator;
 mod rbac;
 mod realtime_collab;
+mod rill_integration;
 mod scheduler;
 mod search_engine;
 mod session;
@@ -494,6 +495,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/quality/assertion", post(api::create_quality_assertion))
         .route("/quality/score", get(api::get_quality_score))
         .route("/quality/run-checks", get(api::run_quality_checks))
+        // Rill Data OSS Integration
+        .route("/rill/projects", post(api::create_rill_project).get(api::list_rill_projects))
+        .route("/rill/projects/:project_id", get(api::get_rill_project))
+        .route("/rill/projects/:project_id/export", get(api::export_rill_project))
+        .route("/rill/dashboards", post(api::create_rill_dashboard))
+        .route("/rill/dashboards/:project_id/:dashboard_id/embed", get(api::embed_rill_dashboard))
+        .route("/rill/tiles", post(api::add_rill_tile))
         .with_state(state.clone());
 
     let ws_routes = Router::new()

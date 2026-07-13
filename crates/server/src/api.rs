@@ -5192,6 +5192,7 @@ pub async fn get_column_statistics(
 use crate::catalog::{ColumnMetadata, TableMetadata, DataCatalog};
 use crate::pii_detector::{PiiDetector, PiiDetectionResult};
 use crate::quality_assertions::{AssertionEngine, QualityAssertion, AssertionType, QualityReport};
+use crate::rill_integration::{RillProject, RillDashboard, RillTile, RillProjectManager, RillConfig};
 
 #[derive(Deserialize)]
 pub struct RegisterTableRequest {
@@ -5493,6 +5494,161 @@ pub async fn run_quality_checks(
                     "rows_affected": 3
                 }
             ]
+        })),
+    )
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Rill Data OSS Integration (Dashboard Visualization)
+// ────────────────────────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct CreateRillProjectRequest {
+    pub notebook_id: String,
+    pub name: String,
+    pub description: Option<String>,
+}
+
+pub async fn create_rill_project(
+    State(_state): State<Arc<AppState>>,
+    Json(req): Json<CreateRillProjectRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let mut manager = RillProjectManager::new(RillConfig::default());
+    let project = manager.create_project(&req.notebook_id, &req.name);
+
+    (
+        StatusCode::CREATED,
+        Json(json!({
+            "project_id": project.project_id,
+            "name": project.name,
+            "notebook_id": project.notebook_id,
+            "created_at": project.created_at,
+            "message": "Rill Data project created"
+        })),
+    )
+}
+
+pub async fn list_rill_projects(
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let notebook_id = params.get("notebook_id").map(|s| s.as_str()).unwrap_or("");
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "notebook_id": notebook_id,
+            "projects": [],
+            "count": 0
+        })),
+    )
+}
+
+#[derive(Deserialize)]
+pub struct CreateRillDashboardRequest {
+    pub project_id: String,
+    pub name: String,
+    pub title: String,
+    pub source_data: String,
+    pub description: Option<String>,
+}
+
+pub async fn create_rill_dashboard(
+    State(_state): State<Arc<AppState>>,
+    Json(req): Json<CreateRillDashboardRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let dashboard_id = Uuid::new_v4().to_string();
+
+    (
+        StatusCode::CREATED,
+        Json(json!({
+            "dashboard_id": dashboard_id,
+            "project_id": req.project_id,
+            "name": req.name,
+            "title": req.title,
+            "source_data": req.source_data,
+            "tiles": [],
+            "created_at": chrono::Utc::now(),
+            "message": "Rill dashboard created"
+        })),
+    )
+}
+
+#[derive(Deserialize)]
+pub struct AddRillTileRequest {
+    pub project_id: String,
+    pub dashboard_id: String,
+    pub title: String,
+    pub visualization_type: String,
+    pub dimensions: Vec<String>,
+    pub measures: Vec<serde_json::Value>,
+}
+
+pub async fn add_rill_tile(
+    State(_state): State<Arc<AppState>>,
+    Json(req): Json<AddRillTileRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let tile_id = Uuid::new_v4().to_string();
+
+    (
+        StatusCode::CREATED,
+        Json(json!({
+            "tile_id": tile_id,
+            "dashboard_id": req.dashboard_id,
+            "title": req.title,
+            "visualization_type": req.visualization_type,
+            "dimensions": req.dimensions,
+            "measures": req.measures,
+            "message": "Tile added to dashboard"
+        })),
+    )
+}
+
+pub async fn get_rill_project(
+    Path(project_id): Path<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::OK,
+        Json(json!({
+            "project_id": project_id,
+            "dashboards": [],
+            "config": {
+                "enabled": true,
+                "auto_generate": true,
+                "refresh_interval": 300
+            }
+        })),
+    )
+}
+
+pub async fn export_rill_project(
+    Path(project_id): Path<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::OK,
+        Json(json!({
+            "project_id": project_id,
+            "format": "rill-yaml",
+            "content": "# Rill Data project configuration exported from PrismNote",
+            "message": "Project exported for Rill Data"
+        })),
+    )
+}
+
+pub async fn embed_rill_dashboard(
+    Path((project_id, dashboard_id)): Path<(String, String)>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::OK,
+        Json(json!({
+            "project_id": project_id,
+            "dashboard_id": dashboard_id,
+            "embed_url": format!("/rill/embed/{}/{}", project_id, dashboard_id),
+            "iframe_url": format!("http://localhost:3100/explore?dashboard={}", dashboard_id),
+            "config": {
+                "interactive": true,
+                "toolbar": true,
+                "theme": "dark"
+            }
         })),
     )
 }
