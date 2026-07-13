@@ -57,7 +57,9 @@ export default function BottomPanel({ notebookVisible = true, onClose, onOpenExp
   ])
   const [cmd, setCmd] = useState('')
   const termEndRef = useRef<HTMLDivElement>(null)
-  useEffect(() => termEndRef.current?.scrollIntoView(), [history, tab])
+  useEffect(() => {
+    termEndRef.current?.scrollIntoView()
+  }, [history, tab])
 
   const runCmd = async () => {
     const c = cmd.trim()
