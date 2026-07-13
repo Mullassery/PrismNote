@@ -93,6 +93,27 @@ CREATE TABLE IF NOT EXISTS group_members (
     UNIQUE(group_id, user_id)
 );
 
+-- Execution history: tracks cell execution metadata (v1.2.1)
+CREATE TABLE IF NOT EXISTS execution_history (
+    execution_id TEXT PRIMARY KEY NOT NULL,
+    notebook_id TEXT NOT NULL,
+    cell_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    execution_status TEXT NOT NULL DEFAULT 'success', -- 'success', 'error', 'timeout'
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    duration_ms INTEGER NOT NULL,
+    execution_count INTEGER,
+    rows_affected INTEGER,
+    memory_mb REAL,
+    cpu_percent REAL,
+    error_message TEXT,
+    output_summary TEXT, -- JSON summary of outputs
+    code_preview TEXT, -- First 500 chars of code
+    FOREIGN KEY (notebook_id) REFERENCES notebooks(notebook_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
 -- Create indices for performance
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
@@ -106,3 +127,8 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
 CREATE INDEX IF NOT EXISTS idx_groups_role ON groups(role);
+CREATE INDEX IF NOT EXISTS idx_execution_history_notebook_id ON execution_history(notebook_id);
+CREATE INDEX IF NOT EXISTS idx_execution_history_cell_id ON execution_history(cell_id);
+CREATE INDEX IF NOT EXISTS idx_execution_history_user_id ON execution_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_execution_history_start_time ON execution_history(start_time);
+CREATE INDEX IF NOT EXISTS idx_execution_history_status ON execution_history(execution_status);

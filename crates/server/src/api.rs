@@ -4902,3 +4902,49 @@ pub async fn sql_complete(
     let suggestions = crate::sql_schema::generate_suggestions(&schema, &req.prefix);
     Json(suggestions)
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Execution History — v1.2.1
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Get execution history for a cell
+pub async fn get_cell_execution_history(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Path((notebook_id, cell_id)): Path<(String, String)>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<Vec<crate::execution::ExecutionRecord>>, (StatusCode, String)> {
+    let limit = params
+        .get("limit")
+        .and_then(|l| l.parse::<i64>().ok())
+        .unwrap_or(50);
+
+    match crate::execution::get_cell_history(&state.db_pool, &notebook_id, &cell_id, limit).await {
+        Ok(records) => {
+            tracing::info!("User {} queried execution history for cell {}/{}", user.user_id, notebook_id, cell_id);
+            Ok(Json(records))
+        }
+        Err(e) => {
+            tracing::error!("Failed to query execution history: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to query execution history".to_string()))
+        }
+    }
+}
+
+/// Get execution statistics for a notebook
+pub async fn get_notebook_execution_stats(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Path(notebook_id): Path<String>,
+) -> Result<Json<crate::execution::ExecutionStats>, (StatusCode, String)> {
+    match crate::execution::get_notebook_stats(&state.db_pool, &notebook_id).await {
+        Ok(stats) => {
+            tracing::info!("User {} queried execution stats for notebook {}", user.user_id, notebook_id);
+            Ok(Json(stats))
+        }
+        Err(e) => {
+            tracing::error!("Failed to query execution stats: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to query stats".to_string()))
+        }
+    }
+}

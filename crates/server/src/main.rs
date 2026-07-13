@@ -12,6 +12,7 @@ mod db;
 mod dbt_integration;
 mod docker_executor;
 mod enterprise_auth;
+mod execution;
 mod execution_pipeline;
 mod file_manager;
 mod files;
@@ -461,6 +462,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/cache/clear", post(api::clear_cache))
         // SQL Autocomplete (v1.2.1)
         .route("/sql/complete", post(api::sql_complete))
+        // Execution History (v1.2.1)
+        .route("/notebooks/:notebook_id/cells/:cell_id/executions", get(api::get_cell_execution_history))
+        .route("/notebooks/:notebook_id/execution-stats", get(api::get_notebook_execution_stats))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
