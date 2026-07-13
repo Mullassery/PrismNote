@@ -141,11 +141,14 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
     <div className="fixed inset-0 z-[100] flex items-center justify-center" onMouseDown={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
         className="relative w-[560px] max-w-[92vw] max-h-[80vh] overflow-y-auto pn-solid-bg border pn-bd rounded-2xl shadow-2xl shadow-black/50"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 h-12 border-b pn-bd sticky top-0 pn-solid-bg">
-          <h2 className="text-[15px] font-semibold pn-text">Settings</h2>
+          <h2 id="settings-title" className="text-[15px] font-semibold pn-text">Settings</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg pn-hover pn-muted hover:pn-text"><X size={16} /></button>
         </div>
 

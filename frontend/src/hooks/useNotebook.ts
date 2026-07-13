@@ -52,6 +52,7 @@ interface NotebookStore {
   updateCell: (index: number, updates: Partial<Cell>) => void
   deleteCell: (index: number) => void
   moveCell: (index: number, dir: -1 | 1) => void
+  reorderCell: (fromIdx: number, toIdx: number) => void
   copyCell: (index: number) => void
   cutCell: (index: number) => void
   pasteCell: (afterIndex: number) => void
@@ -136,9 +137,16 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       const at = index == null ? cells.length : Math.max(0, Math.min(index, cells.length))
       cells.splice(at, 0, newCell)
 
-      return {
+      const updated = {
         currentNotebook: { ...state.currentNotebook, cells },
       }
+
+      // Auto-save structural changes
+      setTimeout(() => {
+        get().saveNotebook()
+      }, 500)
+
+      return updated
     })
   },
 
@@ -170,10 +178,17 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       if (!state.currentNotebook) return state
       const cells = state.currentNotebook.cells.filter((_, i) => i !== index)
       const sel = state.selectedCellIndex
-      return {
+      const updated = {
         currentNotebook: { ...state.currentNotebook, cells },
         selectedCellIndex: sel == null ? null : Math.min(sel, cells.length - 1),
       }
+
+      // Auto-save structural changes
+      setTimeout(() => {
+        get().saveNotebook()
+      }, 500)
+
+      return updated
     })
   },
 
@@ -186,10 +201,38 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       const j = index + dir
       if (index < 0 || index >= cells.length || j < 0 || j >= cells.length) return state
       ;[cells[index], cells[j]] = [cells[j], cells[index]]
-      return {
+      const updated = {
         currentNotebook: { ...state.currentNotebook, cells },
         selectedCellIndex: j,
       }
+
+      // Auto-save structural changes
+      setTimeout(() => {
+        get().saveNotebook()
+      }, 500)
+
+      return updated
+    })
+  },
+
+  reorderCell: (fromIdx, toIdx) => {
+    set((state) => {
+      if (!state.currentNotebook) return state
+      if (fromIdx === toIdx) return state
+      const cells = [...state.currentNotebook.cells]
+      const [cell] = cells.splice(fromIdx, 1)
+      cells.splice(toIdx, 0, cell)
+      const updated = {
+        currentNotebook: { ...state.currentNotebook, cells },
+        selectedCellIndex: toIdx,
+      }
+
+      // Auto-save structural changes
+      setTimeout(() => {
+        get().saveNotebook()
+      }, 500)
+
+      return updated
     })
   },
 

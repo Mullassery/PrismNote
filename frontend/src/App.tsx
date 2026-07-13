@@ -63,6 +63,18 @@ function App() {
     return () => window.removeEventListener('click', close)
   }, [])
 
+  // Warn user before closing if a notebook is open
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (currentNotebookId) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [currentNotebookId])
+
   useEffect(() => {
     const saved = (localStorage.getItem('pn-theme') as 'light' | 'dark') || 'dark'
     setTheme(saved)
@@ -278,13 +290,15 @@ function App() {
 
   const railBtn = (active: boolean, onClick: () => void, title: string, Icon: any, stop = false) => (
     <button
+      aria-pressed={active}
+      aria-label={title.split('  ')[0]}
       onClick={(e) => {
         if (stop) e.stopPropagation()
         onClick()
       }}
       title={title}
-      className={`relative w-12 h-12 flex items-center justify-center transition-colors ${
-        active ? 'pn-text' : 'pn-faint hover:pn-text'
+      className={`relative w-12 h-12 flex items-center justify-center transition-colors rounded ${
+        active ? 'pn-text bg-blue-500/10' : 'pn-faint hover:pn-text'
       }`}
     >
       {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r prism-bar shadow-[0_0_10px_rgba(167,139,250,0.7)]" />}
@@ -429,6 +443,9 @@ function App() {
                   {notebooks.length > 0 && (
                     <p className="mt-4 text-sm pn-faint">…or pick a notebook from the Explorer on the left.</p>
                   )}
+                  <p className="mt-5 text-xs pn-faint">
+                    Tip — press <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[11px]">⌘E</kbd> anytime to explore data files, DataFrames, or run SQL.
+                  </p>
                 </div>
               </div>
             )}

@@ -55,7 +55,7 @@
   --pn-border: rgba(15, 23, 42, 0.10);
   --pn-text: #1f2937;
   --pn-muted: #5b6472;
-  --pn-faint: #97a1b2;
+  --pn-faint: #7b8899;
   --pn-hover: rgba(15, 23, 42, 0.06);
   --pn-backdrop:
     radial-gradient(1100px 480px at 78% -10%, rgba(59, 130, 246, 0.10), transparent 60%),
@@ -71,7 +71,7 @@
   --pn-border: rgba(255, 255, 255, 0.08);
   --pn-text: #e6edf6;
   --pn-muted: #9aa8bd;
-  --pn-faint: #5f6e85;
+  --pn-faint: #7a8697;
   --pn-hover: rgba(255, 255, 255, 0.06);
   --pn-backdrop:
     radial-gradient(1200px 520px at 78% -12%, rgba(59, 130, 246, 0.14), transparent 60%),
@@ -204,8 +204,9 @@ body {
 
 /* Accessibility: Focus Visible */
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid #60a5fa;
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(11, 15, 23, 0.9);
 }
 
 /* Button Base Styles */

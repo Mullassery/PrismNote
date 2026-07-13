@@ -104,7 +104,12 @@ export function ExplorerPicker({
   }, [onClose])
 
   return (
-    <div className="absolute inset-0 z-40 pn-app flex flex-col">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Data Explorer — choose a dataset"
+      className="absolute inset-0 z-40 pn-app flex flex-col"
+    >
       <div className="h-10 flex items-center gap-2 px-4 border-b pn-bd">
         <Table2 size={16} className="prism-text" />
         <span className="text-sm font-semibold pn-text">Data Explorer</span>

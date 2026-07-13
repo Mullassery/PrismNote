@@ -63,14 +63,19 @@ export default function CommandPalette({ commands, onClose, placeholder = 'Type 
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]" onMouseDown={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="command-search"
         className="relative w-[640px] max-w-[92vw] pn-solid-bg border pn-bd rounded-xl shadow-2xl shadow-black/50 overflow-hidden"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <input
+          id="command-search"
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={placeholder}
+          aria-label="Search commands"
           className="w-full px-4 py-3 bg-transparent outline-none pn-text text-[14px] border-b pn-bd"
         />
         <div ref={listRef} className="max-h-[50vh] overflow-y-auto py-1">

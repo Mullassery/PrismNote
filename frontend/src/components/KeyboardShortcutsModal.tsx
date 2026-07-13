@@ -78,10 +78,15 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-lg border border-slate-700 w-full max-w-2xl max-h-[80vh] flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-title"
+        className="bg-slate-800 rounded-lg border border-slate-700 w-full max-w-2xl max-h-[80vh] flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
-          <h2 className="text-lg font-semibold pn-text">Keyboard Shortcuts</h2>
+          <h2 id="shortcuts-title" className="text-lg font-semibold pn-text">Keyboard Shortcuts</h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-slate-700 rounded transition"
