@@ -1,6 +1,8 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use chrono::{Duration, Utc};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum AuthProvider {
@@ -88,6 +90,16 @@ pub struct JWTToken {
     pub token_type: String,
     pub expires_in: u32,
     pub issued_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct JWTClaims {
+    pub sub: String,           // subject (user_id)
+    pub email: String,
+    pub roles: Vec<String>,    // role names as strings
+    pub exp: i64,              // expiration time (unix timestamp)
+    pub iat: i64,              // issued at time
+    pub nbf: i64,              // not before time
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -444,24 +456,92 @@ impl EnterpriseAuthManager {
         logs
     }
 
-    pub fn generate_jwt(&self, user_id: &str, roles: &[UserRole]) -> Result<JWTToken> {
-        // TODO: Generate actual JWT using jwt crate
-        // For now, return placeholder
+    pub fn generate_jwt(&self, user_id: &str, email: &str, roles: &[UserRole]) -> Result<JWTToken> {
+        let now = Utc::now();
+        let access_expiration = now + Duration::minutes(15); // 15 min access token
+        let refresh_expiration = now + Duration::days(7);     // 7 day refresh token
+
+        // Access token claims
+        let access_claims = JWTClaims {
+            sub: user_id.to_string(),
+            email: email.to_string(),
+            roles: roles.iter().map(|r| format!("{:?}", r)).collect(),
+            exp: access_expiration.timestamp(),
+            iat: now.timestamp(),
+            nbf: now.timestamp(),
+        };
+
+        // Generate access token
+        let access_token = encode(
+            &Header::default(),
+            &access_claims,
+            &EncodingKey::from_secret(self.jwt_secret.as_bytes()),
+        )?;
+
+        // Refresh token claims (simpler, longer-lived)
+        let refresh_claims = JWTClaims {
+            sub: user_id.to_string(),
+            email: email.to_string(),
+            roles: vec!["refresh".to_string()],
+            exp: refresh_expiration.timestamp(),
+            iat: now.timestamp(),
+            nbf: now.timestamp(),
+        };
+
+        // Generate refresh token
+        let refresh_token = encode(
+            &Header::default(),
+            &refresh_claims,
+            &EncodingKey::from_secret(self.jwt_secret.as_bytes()),
+        )?;
 
         Ok(JWTToken {
-            access_token: format!("token-{}", uuid::Uuid::new_v4()),
-            refresh_token: Some(format!("refresh-{}", uuid::Uuid::new_v4())),
+            access_token,
+            refresh_token: Some(refresh_token),
             token_type: "Bearer".to_string(),
-            expires_in: 3600,
-            issued_at: chrono::Local::now().to_rfc3339(),
+            expires_in: 900, // 15 minutes in seconds
+            issued_at: now.to_rfc3339(),
         })
     }
 
-    pub fn validate_jwt(&self, token: &str) -> Result<AuthenticatedUser> {
-        // TODO: Validate and decode JWT
-        // For now, return error
+    pub fn validate_jwt(&self, token: &str) -> Result<(JWTClaims, AuthenticatedUser)> {
+        let token_data = decode::<JWTClaims>(
+            token,
+            &DecodingKey::from_secret(self.jwt_secret.as_bytes()),
+            &Validation::default(),
+        ).map_err(|e| anyhow::anyhow!("JWT validation failed: {}", e))?;
 
-        Err(anyhow::anyhow!("JWT validation not implemented"))
+        let claims = token_data.claims;
+
+        // Convert role strings back to UserRole enums
+        let roles: Vec<UserRole> = claims.roles
+            .iter()
+            .filter_map(|r| match r.as_str() {
+                "Admin" => Some(UserRole::Admin),
+                "Manager" => Some(UserRole::Manager),
+                "Member" => Some(UserRole::Member),
+                "Guest" => Some(UserRole::Guest),
+                _ => None,
+            })
+            .collect();
+
+        let user = AuthenticatedUser {
+            user_id: claims.sub.clone(),
+            email: claims.email.clone(),
+            display_name: claims.email.split('@').next().unwrap_or("User").to_string(),
+            given_name: None,
+            family_name: None,
+            roles,
+            groups: vec![],
+            provider: AuthProvider::Local,
+            created_at: chrono::Local::now().to_rfc3339(),
+            last_login: chrono::Local::now().to_rfc3339(),
+            is_active: true,
+            department: None,
+            manager: None,
+        };
+
+        Ok((claims, user))
     }
 }
 
