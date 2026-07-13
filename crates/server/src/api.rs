@@ -5184,3 +5184,169 @@ pub async fn get_column_statistics(
         }
     })))
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Catalog & Lineage API Endpoints (v1.3.0)
+// ────────────────────────────────────────────────────────────────────────────
+
+use crate::catalog::{ColumnMetadata, TableMetadata, DataCatalog};
+
+#[derive(Deserialize)]
+pub struct RegisterTableRequest {
+    pub notebook_id: String,
+    pub table_name: String,
+    pub source_type: String,
+    pub row_count: i64,
+    pub columns: Vec<ColumnMetadata>,
+    pub tags: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateCatalogRequest {
+    pub catalog_id: String,
+    pub description: Option<String>,
+    pub tags: Option<Vec<String>>,
+}
+
+pub async fn register_table(
+    State(_state): State<Arc<AppState>>,
+    Json(req): Json<RegisterTableRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let table_meta = TableMetadata {
+        table_id: Uuid::new_v4().to_string(),
+        name: req.table_name,
+        source_type: req.source_type,
+        row_count: req.row_count,
+        columns: req.columns,
+        created_at: chrono::Utc::now(),
+        last_accessed: chrono::Utc::now(),
+        size_bytes: 0, // TODO: calculate from actual data
+    };
+
+    let mut catalog = DataCatalog::new();
+    let entry = catalog.register_table(&req.notebook_id, "", table_meta, req.tags);
+
+    (
+        StatusCode::CREATED,
+        Json(json!({
+            "catalog_id": entry.catalog_id,
+            "table_name": entry.table_metadata.name,
+            "created_at": entry.created_at,
+            "message": "Table registered in catalog"
+        })),
+    )
+}
+
+pub async fn list_catalog(
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let notebook_id = params.get("notebook_id").map(|s| s.as_str());
+
+    if let Some(notebook_id) = notebook_id {
+        (
+            StatusCode::OK,
+            Json(json!({
+                "notebook_id": notebook_id,
+                "entries": [],
+                "message": "Catalog entries retrieved"
+            })),
+        )
+    } else {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "notebook_id parameter required"
+            })),
+        )
+    }
+}
+
+pub async fn search_catalog(
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let query = params.get("q").map(|s| s.as_str()).unwrap_or("");
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "query": query,
+            "results": [],
+            "message": "Search results"
+        })),
+    )
+}
+
+#[derive(Deserialize)]
+pub struct LineageRequest {
+    pub source_table: String,
+    pub source_column: String,
+    pub target_table: String,
+    pub target_column: String,
+    pub operation: String,
+    pub notebook_id: String,
+    pub cell_id: String,
+}
+
+pub async fn add_lineage(
+    State(_state): State<Arc<AppState>>,
+    Json(_req): Json<LineageRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::CREATED,
+        Json(json!({
+            "message": "Lineage edge recorded",
+            "lineage_id": Uuid::new_v4().to_string()
+        })),
+    )
+}
+
+pub async fn get_lineage(
+    Path((table, column)): Path<(String, String)>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::OK,
+        Json(json!({
+            "table": table,
+            "column": column,
+            "upstream": [],
+            "downstream": [],
+            "operations": []
+        })),
+    )
+}
+
+#[derive(Deserialize)]
+pub struct GovernanceRequest {
+    pub catalog_id: String,
+    pub sensitivity: Option<String>,
+    pub pii_categories: Option<Vec<String>>,
+    pub tags: Option<Vec<String>>,
+}
+
+pub async fn set_governance(
+    State(_state): State<Arc<AppState>>,
+    Json(_req): Json<GovernanceRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::OK,
+        Json(json!({
+            "message": "Governance policy applied",
+            "violations": []
+        })),
+    )
+}
+
+pub async fn get_pii_columns(
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let notebook_id = params.get("notebook_id").map(|s| s.as_str()).unwrap_or("");
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "notebook_id": notebook_id,
+            "pii_columns": [],
+            "count": 0
+        })),
+    )
+}

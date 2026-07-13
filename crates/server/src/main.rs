@@ -478,6 +478,14 @@ async fn main() -> anyhow::Result<()> {
         // Data Preview & Profiling (v1.2.1)
         .route("/data/preview", post(api::get_data_preview_with_stats))
         .route("/data/column-stats", get(api::get_column_statistics))
+        // Data Catalog & Governance (v1.3.0)
+        .route("/catalog/register", post(api::register_table))
+        .route("/catalog/list", get(api::list_catalog))
+        .route("/catalog/search", get(api::search_catalog))
+        .route("/lineage/add", post(api::add_lineage))
+        .route("/lineage/:table/:column", get(api::get_lineage))
+        .route("/governance/set", post(api::set_governance))
+        .route("/governance/pii-columns", get(api::get_pii_columns))
         .with_state(state.clone());
 
     let ws_routes = Router::new()
