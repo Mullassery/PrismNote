@@ -2,7 +2,7 @@
 
 **Current Version:** v1.2.1  
 **Last Updated:** July 14, 2026  
-**Status:** ✅ v1.2.0-BETA shipping ready · ✅ v1.2.1 released · 🔜 v1.3.0 planned (Data Catalog & Governance)
+**Status:** ✅ v1.2.1 released · 🔨 v1.3.1 Chainlit UI in progress · 🔜 v1.3.0 (Data Catalog & Governance)
 
 ---
 
@@ -312,13 +312,13 @@ Phase 3 enhancements (optional polish):
 ### v1.3.1 (Q2 2027) — AI Assistant Polish with Chainlit
 **~8 hours | Conversational AI interface upgrade**
 
-#### Chainlit Integration
-- [ ] **Chainlit UI Foundation** — replace RHS AI panel with Chainlit chat interface
-- [ ] **Multi-Provider LLMs** — Ollama (local), Anthropic Claude, OpenAI in unified Chainlit UI
-- [ ] **Conversational Interface** — multi-turn conversations with context preservation
-- [ ] **Notebook-Aware Context** — AI aware of current notebook, cells, and data
+#### Chainlit Integration (🚧 In Progress)
+- [x] **Chainlit UI Foundation** — replace RHS AI panel with Chainlit chat interface ✅ Phase 1
+- [x] **Multi-Provider LLMs** — Ollama (local), Anthropic Claude, OpenAI in unified Chainlit UI ✅ Phase 2
+- [x] **Conversational Interface** — multi-turn conversations with context preservation ✅ Phase 3
+- [x] **Notebook-Aware Context** — AI aware of current notebook, cells, and data ✅ Phase 2
+- [x] **Message History** — persist conversations per notebook session ✅ Phase 3
 - [ ] **Agent Capabilities** — streaming output, tool calling, memory management
-- [ ] **Message History** — persist conversations per notebook session
 
 #### Enhanced AI Features
 - [ ] **AI Chat Sidebar** — dedicated right panel for AI conversations
