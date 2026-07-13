@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import axios from 'axios'
+import { useExecutionMinimapStore } from './useExecutionMinimap'
 
 interface Cell {
   id: string
@@ -114,6 +115,8 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
         currentNotebookId: id,
         currentNotebook: res.data,
       })
+      // Reset execution minimap state when loading new notebook
+      useExecutionMinimapStore.getState().resetExecutionStates()
     } catch (err) {
       console.error('Failed to load notebook:', err)
     }
@@ -273,6 +276,9 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
     const cell = state.currentNotebook.cells[index]
     if (!cell) return
 
+    const minimapStore = useExecutionMinimapStore.getState()
+    minimapStore.recordCellStart(cell.id)
+
     try {
       const res = await axios.post(`${API_BASE}/notebooks/${state.currentNotebook.id}/execute`, {
         cell_id: cell.id,
@@ -299,6 +305,8 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
         }
       })
 
+      minimapStore.recordCellComplete(cell.id, true)
+
       // Auto-save after execution
       setTimeout(() => {
         get().saveNotebook()
@@ -311,6 +319,9 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
     } catch (err: any) {
       console.error('Failed to execute cell:', err)
 
+      const errorMessage = err.response?.data?.message || err.message || 'Execution failed'
+      minimapStore.recordCellComplete(cell.id, false, errorMessage)
+
       // Show error in output
       set((s) => {
         if (!s.currentNotebook) return s
@@ -321,7 +332,7 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
           outputs: [
             {
               output_type: 'error',
-              text: [err.response?.data?.message || err.message || 'Execution failed'],
+              text: [errorMessage],
               metadata: null,
               data: null,
             },

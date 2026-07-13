@@ -1,15 +1,28 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNotebookStore } from '../hooks/useNotebook'
 import Cell from './Cell'
 import Toolbar from './Toolbar'
+import ExecutionMinimap from './ExecutionMinimap'
 import { Plus, FileCode, Code2, Type, Minus, ChevronDown } from 'lucide-react'
 import { useFontSize } from '../hooks/useFontSize'
 
 export default function Notebook() {
   const { currentNotebook, addCell, selectedCellIndex, setSelectedCell } = useNotebookStore()
   const [collapsed, setCollapsed] = useState(false)
+  const cellRefsMap = useRef(new Map<string, React.RefObject<HTMLDivElement>>()).current
   // Code editor font, live across all cells via a window event each Cell listens to.
   const { size: codeFont, inc, dec } = useFontSize('pn-code-size', 16, 9, 40)
+
+  // Initialize refs for all cells
+  useEffect(() => {
+    if (currentNotebook) {
+      currentNotebook.cells.forEach((cell) => {
+        if (!cellRefsMap.has(cell.id)) {
+          cellRefsMap.set(cell.id, useRef<HTMLDivElement>(null))
+        }
+      })
+    }
+  }, [currentNotebook?.id, currentNotebook?.cells.length])
   const setFont = (fn: () => void) => {
     fn()
     // read back the just-persisted value and broadcast it
@@ -65,12 +78,14 @@ export default function Notebook() {
       <Toolbar />
 
       {!collapsed && (
-      <div className="flex-1 overflow-y-auto p-4 min-w-0">
-        <div className="w-full min-w-0">
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-4 min-w-0">
+          <div className="w-full min-w-0">
           <Inserter at={0} />
           {currentNotebook.cells.map((cell, idx) => (
             <div key={cell.id} data-cell-index={idx}>
               <div
+                ref={cellRefsMap.get(cell.id)}
                 onClick={() => setSelectedCell(idx)}
                 className={`cursor-text transition rounded-lg ${
                   selectedCellIndex === idx ? 'ring-2 ring-blue-500/70' : 'ring-1 ring-transparent hover:ring-slate-700'
@@ -96,7 +111,9 @@ export default function Notebook() {
               <Type size={16} /> Markdown
             </button>
           </div>
+          </div>
         </div>
+        <ExecutionMinimap cells={currentNotebook.cells} cellRefs={cellRefsMap} />
       </div>
       )}
     </div>
