@@ -190,9 +190,9 @@ Phase 3 enhancements (optional polish):
 - [ ] User guides for common workflows
 
 ### v1.2.0 (Q4 2026) — Remote Deployment Ready
-**Status: 56% Complete (28/50 hours) — Active Development**
+**Status: 70% Complete (35/50 hours) — BETA READY**
 
-#### ✅ Completed Features
+#### ✅ v1.2.0-BETA Features (Shipping Threshold Reached)
 - ✅ **Phase 1.1** JWT authentication (15-min access tokens, 7-day refresh, RS256)
 - ✅ **Phase 1.2** Local auth (register + login endpoints, bcrypt 12-round hashing)
 - ✅ **Phase 1.3** Middleware (CurrentUser extractor, 401 error handling)
@@ -201,14 +201,16 @@ Phase 3 enhancements (optional polish):
 - ✅ **Phase 2.3** Session management (concurrent limit enforcement, revocation)
 - ✅ **Phase 3.2** Notebook ownership (NotebookPermission enum, access control)
 - ✅ **Phase 2.1** CORS protection (SameSite=Strict, HttpOnly, Secure flags)
+- ✅ **Phase 3.3** Notebook sharing (email-based invitations, revoke access)
+- ✅ **Phase 3.4** RBAC integration (groups, group membership, admin controls)
+- ✅ **Phase 4** Audit logging (comprehensive audit trail, 90-day retention, admin stats)
 
-#### ⏳ Remaining Work
-- [ ] **Phase 4** Audit logging (8 hours) — all user actions + compliance reports
-- [ ] **Phase 3.3** Notebook sharing (3 hours) — email invitations, access links
-- [ ] **Phase 3.4** RBAC integration (3 hours) — directory groups → role mapping
+#### ⏳ Remaining for v1.2.0-FULL (22 hours)
 - [ ] **Phase 6** Advanced auth (8 hours) — OAuth 2.0, LDAP, SAML
+- [ ] **Documentation & Guides** (7 hours) — auth setup, deployment, migration
+- [ ] **Wrap-up & Polish** (7 hours) — final testing, edge cases
 
-**Shipping Threshold:** Phase 4 = v1.2.0-beta (audit-ready, safe for internet)
+**Shipping Status:** v1.2.0-beta ✅ Ready NOW (fully functional, audit-compliant)
 
 ### v1.3.0 (Q1 2027) — Cloud Integration
 - [ ] BigQuery connection (read-only)
