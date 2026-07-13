@@ -652,7 +652,11 @@ function StatsTab({ target, cols, profiles }: { target: ExplorerTarget; cols: Co
           <StatsTable stats={stats} />
         )
       ) : (
-        <div className="p-4 grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+        <div className="p-4" style={{
+          display: 'grid',
+          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))',
+          gap: '0.75rem'
+        }}>
           {cols.map((c) => (
             <div key={c.name} className="rounded-lg border pn-bd p-3 bg-white/[0.02]">
               <div className="flex items-center gap-1.5 mb-2">

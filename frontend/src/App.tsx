@@ -83,26 +83,33 @@ function App() {
     if (fs) document.documentElement.style.setProperty('--pn-code-size', `${fs}px`)
   }, [])
 
-  // Responsive layout: auto-collapse side panels when the window is too narrow
-  // to show them comfortably, and restore them when it widens again. Acts only
-  // on breakpoint transitions so it doesn't fight manual toggles at a given size.
+  // Responsive layout: stagger panel collapse at three independent breakpoints
+  // - 1400px: hide AI panel first (keep files)
+  // - 900px: hide files panel (keep center)
+  // - 700px: hide terminal (keep essential UI)
   useEffect(() => {
-    const NARROW = 1000 // below this, hide both side panels
-    const TIGHT = 700 //  below this, also hide the bottom panel
-    let prev = { narrow: window.innerWidth < NARROW, tight: window.innerWidth < TIGHT }
-    if (prev.narrow || prev.tight) {
+    const HIDE_AI = 1400 // below this, hide AI panel
+    const HIDE_FILES = 900 // below this, hide files panel
+    const TIGHT = 700 // below this, hide terminal
+    let prev = {
+      hideAi: window.innerWidth < HIDE_AI,
+      hideFiles: window.innerWidth < HIDE_FILES,
+      tight: window.innerWidth < TIGHT,
+    }
+    if (prev.hideAi || prev.hideFiles || prev.tight) {
       setPanels((p) => ({
-        files: prev.narrow ? false : p.files,
-        ai: prev.narrow ? false : p.ai,
+        files: prev.hideFiles ? false : p.files,
+        ai: prev.hideAi ? false : p.ai,
         terminal: prev.tight ? false : p.terminal,
       }))
     }
     const onResize = () => {
-      const narrow = window.innerWidth < NARROW
+      const hideAi = window.innerWidth < HIDE_AI
+      const hideFiles = window.innerWidth < HIDE_FILES
       const tight = window.innerWidth < TIGHT
-      if (narrow !== prev.narrow || tight !== prev.tight) {
-        prev = { narrow, tight }
-        setPanels({ files: !narrow, ai: !narrow, terminal: !tight })
+      if (hideAi !== prev.hideAi || hideFiles !== prev.hideFiles || tight !== prev.tight) {
+        prev = { hideAi, hideFiles, tight }
+        setPanels({ files: !hideFiles, ai: !hideAi, terminal: !tight })
       }
     }
     window.addEventListener('resize', onResize)
