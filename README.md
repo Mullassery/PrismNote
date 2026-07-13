@@ -112,12 +112,18 @@ Open a live DataFrame, a file, or a DuckDB query in a warehouse-style explorer:
 - **Reproducible** — "Copy as code" / "Insert as cell" emits runnable pandas; export CSV.
 - Collapsible, with **+/- zoom**; double-click a data file in the file browser to open it here.
 
-### 📊 Visualization Pane
+### 📊 Dashboarding & Visualization
 - **Plot gallery** — every figure (matplotlib/plotly) collected with zoom, pan, filmstrip,
   and **PNG + vector SVG** export.
 - **No-code chart builder** (Looker-style) — drag dimensions/measures, pick a chart
   (bar/line/area/scatter/heatmap/pie), aggregate, and render via **Vega-Lite** — then
   "Copy as code" to get the equivalent Altair.
+- **Rill Data OSS Integration** — Enterprise BI dashboards with:
+  - Multi-tile interactive dashboards (12+ visualization types)
+  - Filters, drill-down, cross-filtering
+  - Public sharing via URL & iframe embedding
+  - Scheduled data refresh & caching
+  - YAML-based configuration (version control friendly)
 
 ### 🤖 AI assistance
 - **Choose your provider** in Settings → AI: **Ollama** (local, free, private), **Claude**,

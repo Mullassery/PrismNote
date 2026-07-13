@@ -320,6 +320,18 @@ Phase 3 enhancements (optional polish):
 - [ ] **Data Discovery Assistant** — "show customer datasets" → natural language search (Phase 5)
 - [ ] **Auto Quality Checks** — AI generates test cases based on column type (Phase 5)
 
+#### Dashboard & BI Integration ✨ NEW
+- [x] **Rill Data OSS Integration** — Enterprise BI dashboarding (rill_integration.rs, 350 lines)
+  - Multi-tile dashboards with grid-based layout
+  - 12+ visualization types (Table, BarChart, LineChart, ScatterPlot, Heatmap, Sankey, etc.)
+  - Interactive filters (Dropdown, Range, Date, Search, Checkbox)
+  - Project persistence & YAML configuration
+  - Public sharing & iframe embedding
+  - Replaces/enhances previous Plots feature
+  - Integrates with v1.3.0 governance dashboards
+  - 7 REST API endpoints for project/dashboard management
+  - Frontend component (RillDashboard.tsx, 400 lines)
+
 #### Plus Previous Databricks Features
 - [ ] **AI Assistant Inside Cells** — Explain, Optimize, Generate Tests
 - [ ] **Notebook Versioning** — Git-style diffs
