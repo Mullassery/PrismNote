@@ -4391,3 +4391,271 @@ pub async fn revoke_notebook_access(
         _ => Err((StatusCode::FORBIDDEN, "Only owner can revoke access".to_string())),
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// RBAC (Role-Based Access Control) — Phase 3.4
+// ════════════════════════════════════════════════════════════════════════════
+
+#[derive(Deserialize)]
+pub struct CreateGroupRequest {
+    pub group_name: String,
+    pub description: Option<String>,
+    pub role: String, // "Admin", "Editor", "Viewer"
+}
+
+#[derive(Serialize)]
+pub struct GroupInfo {
+    pub group_id: String,
+    pub group_name: String,
+    pub description: Option<String>,
+    pub role: String,
+    pub created_at: String,
+    pub member_count: i64,
+}
+
+#[derive(Deserialize)]
+pub struct AddGroupMemberRequest {
+    pub email: String,
+}
+
+/// Create a new group (admin only)
+pub async fn create_group(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CreateGroupRequest>,
+) -> Result<(StatusCode, Json<GroupInfo>), (StatusCode, String)> {
+    // Check if user is admin
+    if !user.roles.contains(&"Admin".to_string()) {
+        return Err((StatusCode::FORBIDDEN, "Only admins can create groups".to_string()));
+    }
+
+    let group_id = Uuid::new_v4().to_string();
+    let now = chrono::Local::now().to_rfc3339();
+
+    let insert_query = "INSERT INTO groups (group_id, group_name, description, role, created_at, created_by)
+                       VALUES (?, ?, ?, ?, ?, ?)";
+
+    match sqlx::query(insert_query)
+        .bind(&group_id)
+        .bind(&req.group_name)
+        .bind(&req.description)
+        .bind(&req.role)
+        .bind(&now)
+        .bind(&user.user_id)
+        .execute(&state.db_pool)
+        .await
+    {
+        Ok(_) => {
+            tracing::info!("Admin {} created group {}", user.user_id, group_id);
+            Ok((
+                StatusCode::CREATED,
+                Json(GroupInfo {
+                    group_id,
+                    group_name: req.group_name,
+                    description: req.description,
+                    role: req.role,
+                    created_at: now,
+                    member_count: 0,
+                }),
+            ))
+        }
+        Err(e) => {
+            tracing::error!("Failed to create group: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to create group".to_string()))
+        }
+    }
+}
+
+/// List all groups
+pub async fn list_groups(
+    _user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+) -> Json<Vec<GroupInfo>> {
+    let query = "SELECT g.group_id, g.group_name, g.description, g.role, g.created_at,
+                        COUNT(gm.member_id) as member_count
+                 FROM groups g
+                 LEFT JOIN group_members gm ON g.group_id = gm.group_id
+                 GROUP BY g.group_id
+                 ORDER BY g.created_at DESC";
+
+    match sqlx::query_as::<_, (String, String, Option<String>, String, String, Option<i64>)>(query)
+        .fetch_all(&state.db_pool)
+        .await
+    {
+        Ok(rows) => {
+            let groups = rows.into_iter()
+                .map(|(group_id, group_name, description, role, created_at, member_count)| GroupInfo {
+                    group_id,
+                    group_name,
+                    description,
+                    role,
+                    created_at,
+                    member_count: member_count.unwrap_or(0),
+                })
+                .collect();
+            Json(groups)
+        }
+        Err(e) => {
+            tracing::error!("Failed to list groups: {}", e);
+            Json(vec![])
+        }
+    }
+}
+
+/// Add a user to a group (admin only)
+pub async fn add_group_member(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Path(group_id): Path<String>,
+    Json(req): Json<AddGroupMemberRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    // Check if user is admin
+    if !user.roles.contains(&"Admin".to_string()) {
+        return Err((StatusCode::FORBIDDEN, "Only admins can manage groups".to_string()));
+    }
+
+    // Look up user by email
+    let target_user_query = "SELECT user_id FROM users WHERE email = ?";
+    let target_user: Option<(String,)> = match sqlx::query_as(target_user_query)
+        .bind(&req.email)
+        .fetch_optional(&state.db_pool)
+        .await
+    {
+        Ok(Some(row)) => Some(row),
+        Ok(None) => {
+            return Err((StatusCode::NOT_FOUND, format!("User with email {} not found", req.email)))
+        }
+        Err(e) => {
+            tracing::error!("Database error looking up user: {}", e);
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))
+        }
+    };
+
+    let target_user_id = target_user.map(|(id,)| id).unwrap();
+
+    // Check if group exists
+    let group_query = "SELECT group_id FROM groups WHERE group_id = ?";
+    match sqlx::query_as::<_, (String,)>(group_query)
+        .bind(&group_id)
+        .fetch_optional(&state.db_pool)
+        .await
+    {
+        Ok(Some(_)) => {}
+        Ok(None) => return Err((StatusCode::NOT_FOUND, "Group not found".to_string())),
+        Err(e) => {
+            tracing::error!("Database error checking group: {}", e);
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()));
+        }
+    }
+
+    // Add member to group
+    let member_id = Uuid::new_v4().to_string();
+    let insert_query = "INSERT OR IGNORE INTO group_members (member_id, group_id, user_id)
+                       VALUES (?, ?, ?)";
+
+    match sqlx::query(insert_query)
+        .bind(&member_id)
+        .bind(&group_id)
+        .bind(&target_user_id)
+        .execute(&state.db_pool)
+        .await
+    {
+        Ok(_) => {
+            tracing::info!("Added user {} to group {}", target_user_id, group_id);
+            Ok(StatusCode::CREATED)
+        }
+        Err(e) => {
+            tracing::error!("Failed to add group member: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to add member".to_string()))
+        }
+    }
+}
+
+/// Remove a user from a group (admin only)
+pub async fn remove_group_member(
+    user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Path((group_id, user_email)): Path<(String, String)>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    // Check if user is admin
+    if !user.roles.contains(&"Admin".to_string()) {
+        return Err((StatusCode::FORBIDDEN, "Only admins can manage groups".to_string()));
+    }
+
+    // Look up user by email
+    let target_user_query = "SELECT user_id FROM users WHERE email = ?";
+    let target_user: Option<(String,)> = match sqlx::query_as(target_user_query)
+        .bind(&user_email)
+        .fetch_optional(&state.db_pool)
+        .await
+    {
+        Ok(Some(row)) => Some(row),
+        Ok(None) => {
+            return Err((StatusCode::NOT_FOUND, format!("User with email {} not found", user_email)))
+        }
+        Err(e) => {
+            tracing::error!("Database error looking up user: {}", e);
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))
+        }
+    };
+
+    let target_user_id = target_user.map(|(id,)| id).unwrap();
+
+    let delete_query = "DELETE FROM group_members WHERE group_id = ? AND user_id = ?";
+    match sqlx::query(delete_query)
+        .bind(&group_id)
+        .bind(&target_user_id)
+        .execute(&state.db_pool)
+        .await
+    {
+        Ok(result) => {
+            if result.rows_affected() == 0 {
+                return Err((StatusCode::NOT_FOUND, "User not in group".to_string()));
+            }
+
+            tracing::info!("Removed user {} from group {}", target_user_id, group_id);
+            Ok(StatusCode::NO_CONTENT)
+        }
+        Err(e) => {
+            tracing::error!("Failed to remove group member: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to remove member".to_string()))
+        }
+    }
+}
+
+/// Get members of a group
+pub async fn get_group_members(
+    _user: CurrentUser,
+    State(state): State<Arc<AppState>>,
+    Path(group_id): Path<String>,
+) -> Json<Vec<serde_json::Value>> {
+    let query = "SELECT u.user_id, u.email, u.display_name, gm.joined_at
+                 FROM group_members gm
+                 JOIN users u ON gm.user_id = u.user_id
+                 WHERE gm.group_id = ?
+                 ORDER BY gm.joined_at";
+
+    match sqlx::query_as::<_, (String, String, String, String)>(query)
+        .bind(&group_id)
+        .fetch_all(&state.db_pool)
+        .await
+    {
+        Ok(rows) => {
+            let members: Vec<serde_json::Value> = rows.into_iter()
+                .map(|(user_id, email, display_name, joined_at)| {
+                    json!({
+                        "user_id": user_id,
+                        "email": email,
+                        "display_name": display_name,
+                        "joined_at": joined_at,
+                    })
+                })
+                .collect();
+            Json(members)
+        }
+        Err(e) => {
+            tracing::error!("Failed to get group members: {}", e);
+            Json(vec![])
+        }
+    }
+}

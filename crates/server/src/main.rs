@@ -439,6 +439,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/notebooks/accessible", get(api::list_accessible_notebooks))
         .route("/notebooks/:id/share", post(api::share_notebook))
         .route("/notebooks/:id/access/:user_email", delete(api::revoke_notebook_access))
+        // RBAC (Role-Based Access Control) endpoints
+        .route("/admin/groups", post(api::create_group).get(api::list_groups))
+        .route("/admin/groups/:group_id/members", post(api::add_group_member).get(api::get_group_members))
+        .route("/admin/groups/:group_id/members/:user_email", delete(api::remove_group_member))
         .with_state(state.clone());
 
     let ws_routes = Router::new()

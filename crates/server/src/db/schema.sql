@@ -71,6 +71,28 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
+-- Groups: for RBAC (Role-Based Access Control)
+CREATE TABLE IF NOT EXISTS groups (
+    group_id TEXT PRIMARY KEY NOT NULL,
+    group_name TEXT UNIQUE NOT NULL,
+    description TEXT,
+    role TEXT NOT NULL DEFAULT 'Member', -- 'Admin', 'Editor', 'Viewer'
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NOT NULL,
+    FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Group membership: tracks which users belong to which groups
+CREATE TABLE IF NOT EXISTS group_members (
+    member_id TEXT PRIMARY KEY NOT NULL,
+    group_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    UNIQUE(group_id, user_id)
+);
+
 -- Create indices for performance
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
@@ -81,3 +103,6 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX IF NOT EXISTS idx_groups_role ON groups(role);
