@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { TerminalSquare, ListChecks, ChevronDown, X, Minus, SquareTerminal, Plus, Variable, RefreshCw, Table2, List, GitBranch, Sparkles } from 'lucide-react'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore } from '../hooks/useNotebookRedux'
 import { useFontSize } from '../hooks/useFontSize'
 import TableOfContents from './TableOfContents'
 import LineageViewer from './LineageViewer'
@@ -16,8 +16,9 @@ interface BottomPanelProps {
 }
 
 export default function BottomPanel({ notebookVisible = true, onClose, onOpenExplorer }: BottomPanelProps) {
+    
   const { currentNotebook } = useNotebookStore()
-  const [tab, setTab] = useState<Tab>('output')
+const [tab, setTab] = useState<Tab>('output')
   const [collapsed, setCollapsed] = useState(false)
   const [height, setHeight] = useState(240)
   const [selectedTable, setSelectedTable] = useState<string | null>(null)

@@ -12,7 +12,7 @@ import {
   type Source, type SchemaResult, type Overview, type ColumnProfile, type ColumnSchema,
   type Sort, type Filter, type LogicalType, type ColumnStat, type Lineage,
 } from '../api/explore'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore, getNotebookState } from '../hooks/useNotebookRedux'
 import { listVariables } from '../api/kernel'
 import { useAIContext } from '../hooks/useAIContext'
 
@@ -384,10 +384,10 @@ export default function DataExplorer({
   const insertAsCell = async () => {
     try {
       const code = await exploreExportCode(target, { sort, filters })
-      const store = useNotebookStore.getState() as any
+      const store = getNotebookState() as any
       if (!store.currentNotebook) await store.createNotebook('Explore')
       store.addCell('code')
-      const s2 = useNotebookStore.getState() as any
+      const s2 = getNotebookState() as any
       const idx = s2.currentNotebook.cells.length - 1
       s2.updateCell(idx, { source: code.split(/(?<=\n)/) })
       onClose()
@@ -935,7 +935,7 @@ function LineageTab({ target, title }: { target: ExplorerTarget; title: string }
   }, [JSON.stringify(target)])
 
   const varName = 'var' in target ? target.var : (lin?.kind === 'variable' ? lin.name : undefined)
-  const nb = (useNotebookStore.getState() as any).currentNotebook
+  const nb = (getNotebookState() as any).currentNotebook
   const cells: { source: string[] }[] = nb?.cells ?? []
   const cellText = (i: number) => (Array.isArray(cells[i]?.source) ? cells[i].source.join('') : String(cells[i]?.source ?? ''))
 

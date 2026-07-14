@@ -1,14 +1,16 @@
 import { Download, Upload, Save, Moon, Sun, RotateCcw, Minus, Plus } from 'lucide-react'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore, getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
+import { setNotebooks } from '../store/notebookSlice'
 import { restartKernel } from '../api/kernel'
 import { useState, useEffect } from 'react'
 import { useFontSize } from '../hooks/useFontSize'
 
 export default function Toolbar() {
-  const [isDark, setIsDark] = useState(true)
-  const [editingName, setEditingName] = useState(false)
+  
   const { currentNotebook, saveNotebook } = useNotebookStore()
-  const { size: fontSize, inc: fontInc, dec: fontDec } = useFontSize('pn-notebook-zoom', 14)
+const [isDark, setIsDark] = useState(true)
+  const [editingName, setEditingName] = useState(false)
+      const { size: fontSize, inc: fontInc, dec: fontDec } = useFontSize('pn-notebook-zoom', 14)
 
   // Broadcast notebook zoom level to cells
   useEffect(() => {
@@ -22,11 +24,16 @@ export default function Toolbar() {
     setEditingName(false)
     const name = value.trim()
     if (!name || !currentNotebook || name === currentNotebook.name) return
-    useNotebookStore.setState((s: any) => ({
-      currentNotebook: { ...s.currentNotebook, name },
-      notebooks: s.notebooks.map((n: any) => (n.id === s.currentNotebook.id ? { ...n, name } : n)),
+    const dispatch = getReduxDispatch()
+    const state = getNotebookState()
+    const updatedNotebook = { ...currentNotebook, name }
+    dispatch(setNotebooks({
+      currentNotebook: updatedNotebook,
+      currentNotebookId: state.currentNotebookId!,
+      notebooks: state.notebooks.map((n) => (n.id === currentNotebook.id ? { ...n, name } : n)),
     }))
-    setTimeout(() => useNotebookStore.getState().saveNotebook?.(), 0)
+    // Save after rename
+    setTimeout(() => { const hook = useNotebookStore(); hook.saveNotebook() }, 0)
   }
 
   const handleExport = () => {

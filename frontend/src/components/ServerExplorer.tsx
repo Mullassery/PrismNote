@@ -4,7 +4,8 @@ import {
   Folder, FileCode, FileText, ChevronUp, RefreshCw, Loader2,
   FilePlus, FolderPlus, Upload, Eye, EyeOff, Pencil, Trash2, Scissors, Copy, ClipboardPaste,
 } from 'lucide-react'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore, getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
+import { setNotebooks } from '../store/notebookSlice'
 import { useExplorerRequest, isDataFile } from '../hooks/useExplorerRequest'
 import { useAIContext } from '../hooks/useAIContext'
 
@@ -78,8 +79,10 @@ export default function ServerExplorer({ initialPath }: { initialPath?: string }
         outputs: c.outputs ?? [], execution_count: c.execution_count ?? null, metadata: c.metadata ?? {},
       }))
       const nb = { id: `local-${entry.path}`, name: entry.name.replace(/\.ipynb$/, ''), cells, metadata: data.metadata ?? {} }
-      useNotebookStore.setState((s: any) => ({
-        notebooks: [...s.notebooks.filter((n: any) => n.id !== nb.id), nb],
+      const dispatch = getReduxDispatch()
+      const state = getNotebookState()
+      dispatch(setNotebooks({
+        notebooks: [...state.notebooks.filter((n: any) => n.id !== nb.id), nb],
         currentNotebookId: nb.id, currentNotebook: nb,
       }))
     } catch (e: any) { setError(e?.response?.data?.error || 'Could not open notebook') }

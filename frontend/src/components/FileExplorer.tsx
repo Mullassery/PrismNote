@@ -17,7 +17,8 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { useWorkspace } from '../hooks/useWorkspace'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore, getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
+import { setNotebooks } from '../store/notebookSlice'
 import { useFontSize } from '../hooks/useFontSize'
 import ServerExplorer from './ServerExplorer'
 
@@ -76,8 +77,10 @@ function loadIpynb(name: string, data: any) {
     metadata: c.metadata ?? {},
   }))
   const nb = { id: `local-${name}`, name: name.replace(/\.ipynb$/, ''), cells, metadata: data.metadata ?? {} }
-  useNotebookStore.setState((s: any) => ({
-    notebooks: [...s.notebooks.filter((n: any) => n.id !== nb.id), nb],
+  const dispatch = getReduxDispatch()
+  const state = getNotebookState()
+  dispatch(setNotebooks({
+    notebooks: [...state.notebooks.filter((n: any) => n.id !== nb.id), nb],
     currentNotebookId: nb.id,
     currentNotebook: nb,
   }))
@@ -86,7 +89,12 @@ function loadIpynb(name: string, data: any) {
 type MenuState = { x: number; y: number; entry: Entry; parent: any } | null
 
 export default function FileExplorer() {
-  const { rootHandle, rootName, rev, openFolder, refresh, supported } = useWorkspace()
+  const rootHandle = useWorkspace((s) => s.rootHandle)
+  const rootName = useWorkspace((s) => s.rootName)
+  const rev = useWorkspace((s) => s.rev)
+  const openFolder = useWorkspace((s) => s.openFolder)
+  const refresh = useWorkspace((s) => s.refresh)
+  const supported = useWorkspace((s) => s.supported)
   const [menu, setMenu] = useState<MenuState>(null)
   // Server-backed browse: the reliable path when the File System Access API
   // isn't available (e.g. embedded/automated browsers), or on user request.

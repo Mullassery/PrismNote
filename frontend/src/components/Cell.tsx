@@ -1,9 +1,9 @@
 import Editor, { DiffEditor } from '@monaco-editor/react'
 import MDPreview from '@uiw/react-markdown-preview'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback, memo } from 'react'
 import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown, GripVertical } from 'lucide-react'
 import Output from './Output'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore } from '../hooks/useNotebookRedux'
 import { aiEdit, aiFix, aiExplain } from '../api/ai'
 import { interruptKernel } from '../api/kernel'
 import { subscribeCellStream } from '../api/stream'
@@ -31,7 +31,7 @@ function errorFromOutputs(outputs: any[]): string | null {
   return null
 }
 
-export default function Cell({ cell, cellIndex }: CellProps) {
+function CellInner({ cell, cellIndex }: CellProps) {
   const [isEditing, setIsEditing] = useState(!cell.source.length)
   const [collapsed, setCollapsed] = useState(false)
   const { updateCell, deleteCell, executeCell, currentNotebook } = useNotebookStore()
@@ -192,6 +192,19 @@ export default function Cell({ cell, cellIndex }: CellProps) {
   }
 
   const rejectProposal = () => setProposal(null)
+
+  const handleEditorMount = useCallback((editor: any, monaco: any) => {
+    editorRef.current = editor
+    monacoRef.current = monaco
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, openAi)
+    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => handleRun())
+    registerOllamaCompletions(monaco)
+    registerSqlCompletions(monaco)
+    registerPythonFormatter(monaco)
+    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () =>
+      editor.getAction('editor.action.formatDocument')?.run(),
+    )
+  }, [openAi, handleRun])
 
   return (
     <div className="pn-solid-bg rounded-lg border pn-bd overflow-hidden">
@@ -362,19 +375,7 @@ export default function Cell({ cell, cellIndex }: CellProps) {
             height="200px"
             language="python"
             value={sourceText}
-            onMount={(editor, monaco) => {
-              editorRef.current = editor
-              monacoRef.current = monaco
-              editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, openAi)
-              editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => handleRun())
-              registerOllamaCompletions(monaco) // ghost-text suggestions when Ollama is up
-              registerSqlCompletions(monaco) // SQL keyword + table + column completions
-              registerPythonFormatter(monaco) // Black-powered pretty-printing / indentation
-              // ⇧⌥F formats the cell on demand (format-on-paste handles the rest)
-              editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () =>
-                editor.getAction('editor.action.formatDocument')?.run(),
-              )
-            }}
+            onMount={handleEditorMount}
             // split *keeping* the trailing \n on each line so join('') round-trips
             // (otherwise newlines are lost and the cursor can't move to a new line)
             onChange={(val) => updateCell(cellIndex, { source: (val ?? '').split(/(?<=\n)/) })}
@@ -463,3 +464,5 @@ export default function Cell({ cell, cellIndex }: CellProps) {
     </div>
   )
 }
+
+export default memo(CellInner)

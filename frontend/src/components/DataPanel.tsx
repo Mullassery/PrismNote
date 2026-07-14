@@ -7,7 +7,7 @@ import {
   type DbConnection, type QueryResult, type DatabaseSchema,
 } from '../api/data'
 import DataFrameView from './DataFrameView'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore, getNotebookState } from '../hooks/useNotebookRedux'
 import { useFontSize } from '../hooks/useFontSize'
 
 type Conn = { id: string; name: string; kind: 'db' | 'warehouse'; sub: string }
@@ -164,12 +164,12 @@ export default function DataPanel({ onClose }: { onClose: () => void }) {
     if (!sel) return
     try {
       const code = await queryCode(sel.kind, sel.id, sql)
-      const store = useNotebookStore.getState() as any
+      const store = getNotebookState() as any
       if (!store.currentNotebook) {
         await store.createNotebook('SQL')
       }
       store.addCell('code')
-      const s2 = useNotebookStore.getState() as any
+      const s2 = getNotebookState() as any
       const idx = s2.currentNotebook.cells.length - 1
       s2.updateCell(idx, { source: code.split(/(?<=\n)/) })
       onClose() // jump back to the notebook with the new cell

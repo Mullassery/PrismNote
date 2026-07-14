@@ -37,7 +37,8 @@ import MenuBar from './components/MenuBar'
 import UnifiedSearch from './components/UnifiedSearch'
 import CommandPalette, { type Command } from './components/CommandPalette'
 import SettingsModal from './components/SettingsModal'
-import { useNotebookStore } from './hooks/useNotebook'
+import { useNotebookStore, getNotebookState, getReduxDispatch } from './hooks/useNotebookRedux'
+import { setNotebooks } from './store/notebookSlice'
 import { useWorkspace, openNotebookFile, saveJsonAs } from './hooks/useWorkspace'
 import { useAuth } from './hooks/useAuth'
 
@@ -131,15 +132,12 @@ function App() {
         setSearchOpen(true)
       } else if (mod && e.shiftKey && e.key === 'Enter') {
         e.preventDefault()
-        const st: any = useNotebookStore.getState()
-        const nb = st.currentNotebook
-        if (nb) {
-          ;(async () => {
-            for (let i = 0; i < nb.cells.length; i++) {
-              if (nb.cells[i].cell_type === 'code') await st.executeCell(i)
-            }
-          })()
-        }
+        ;(async () => {
+          for (let i = 0; i < (currentNotebook?.cells ?? []).length; i++) {
+            if (currentNotebook?.cells[i].cell_type === 'code') await executeCell(i)
+          }
+        })()
+
       } else if (mod && e.key === ',') {
         e.preventDefault()
         setOverlay('settings')
@@ -228,9 +226,8 @@ function App() {
   // and after Chrome's "prevent additional dialogs" — a common reason the
   // button appeared to do nothing.
   const newNotebook = () => {
-    const existing = (useNotebookStore.getState() as any).notebooks as { name: string }[]
     let name = 'Untitled'
-    for (let i = 1; existing.some((n) => n.name === name); i++) name = `Untitled ${i}`
+    for (let i = 1; notebooks.some((n) => n.name === name); i++) name = `Untitled ${i}`
     createNotebook(name)
   }
 
@@ -245,8 +242,10 @@ function App() {
       metadata: c.metadata ?? {},
     }))
     const nb = { id: `local-${res.name}`, name: res.name.replace(/\.ipynb$/, ''), cells, metadata: res.data.metadata ?? {} }
-    useNotebookStore.setState((s: any) => ({
-      notebooks: [...s.notebooks.filter((n: any) => n.id !== nb.id), nb],
+    const dispatch = getReduxDispatch()
+    const state = getNotebookState()
+    dispatch(setNotebooks({
+      notebooks: [...state.notebooks.filter((n: any) => n.id !== nb.id), nb],
       currentNotebookId: nb.id,
       currentNotebook: nb,
     }))
@@ -255,7 +254,7 @@ function App() {
   const saveCurrent = async () => {
     // Read fresh state — this is also called from the ⌘S key handler whose
     // closure would otherwise capture a stale `currentNotebook`.
-    const nb = (useNotebookStore.getState() as any).currentNotebook
+    const nb = getNotebookState().currentNotebook
     if (!nb) return
     const ipynb = {
       cells: nb.cells.map((c: any) => ({

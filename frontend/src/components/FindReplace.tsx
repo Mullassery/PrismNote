@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { X, Replace } from 'lucide-react'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore } from '../hooks/useNotebookRedux'
 
 // Notebook-wide find & replace (per-cell find is already built into Monaco via ⌘F).
 export default function FindReplace({ onClose }: { onClose: () => void }) {
+      
   const { currentNotebook, updateCell } = useNotebookStore()
-  const [find, setFind] = useState('')
+const [find, setFind] = useState('')
   const [replace, setReplace] = useState('')
   const [caseSensitive, setCaseSensitive] = useState(false)
 

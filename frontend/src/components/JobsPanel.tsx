@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Play, Trash2, X, Plus, Clock, CheckCircle2, XCircle, Loader2, Briefcase, Workflow, Copy } from 'lucide-react'
 import { listJobs, createJob, runJob, deleteJob, airflowDag, type JobSummary, type Schedule } from '../api/jobs'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore } from '../hooks/useNotebookRedux'
 
 // Airflow-like Jobs view: save the current notebook as a runnable job, run it on
 // demand or on a schedule, and see status/history.
 export default function JobsPanel({ onClose, initialCreate }: { onClose: () => void; initialCreate?: boolean }) {
+    
   const { currentNotebook } = useNotebookStore()
-  const [jobs, setJobs] = useState<JobSummary[]>([])
+const [jobs, setJobs] = useState<JobSummary[]>([])
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(!!initialCreate && !!currentNotebook)

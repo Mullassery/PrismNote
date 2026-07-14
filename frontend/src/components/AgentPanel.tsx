@@ -23,7 +23,7 @@ import {
   Eye,
 } from 'lucide-react'
 import MDPreview from '@uiw/react-markdown-preview'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore } from '../hooks/useNotebookRedux'
 import { useFontSize } from '../hooks/useFontSize'
 import { ollamaEndpoint, getAiConfig, aiChat } from '../api/ai'
 import { buildEnvironmentContext, sanitizeForAI } from '../hooks/useAIContext'
@@ -52,6 +52,7 @@ interface Message {
 // Python teacher — explaining the "why", flagging pitfalls, and offering a short
 // contextual tip/trick. Kept model-agnostic so it works across local models.
 const teacherPersona = `You are "Prism", a friendly and patient Python data-science teacher embedded in a notebook.
+
 Teaching style (always):
 - Explain the *why*, not just the *what*, in plain language.
 - Prefer clear, idiomatic, Pythonic code (pandas/numpy where apt) and name the idiom you used.
@@ -96,7 +97,7 @@ function stripActions(text: string) {
 }
 
 export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose: () => void; inBottomPanel?: boolean }) {
-  const { currentNotebook, addCell, updateCell, executeCell } = useNotebookStore()
+  const { addCell, currentNotebook, executeCell, updateCell } = useNotebookStore()
   const [mode, setMode] = useState<Mode>('plan')
   const [models, setModels] = useState<string[]>([])
   const [model, setModel] = useState('')

@@ -10,14 +10,14 @@ import { usePlots } from '../hooks/usePlots'
 import { useViz } from '../hooks/useViz'
 import { exploreSchema, exploreAggregate, type ColumnSchema, type Measure } from '../api/explore'
 import { listVariables } from '../api/kernel'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore, getNotebookState } from '../hooks/useNotebookRedux'
 import type { ExplorerTarget } from './DataExplorer'
 
 type Mode = 'gallery' | 'explore'
 
 export default function VizPane() {
   const [mode, setMode] = useState<Mode>('gallery')
-  const { nonce } = useViz()
+  const nonce = useViz((s) => s.nonce)
 
   // a request from the Data Explorer's "Visualize" button switches to Explore
   useEffect(() => {
@@ -48,7 +48,12 @@ export default function VizPane() {
 
 // ── Gallery (plot history) ────────────────────────────────────────────────────
 function Gallery() {
-  const { plots, currentIndex, select, next, prev, clear } = usePlots()
+  const plots = usePlots((s) => s.plots)
+  const currentIndex = usePlots((s) => s.currentIndex)
+  const select = usePlots((s) => s.select)
+  const next = usePlots((s) => s.next)
+  const prev = usePlots((s) => s.prev)
+  const clear = usePlots((s) => s.clear)
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [light, setLight] = useState(false)
@@ -170,7 +175,8 @@ const CHARTS: { id: ChartType; icon: any; label: string }[] = [
 ]
 
 function Explore() {
-  const { target, title } = useViz()
+  const target = useViz((s) => s.target)
+  const title = useViz((s) => s.title)
   const [vars, setVars] = useState<{ name: string; type: string }[]>([])
   const [localTarget, setLocalTarget] = useState<ExplorerTarget | null>(target)
   const [localTitle, setLocalTitle] = useState(title)
@@ -230,10 +236,10 @@ function Explore() {
 
   const insertAltair = async () => {
     const code = altairCode(localTitle || 'df', chart, dim, dim2, measure, agg)
-    const store = useNotebookStore.getState() as any
+    const store = getNotebookState() as any
     if (!store.currentNotebook) await store.createNotebook('Viz')
     store.addCell('code')
-    const s2 = useNotebookStore.getState() as any
+    const s2 = getNotebookState() as any
     const idx = s2.currentNotebook.cells.length - 1
     s2.updateCell(idx, { source: code.split(/(?<=\n)/) })
   }

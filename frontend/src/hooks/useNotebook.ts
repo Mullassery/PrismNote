@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { subscribeWithSelector } from 'zustand/middleware'
 import axios from 'axios'
 import { useExecutionMinimapStore } from './useExecutionMinimap'
 
@@ -65,7 +66,8 @@ interface NotebookStore {
 
 const API_BASE = '/api'
 
-export const useNotebookStore = create<NotebookStore>((set, get) => ({
+export const useNotebookStore = create<NotebookStore>()(
+  subscribeWithSelector((set, get) => ({
   notebooks: [],
   currentNotebookId: null,
   currentNotebook: null,
@@ -412,4 +414,4 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       console.error('Failed to save notebook:', err)
     }
   },
-}))
+})))

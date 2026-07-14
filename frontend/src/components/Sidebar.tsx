@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus, FileText, Trash2, Sun, Moon } from 'lucide-react'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore } from '../hooks/useNotebookRedux'
 
 interface SidebarProps {
   onToggleTheme?: () => void
@@ -8,11 +8,11 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onToggleTheme, currentTheme = 'dark' }: SidebarProps) {
-  const [newName, setNewName] = useState('')
+  
+  const { createNotebook, currentNotebookId, deleteNotebook, notebooks, setCurrentNotebook } = useNotebookStore()
+const [newName, setNewName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
-  const { notebooks, currentNotebookId, createNotebook, deleteNotebook, setCurrentNotebook } =
-    useNotebookStore()
-
+          
   const handleCreate = () => {
     if (newName.trim()) {
       createNotebook(newName)

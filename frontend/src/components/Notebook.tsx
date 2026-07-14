@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore } from '../hooks/useNotebookRedux'
 import Cell from './Cell'
 import Toolbar from './Toolbar'
 import ExecutionMinimap from './ExecutionMinimap'
@@ -7,8 +7,9 @@ import { Plus, FileCode, Code2, Type, Minus, ChevronDown } from 'lucide-react'
 import { useFontSize } from '../hooks/useFontSize'
 
 export default function Notebook() {
-  const { currentNotebook, addCell, selectedCellIndex, setSelectedCell, reorderCell } = useNotebookStore()
-  const [collapsed, setCollapsed] = useState(false)
+            
+  const { addCell, currentNotebook, reorderCell, selectedCellIndex, setSelectedCell } = useNotebookStore()
+const [collapsed, setCollapsed] = useState(false)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [notebookZoom, setNotebookZoom] = useState(14)

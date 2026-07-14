@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
-import { useNotebookStore } from '../hooks/useNotebook'
+import { useNotebookStore, getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
+import { setNotebooks } from '../store/notebookSlice'
 import { useWorkspace, openNotebookFile, saveJsonAs, saveTextAs } from '../hooks/useWorkspace'
 import { restartKernel, interruptKernel } from '../api/kernel'
 import FindReplace from './FindReplace'
@@ -29,27 +30,13 @@ interface MenuItem {
 }
 
 export default function MenuBar({ theme, onToggleTheme, panels, onTogglePanel, onOpenSearch, onOpenJobs, onOpenGit, onOpenCommandPalette, onOpenDataExplorer, onOpenData }: MenuBarProps) {
-  const [open, setOpen] = useState<string | null>(null)
+  
+  const { addCell, clipboardCell, copyCell, createNotebook, currentNotebook, cutCell, deleteCell, deleteNotebook, executeCell, moveCell, pasteCell, saveNotebook, selectedCellIndex, updateCell } = useNotebookStore()
+const [open, setOpen] = useState<string | null>(null)
   const [findOpen, setFindOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const barRef = useRef<HTMLDivElement>(null)
-  const {
-    currentNotebook,
-    selectedCellIndex,
-    clipboardCell,
-    createNotebook,
-    saveNotebook,
-    deleteNotebook,
-    addCell,
-    updateCell,
-    deleteCell,
-    moveCell,
-    copyCell,
-    cutCell,
-    pasteCell,
-    executeCell,
-  } = useNotebookStore()
-
+                            
   const sel = selectedCellIndex
   const hasSel = currentNotebook != null && sel != null
 
@@ -69,7 +56,7 @@ export default function MenuBar({ theme, onToggleTheme, panels, onTogglePanel, o
   const openFolder = useWorkspace((s) => s.openFolder)
 
   const newNotebook = () => {
-    const existing = (useNotebookStore.getState() as any).notebooks as { name: string }[]
+    const existing = (getNotebookState() as any).notebooks as { name: string }[]
     let name = 'Untitled'
     for (let i = 1; existing.some((n) => n.name === name); i++) name = `Untitled ${i}`
     createNotebook(name)
@@ -87,8 +74,10 @@ export default function MenuBar({ theme, onToggleTheme, panels, onTogglePanel, o
       metadata: c.metadata ?? {},
     }))
     const nb = { id: `local-${res.name}`, name: res.name.replace(/\.ipynb$/, ''), cells, metadata: res.data.metadata ?? {} }
-    useNotebookStore.setState((s: any) => ({
-      notebooks: [...s.notebooks.filter((n: any) => n.id !== nb.id), nb],
+    const dispatch = getReduxDispatch()
+    const state = getNotebookState()
+    dispatch(setNotebooks({
+      notebooks: [...state.notebooks.filter((n: any) => n.id !== nb.id), nb],
       currentNotebookId: nb.id,
       currentNotebook: nb,
     }))
