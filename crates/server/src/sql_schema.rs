@@ -213,11 +213,11 @@ mod tests {
         let suggestions = generate_suggestions(&schema, "");
 
         // Check that keywords come before functions
-        let mut last_sort = "";
+        let mut last_sort = String::new();
         for suggestion in suggestions {
             if let Some(sort) = &suggestion.sort_text {
-                assert!(sort >= last_sort);
-                last_sort = sort;
+                assert!(sort >= &last_sort);
+                last_sort = sort.clone();
             }
         }
     }

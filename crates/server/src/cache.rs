@@ -21,7 +21,7 @@ impl CachedResult {
             .unwrap_or_else(|_| Local::now());
 
         let age = Local::now().signed_duration_since(cached_time);
-        age.num_seconds() > self.ttl_seconds
+        age.num_seconds() >= self.ttl_seconds
     }
 }
 

@@ -58,7 +58,7 @@ impl PiiDetector {
                 "ssn".to_string(),
                 PatternMatcher {
                     name: "Social Security Number".to_string(),
-                    regex: Regex::new(r"\b(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0{4})\d{4}\b")
+                    regex: Regex::new(r"\b\d{3}-\d{2}-\d{4}\b")
                         .unwrap(),
                     confidence: 0.98,
                 },
