@@ -1,1 +1,0 @@
-uid=15_0 RootWebArea "frontend" url="http://localhost:5173/"
