@@ -1,0 +1,36 @@
+# Production dependencies lock file (Python backend)
+# Generated from pyproject.toml
+# Update with: pip install --upgrade pip-tools && pip-compile pyproject.toml -o requirements-lock.txt
+#
+# To use: pip install -r requirements-lock.txt
+# For development: pip install -r requirements-lock.txt && pip install -e ".[dev]"
+
+pydantic>=2.0,<3.0
+
+# API & Web Framework
+fastapi>=0.100.0,<1.0
+uvicorn>=0.23.0,<1.0
+starlette>=0.27.0,<1.0
+
+# Database
+sqlalchemy>=2.0.0,<3.0
+psycopg2-binary>=2.9.0,<3.0
+
+# Query Execution
+pyspark>=3.4.0,<4.0
+
+# HTTP Client
+httpx>=0.24.0,<1.0
+
+# Data Processing
+pandas>=2.0.0,<3.0
+pyarrow>=12.0.0,<13.0
+
+# Async
+aiohttp>=3.8.0,<4.0
+
+# JSON/Serialization
+msgpack>=1.0.0,<2.0
+
+# Logging & Monitoring
+python-json-logger>=2.0.0,<3.0
