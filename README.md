@@ -458,6 +458,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 - No telemetry or tracking
 
 **⚠️ Before deploying to the internet:**
-If you're running PrismNote on a shared server or over the internet, enable authentication first. See [ROADMAP.md](ROADMAP.md) for the full security guide.
+If you're running PrismNote on a shared server or over the internet, enable authentication first. See [CONTRIBUTING.md](CONTRIBUTING.md) for security guidelines.
 
 **Questions?** See [CONTRIBUTING.md](CONTRIBUTING.md) for security reporting.
