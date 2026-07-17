@@ -65,6 +65,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Development and testing
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
 # Database support — permissively-licensed (OSS) drivers only. See CONNECTORS.md.
 sql = ["duckdb==0.9", "pg8000==1.30", "pymysql==1.0"]   # MIT / BSD / MIT
 postgres = ["pg8000==1.30"]                              # BSD (pure-Python)
