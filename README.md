@@ -11,6 +11,8 @@ No more `df.head()` → Explore data visually · Build charts without coding · 
 [![Python](https://img.shields.io/pypi/pyversions/prismnote.svg)](https://pypi.org/project/prismnote/)
 [![Built with Rust](https://img.shields.io/badge/engine-Rust-orange.svg)](https://www.rust-lang.org/)
 [![GitHub stars](https://img.shields.io/github/stars/Mullassery/prismnote?style=social)](https://github.com/Mullassery/prismnote/stargazers)
+![Version: v1.3.0](https://img.shields.io/badge/Version-v1.3.0-blue)
+![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 
 ### ⭐ If PrismNote saves you time, please [**star the repo**](https://github.com/Mullassery/prismnote) — it genuinely helps others discover it.
 
