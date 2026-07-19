@@ -46,9 +46,9 @@
 - 📈 Inline chart rendering
 
 **Right Sidebar (AI Agent):**
-- 🤖 Chainlit-style chat panel
-- 💬 Message history with context awareness
-- 🔍 Web search results (Tavily API)
+- 🤖 AI chat panel with full context
+- 💬 Message history with conversation awareness
+- 🔍 Web search results (real-time data)
 - ⚙️ Plan/Act mode selector
 - Model status and connection indicator
 
@@ -69,7 +69,7 @@
 ## 🎨 Visual Features in Action
 
 **Syntax-Highlighted Cells**
-- Python with full IPython support (colors, autocomplete, error markers)
+- Python with rich execution (colors, autocomplete, error markers)
 - SQL with 10 dialect-specific keywords and formatting
 - JavaScript with modern ES6+ syntax highlighting
 - Markdown with live preview
@@ -212,8 +212,8 @@ LIMIT 10
 - Multi-language cells: Python, SQL, JavaScript (R coming)
 
 ### 🤖 **AI That Actually Helps**
-- **Tavily Web Search** — AI Agent can search the real-time web for context
-- **Chainlit Chat** — Ask questions about your data with full notebook awareness
+- **Web Search** — AI Agent can search the real-time web for context (Tavily)
+- **Conversational AI** — Ask questions about your data with full notebook awareness
 - **Three AI backends:** Ollama (local, free, offline), Claude (fast), OpenAI
 - **Smart modes:** Plan mode (review before executing) + Act mode (auto-run code)
 
@@ -306,24 +306,24 @@ AI: (Reads your data) "2x spike in [category].
 ```
 
 ### 📊 Share Results
-- Export as .ipynb for Jupyter
+- Export as .ipynb (Jupyter compatible)
 - Download as .py script
-- Build interactive dashboards (Rill integration)
+- Build interactive dashboards
 - Share read-only notebooks via web link (v1.7)
 
 ---
 
 ## 📦 What's Included
 
-| Component | Details |
+| Capability | Details |
 |-----------|---------|
-| **Backend** | Axum (Rust) + Tokio async runtime |
-| **Frontend** | React + Monaco editor + Zustand |
-| **Python Kernel** | IPython (standard Jupyter) |
-| **SQL Support** | 10 dialects via sqlx + specific drivers |
-| **AI** | Ollama (local) + Claude/OpenAI (cloud) + Tavily (web search) |
-| **Storage** | .ipynb notebooks (Jupyter compatible) |
-| **Size** | ~50 MB binary (includes everything) |
+| **Language Support** | Python, SQL (10 dialects), JavaScript, Markdown |
+| **AI Backends** | Ollama (local), Claude, OpenAI + Tavily web search |
+| **Database Connectivity** | PostgreSQL, MySQL, BigQuery, Snowflake, DuckDB, SQLite, Redshift, Databricks, T-SQL, Oracle |
+| **File Formats** | CSV, Parquet, JSON, Arrow, Apache Iceberg |
+| **Notebooks** | .ipynb files (Jupyter compatible) |
+| **Binary Size** | ~50 MB (includes everything) |
+| **Themes** | Dark mode, Light mode |
 
 ---
 
