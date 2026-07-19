@@ -111,6 +111,9 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [contextOpen, setContextOpen] = useState(true)
+  const [webSearchEnabled, setWebSearchEnabled] = useState(() =>
+    localStorage.getItem('pn-ai-web-search') !== 'false'
+  )
   const sessionIdRef = useRef(Date.now().toString())
   const endRef = useRef<HTMLDivElement>(null)
 
@@ -148,6 +151,11 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streaming])
+
+  // Persist web search preference
+  useEffect(() => {
+    localStorage.setItem('pn-ai-web-search', String(webSearchEnabled))
+  }, [webSearchEnabled])
 
   // discover local Ollama models (retryable)
   const checkOllama = () => {
@@ -428,14 +436,14 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
 
       {/* conversation — Chainlit style */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-w-0 scrollbar-always-visible" style={{ fontSize, scrollbarWidth: 'auto', msOverflowStyle: 'scrollbar' }}>
-        {/* Tavily API key not configured → required for Agent */}
+        {/* Tavily API key not configured → web search unavailable (optional) */}
         {tavilyConnected === false && (
-          <div className="rounded-lg border border-rose-600/40 bg-rose-500/20 p-3 text-[12px]">
-            <div className="flex items-center gap-2 text-rose-300 font-semibold mb-1">
-              <Search size={14} /> Tavily API key required
+          <div className="rounded-lg border border-amber-600/40 bg-amber-500/20 p-3 text-[12px]">
+            <div className="flex items-center gap-2 text-amber-300 font-semibold mb-1">
+              <Search size={14} /> Web search unavailable (optional)
             </div>
-            <p className="text-rose-200 mb-2">Add your Tavily API key in Settings → AI Provider to enable the AI Agent (web search).</p>
-            <p className="text-[11px] pn-faint">Get a free key: <a href="https://tavily.com" target="_blank" rel="noreferrer" className="text-rose-300 underline">tavily.com</a></p>
+            <p className="text-amber-200 mb-2">Add your Tavily API key in Settings → AI Provider to enable web search. You can still use the AI Agent without it.</p>
+            <p className="text-[11px] pn-faint">Get a free key: <a href="https://tavily.com" target="_blank" rel="noreferrer" className="text-amber-300 underline">tavily.com</a></p>
           </div>
         )}
         {/* Cloud provider selected but no API key → point to Settings */}
@@ -538,7 +546,23 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
         <div ref={endRef} />
       </div>
 
-      {/* prompt input — Chainlit style */}
+      {/* Web search toggle */}
+      {tavilyConnected && (
+        <div className="px-3.5 pt-2 pb-1 flex items-center gap-2 text-[11px]">
+          <label className="flex items-center gap-2 cursor-pointer pn-text hover:pn-text/80">
+            <input
+              type="checkbox"
+              checked={webSearchEnabled}
+              onChange={(e) => setWebSearchEnabled(e.target.checked)}
+              className="w-4 h-4 accent-indigo-500 cursor-pointer"
+            />
+            <span>🔍 Search web with query</span>
+          </label>
+          <span className="pn-faint text-[10px]">(Tavily API)</span>
+        </div>
+      )}
+
+      {/* prompt input — Chat style */}
       <div className="p-3.5 border-t pn-bd pn-surface">
         <div className="flex items-end gap-2 bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 focus-within:border-indigo-400/60 focus-within:bg-white/15 focus-within:shadow-md transition">
           <textarea
@@ -556,9 +580,9 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
           />
           <button
             onClick={send}
-            disabled={streaming || !input.trim() || !tavilyConnected}
+            disabled={streaming || !input.trim() || (webSearchEnabled && !tavilyConnected)}
             className="text-indigo-400 hover:text-indigo-300 p-1.5 disabled:opacity-40 transition hover:bg-indigo-500/20 rounded-lg"
-            title={!tavilyConnected ? 'Set Tavily API key in Settings' : 'Send message (Shift+Enter for new line)'}
+            title={webSearchEnabled && !tavilyConnected ? 'Set Tavily API key in Settings to use web search' : 'Send message (Shift+Enter for new line)'}
           >
             <Send size={18} />
           </button>

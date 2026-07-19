@@ -300,8 +300,8 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
               </>
             )}
 
-            {/* Tavily web search API (required for AI Agent) */}
-            <Row label="Tavily API key" hint={tavilyKeySet ? 'Set — enables web search for AI Agent' : 'Required for AI Agent'}>
+            {/* Tavily web search API (optional for web search) */}
+            <Row label="Tavily API key (optional)" hint={tavilyKeySet ? 'Set — enables web search for AI queries' : 'Optional for web search capability'}>
               <div className="flex items-center gap-2">
                 <input type="password" value={tavilyKey} onChange={(e) => setTavilyKey(e.target.value)}
                   placeholder={tavilyKeySet ? '•••••••• saved' : 'tvly-…'}
