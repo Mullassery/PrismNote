@@ -31,7 +31,7 @@ import GitPanel from './components/GitPanel'
 import DeployPanel from './components/DeployPanel'
 import DataPanel from './components/DataPanel'
 import FileExplorer from './components/FileExplorer'
-import BottomPanel from './components/BottomPanel'
+import BottomPanel, { type BottomPanelTab } from './components/BottomPanel'
 import PlotsPanel from './components/PlotsPanel'
 import MenuBar from './components/MenuBar'
 import UnifiedSearch from './components/UnifiedSearch'
@@ -59,6 +59,12 @@ function App() {
   const [explorerPicker, setExplorerPicker] = useState(false)
   const [railMenu, setRailMenu] = useState<null | 'settings' | 'accounts'>(null)
   const [overlay, setOverlay] = useState<null | 'command' | 'settings' | 'theme'>(null)
+  // BottomPanel state — lifted from component so it persists when panel is toggled off/on
+  const [bottomTab, setBottomTab] = useState<BottomPanelTab>('output')
+  const [bottomHeight, setBottomHeight] = useState(240)
+  const [terminalHistory, setTerminalHistory] = useState<{ cmd: string; out: string }[]>([
+    { cmd: '', out: 'PrismNote terminal — type a command. (python, ls, pip …)' },
+  ])
   const { currentNotebookId, notebooks, currentNotebook, createNotebook, addCell, executeCell } = useNotebookStore()
   const openFolder = useWorkspace((s) => s.openFolder)
 
@@ -557,6 +563,12 @@ function App() {
               notebookVisible={panels.notebook}
               onClose={() => togglePanel('terminal')}
               onOpenExplorer={(target, title) => showExplorer(target, title)}
+              tab={bottomTab}
+              onTabChange={setBottomTab}
+              height={bottomHeight}
+              onHeightChange={setBottomHeight}
+              terminalHistory={terminalHistory}
+              onTerminalHistoryChange={setTerminalHistory}
             />
           )}
         </div>
