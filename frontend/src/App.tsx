@@ -133,8 +133,14 @@ function App() {
       } else if (mod && e.shiftKey && e.key === 'Enter') {
         e.preventDefault()
         ;(async () => {
-          for (let i = 0; i < (currentNotebook?.cells ?? []).length; i++) {
-            if (currentNotebook?.cells[i].cell_type === 'code') await executeCell(i)
+          // Read fresh state — currentNotebook in closure is stale at mount time.
+          // Use getNotebookState() pattern (same as saveCurrent) to ensure we iterate
+          // over the current notebook's cells, not the mount-time null value.
+          const nb = getNotebookState().currentNotebook
+          if (nb) {
+            for (let i = 0; i < nb.cells.length; i++) {
+              if (nb.cells[i].cell_type === 'code') await executeCell(i)
+            }
           }
         })()
 
