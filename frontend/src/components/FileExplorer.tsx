@@ -28,7 +28,7 @@ interface Entry {
   handle: any
 }
 
-// ── file-type icon mapping (VS Code-ish) ──
+// ── file-type icon mapping with syntax-aware icons ──
 function iconFor(name: string) {
   const ext = name.split('.').pop()?.toLowerCase()
   switch (ext) {
@@ -60,7 +60,7 @@ function iconFor(name: string) {
 async function readDir(handle: any): Promise<Entry[]> {
   const items: Entry[] = []
   for await (const [name, h] of handle.entries()) {
-    if (name.startsWith('.')) continue // hide dotfiles, VS Code default-ish
+    if (name.startsWith('.')) continue // hide dotfiles by default
     items.push({ name, kind: h.kind, handle: h })
   }
   items.sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'directory' ? -1 : 1))
@@ -173,7 +173,7 @@ export default function FileExplorer() {
       {serverMode && !rootHandle ? (
         <ServerExplorer />
       ) : !rootHandle ? (
-        // VS Code-style empty state
+        // Empty state with folder picker
         <div className="px-4 py-3">
           <p className="text-[13px] pn-muted leading-relaxed mb-3">You have not yet opened a folder.</p>
           <button

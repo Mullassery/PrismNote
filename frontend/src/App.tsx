@@ -390,7 +390,7 @@ function App() {
           {railBtn(railMenu === 'settings', () => setRailMenu(railMenu === 'settings' ? null : 'settings'), 'Settings', SettingsIcon, true)}
         </div>
 
-        {/* VS Code-style rail popups (Settings gear / Accounts) */}
+        {/* Activity rail popups (Settings gear / Accounts) */}
         {railMenu && (
           <div
             className="fixed left-12 bottom-7 z-50 min-w-[230px] pn-solid-bg border pn-bd pn-text rounded-lg shadow-2xl shadow-black/50 py-1 text-[13px]"

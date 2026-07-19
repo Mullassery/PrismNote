@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "prismnote"
 version = "1.6.0"
-description = "A modern, open-source data science notebook with Deepnote-quality UI"
+description = "PrismNote — Modern data science notebook. SQL + Python execution, 10 SQL dialects, AI Agent, visual data exploration, cloud warehouse connectors, Jupyter-compatible."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
