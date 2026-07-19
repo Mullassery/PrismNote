@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { X, Palette, Type, Columns3, Bot, Check, Loader2 } from 'lucide-react'
-import { getAiConfig, setAiConfig, CLAUDE_MODELS, OPENAI_MODELS } from '../api/ai'
+import { X, Palette, Type, Columns3, Bot, Check, Loader2, Search } from 'lucide-react'
+import { getAiConfig, setAiConfig, CLAUDE_MODELS, OPENAI_MODELS, validateTavilyKey } from '../api/ai'
 
 interface Props {
   onClose: () => void
@@ -61,8 +61,11 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
   const [claudeModel, setClaudeModel] = useState('claude-sonnet-4-6')
   const [openaiKey, setOpenaiKey] = useState('')
   const [openaiModel, setOpenaiModel] = useState('gpt-4o')
+  const [tavilyKey, setTavilyKey] = useState('')
   const [claudeKeySet, setClaudeKeySet] = useState(false)
   const [openaiKeySet, setOpenaiKeySet] = useState(false)
+  const [tavilyKeySet, setTavilyKeySet] = useState(false)
+  const [tavilyStatus, setTavilyStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
   const [aiState, setAiState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'up' | 'down'>('checking')
 
@@ -96,6 +99,7 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
         if (c.openai_model) setOpenaiModel(c.openai_model)
         setClaudeKeySet(c.claude_key_set)
         setOpenaiKeySet(c.openai_key_set)
+        setTavilyKeySet(c.tavily_key_set)
       })
       .catch(() => {})
   }, [])
@@ -111,12 +115,19 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
         claude_model: claudeModel || undefined,
         openai_api_key: openaiKey || undefined,
         openai_model: openaiModel || undefined,
+        tavily_api_key: tavilyKey || undefined,
       })
       // keep the shared Ollama endpoint in sync (chat agent + autocomplete read it)
       localStorage.setItem('pn-ollama', ollamaUrl)
       if (claudeKey) setClaudeKeySet(true)
       if (openaiKey) setOpenaiKeySet(true)
-      setClaudeKey(''); setOpenaiKey('')
+      if (tavilyKey) {
+        setTavilyStatus('checking')
+        const valid = await validateTavilyKey(tavilyKey)
+        setTavilyStatus(valid ? 'valid' : 'invalid')
+        if (valid) setTavilyKeySet(true)
+      }
+      setClaudeKey(''); setOpenaiKey(''); setTavilyKey('')
       setAiState('saved')
       // tell the RHS AI panel to reload the provider/model/connection
       window.dispatchEvent(new Event('pn-ai-config'))
@@ -256,6 +267,18 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
                 </Row>
               </>
             )}
+
+            {/* Tavily web search API (required for AI Agent) */}
+            <Row label="Tavily API key" hint={tavilyKeySet ? 'Set — enables web search for AI Agent' : 'Required for AI Agent'}>
+              <div className="flex items-center gap-2">
+                <input type="password" value={tavilyKey} onChange={(e) => setTavilyKey(e.target.value)}
+                  placeholder={tavilyKeySet ? '•••••••• saved' : 'tvly-…'}
+                  className="w-52 text-[12px] px-2 py-1 rounded-lg pn-solid-bg border pn-bd pn-text outline-none focus:border-blue-500/60" />
+                {tavilyStatus === 'checking' && <Loader2 size={14} className="animate-spin pn-muted" />}
+                {tavilyStatus === 'valid' && <Check size={14} className="text-emerald-400" />}
+                {tavilyStatus === 'invalid' && <span className="text-[11px] text-rose-400">Invalid key</span>}
+              </div>
+            </Row>
 
             <div className="flex items-center justify-between pt-2">
               <span className="text-[12px] pn-faint flex items-center gap-1.5">

@@ -106,6 +106,7 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
   const { size: fontSize, inc, dec } = useFontSize('pn-ai-font', 13)
   const [modelOpen, setModelOpen] = useState(false)
   const [connected, setConnected] = useState<boolean | null>(null)
+  const [tavilyConnected, setTavilyConnected] = useState<boolean | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -177,6 +178,7 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
   }
 
   // Load the configured provider; for cloud providers "connected" = key saved.
+  // Also load Tavily API key status (required for web search in Agent).
   // Re-runs when Settings → AI saves (it dispatches 'pn-ai-config').
   useEffect(() => {
     const loadConfig = () => {
@@ -184,6 +186,7 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
         .then((c) => {
           const p = (c.provider as Provider) || 'ollama'
           setProvider(p)
+          setTavilyConnected(c.tavily_key_set)
           if (p === 'ollama') {
             checkOllama()
           } else if (p === 'claude') {
@@ -425,6 +428,16 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
 
       {/* conversation — Chainlit style */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-w-0 scrollbar-always-visible" style={{ fontSize, scrollbarWidth: 'auto', msOverflowStyle: 'scrollbar' }}>
+        {/* Tavily API key not configured → required for Agent */}
+        {tavilyConnected === false && (
+          <div className="rounded-lg border border-rose-600/40 bg-rose-500/20 p-3 text-[12px]">
+            <div className="flex items-center gap-2 text-rose-300 font-semibold mb-1">
+              <Search size={14} /> Tavily API key required
+            </div>
+            <p className="text-rose-200 mb-2">Add your Tavily API key in Settings → AI Provider to enable the AI Agent (web search).</p>
+            <p className="text-[11px] pn-faint">Get a free key: <a href="https://tavily.com" target="_blank" rel="noreferrer" className="text-rose-300 underline">tavily.com</a></p>
+          </div>
+        )}
         {/* Cloud provider selected but no API key → point to Settings */}
         {provider !== 'ollama' && connected === false && (
           <div className="rounded-lg border border-amber-600/40 bg-amber-500/20 p-3 text-[12px]">
@@ -543,9 +556,9 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
           />
           <button
             onClick={send}
-            disabled={streaming || !input.trim()}
+            disabled={streaming || !input.trim() || !tavilyConnected}
             className="text-indigo-400 hover:text-indigo-300 p-1.5 disabled:opacity-40 transition hover:bg-indigo-500/20 rounded-lg"
-            title="Send message (Shift+Enter for new line)"
+            title={!tavilyConnected ? 'Set Tavily API key in Settings' : 'Send message (Shift+Enter for new line)'}
           >
             <Send size={18} />
           </button>
