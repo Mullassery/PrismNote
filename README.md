@@ -19,14 +19,13 @@
 
 [📺 Watch Demo](#quick-start) · [📖 Read Docs](docs/PRODUCT_VISION.md) · [🐛 Report Bug](https://github.com/Mullassery/prismnote/issues) · [💬 Discussions](https://github.com/Mullassery/prismnote/discussions)
 
-<img src="docs/screenshots/02_notebook_dark.png" alt="PrismNote — Data Science Notebook" width="900" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin: 20px 0;">
+<img src="docs/screenshots/v1_6_0_featured.png" alt="PrismNote v1.6.0 — SQL + Python + AI in One Notebook" width="900" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin: 20px 0;">
 
-> **📸 Screenshot Note:** This shows v1.6.0 features. To capture a fresh screenshot locally:
-> ```bash
-> prismnote
-> # Open notebook → Create Python + SQL cells → Open Data Explorer
-> # Open AI Agent panel → Settings panel → Take screenshot
-> ```
+**v1.6.0 Screenshot Highlights:**
+- **Left:** File explorer with notebooks
+- **Center:** Python cell + SQL query + results table
+- **Right:** AI Agent with Tavily web search results  
+- **Top:** Settings and quick action shortcuts
 
 </div>
 
