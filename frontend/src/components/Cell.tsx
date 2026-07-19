@@ -48,9 +48,16 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const promptRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<any>(null)
   const monacoRef = useRef<any>(null)
+  const handleRunRef = useRef(handleRun)
+  const openAiRef = useRef(openAi)
 
   const sourceText = Array.isArray(cell.source) ? cell.source.join('') : cell.source
   const cellError = cell.cell_type === 'code' ? errorFromOutputs(cell.outputs) : null
+
+  // Keep refs in sync with current functions on every render, so Monaco's
+  // registered commands (via addCommand) always call the latest version.
+  handleRunRef.current = handleRun
+  openAiRef.current = openAi
 
   // Live code-font updates broadcast from the notebook header.
   useEffect(() => {
@@ -196,15 +203,17 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const handleEditorMount = useCallback((editor: any, monaco: any) => {
     editorRef.current = editor
     monacoRef.current = monaco
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, openAi)
-    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => handleRun())
+    // Use refs for command callbacks instead of direct function references.
+    // Refs are always current, so the commands never close over stale functions.
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => openAiRef.current())
+    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => handleRunRef.current())
     registerOllamaCompletions(monaco)
     registerSqlCompletions(monaco)
     registerPythonFormatter(monaco)
     editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () =>
       editor.getAction('editor.action.formatDocument')?.run(),
     )
-  }, [openAi, handleRun])
+  }, [])
 
   return (
     <div className="pn-solid-bg rounded-lg border pn-bd overflow-hidden">
