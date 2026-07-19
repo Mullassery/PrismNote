@@ -95,13 +95,6 @@ openai = ["openai==1.0"]
 # Big data
 spark = ["pyspark==3.0", "pyarrow==10"]
 
-# Development
-dev = [
-    "pytest==7.0",
-    "black==22.0",
-    "ruff==0.1.0",
-]
-
 [project.urls]
 Homepage = "https://github.com/Mullassery/prismnote"
 Repository = "https://github.com/Mullassery/prismnote"
