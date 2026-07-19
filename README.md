@@ -21,7 +21,94 @@
 
 <img src="docs/screenshots/02_notebook_dark.png" alt="PrismNote — Data Science Notebook" width="900" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin: 20px 0;">
 
+> **📸 Screenshot Note:** This shows v1.6.0 features. To capture a fresh screenshot locally:
+> ```bash
+> prismnote
+> # Open notebook → Create Python + SQL cells → Open Data Explorer
+> # Open AI Agent panel → Settings panel → Take screenshot
+> ```
+
 </div>
+
+---
+
+### What's in the Screenshot
+
+**Left Sidebar (Files):**
+- 📁 File explorer with folders and notebook files
+- Quick access to recent notebooks
+- File navigation (search, create new)
+
+**Center (Notebook):**
+- 📝 Python cells (syntax highlighted)
+- 📊 SQL cells (10 dialect support, connection picker)
+- 📄 Markdown cells for documentation
+- ▶️ Run buttons and cell outputs
+- 📈 Inline chart rendering
+
+**Right Sidebar (AI Agent):**
+- 🤖 Chainlit-style chat panel
+- 💬 Message history with context awareness
+- 🔍 Web search results (Tavily API)
+- ⚙️ Plan/Act mode selector
+- Model status and connection indicator
+
+**Top Bar:**
+- ⌘K quick actions (edit, fix, explain)
+- Settings (⌘,) for AI provider, Tavily, execution options
+- Database connections dropdown
+- Notebook name and save status
+
+**Bottom Panel (Optional):**
+- 🖥️ Terminal for shell commands
+- 📊 Data Explorer (visual schema + stats)
+- 📈 Plots gallery
+- 🔍 Search results
+
+---
+
+## 🎨 Visual Features in Action
+
+**Syntax-Highlighted Cells**
+- Python with full IPython support (colors, autocomplete, error markers)
+- SQL with 10 dialect-specific keywords and formatting
+- JavaScript with modern ES6+ syntax highlighting
+- Markdown with live preview
+
+**Data Explorer (Visual)**
+- Click a column → instant histogram, NULL%, unique count
+- Drag to filter, click to sort
+- Copy-as-pandas code button
+- PII detection badges (red ⚠️ on sensitive columns)
+
+**SQL Results View**
+- Table with row numbers and sticky headers
+- Pagination (50 rows/page, adjustable)
+- Column type indicators (T = text, # = number, 📅 = date)
+- Export: CSV, JSON, or copy as TSV
+- Query cost estimate (BigQuery/Snowflake)
+
+**Settings Panel (New in v1.6)**
+- 🤖 AI Provider selector (Ollama/Claude/OpenAI)
+- 🔑 Tavily API key input with validation status
+- ⚙️ Execution settings (timeout, output truncation, auto-save)
+- 🔍 Search preferences (result count, search depth)
+- 🎨 Theme toggle (dark/light)
+
+**AI Agent Panel (New in v1.6)**
+- 💬 Chat-style interface (user on right, AI on left)
+- 🔗 Links to web search results (Tavily)
+- 📋 Plan mode (review before executing)
+- ▶️ Act mode (auto-run suggested code)
+- 🧠 Full notebook context in every response
+
+**Keyboard Shortcuts**
+- ⌘K = Quick actions (edit, fix, explain)
+- ⌘, = Settings
+- ⌘E = Data Explorer
+- ⌘⇧P = Command palette
+- ⌘S = Save
+- ⇧↵ = Run cell
 
 ---
 
