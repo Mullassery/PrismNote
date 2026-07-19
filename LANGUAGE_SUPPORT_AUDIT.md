@@ -62,28 +62,59 @@ Each language should have:
 
 ## Language-Specific Requirements
 
-### SQL
-**Current Gap:** No execution support
+### SQL (Multi-Dialect)
+**Current Gap:** No execution support from cells; syntax highlighting not dialect-aware
+
+**Supported Dialects:**
+- ✅ PostgreSQL
+- ✅ MySQL / MariaDB
+- ✅ SQLite
+- ✅ DuckDB
+- ✅ Snowflake
+- ✅ BigQuery
+- ✅ T-SQL (SQL Server)
+- ✅ Oracle SQL
+- ✅ Redshift
+- ✅ Databricks SQL
 
 **Requirements:**
-- [ ] SQL cell type recognition
+- [ ] SQL cell type recognition with dialect selection
+- [ ] Dialect-specific syntax highlighting (Monaco SQL modes)
 - [ ] Query execution against connected databases
 - [ ] Result set rendering (DataFrameView, pagination)
-- [ ] Connection selection UI
-- [ ] Query timeout handling
-- [ ] Parameterized queries (e.g., `SELECT * FROM table WHERE id = ?`)
-- [ ] Multi-statement support
-- [ ] Query performance hints
+- [ ] Connection selection UI (dropdown auto-detects dialect)
+- [ ] Query timeout handling (configurable per dialect)
+- [ ] Parameterized queries (dialect-aware syntax)
+- [ ] Multi-statement support (where applicable)
+- [ ] Query performance hints & optimization suggestions
+- [ ] Dialect-specific error parsing & helpful messages
+- [ ] Common clauses snippets (INSERT, UPDATE, DELETE, JOIN templates)
+
+**Dialect-Specific Considerations:**
+| Dialect | Special Handling | Complexity |
+|---------|------------------|-----------|
+| PostgreSQL | Standard, good error messages | ✅ Easy |
+| MySQL | LIMIT instead of OFFSET | ✅ Easy |
+| SQLite | No complex joins, simple dialect | ✅ Easy |
+| T-SQL (SQL Server) | Square brackets for identifiers, T-SQL specific functions | 🟡 Medium |
+| BigQuery | Backticks, nested types, large datasets | 🟡 Medium |
+| Oracle SQL | Quoted identifiers, specific functions | 🟡 Medium |
+| Snowflake | Cloud-specific, case sensitivity | 🟡 Medium |
+| Redshift | PostgreSQL-based but different functions | 🟡 Medium |
+| DuckDB | In-process, can handle large files | ✅ Easy |
+| Databricks | Spark SQL variant, distributed | 🟡 Medium |
 
 **Execution Flow:**
 ```
-SQL Cell (type='sql') 
-  → User selects connection 
-  → /api/databases/:id/query 
+SQL Cell (type='sql', dialect='postgres'|'tsql'|'bigquery'|etc)
+  → Detect/select connection
+  → Auto-detect dialect from connection.db_type
+  → /api/databases/:id/query (with dialect hints)
+  → Parse dialect-specific errors
   → Table results → DataFrameView
 ```
 
-**Complexity:** Medium (uses existing database query infrastructure)
+**Complexity:** High (requires dialect-aware parsing, syntax highlighting, error handling)
 
 ### Python
 **Current Gap:** Hardcoded in UI, limited error handling
@@ -197,29 +228,51 @@ R Cell (type='code', language='r')
 
 ---
 
-### Phase 2: SQL Support (1.5 weeks)
+### Phase 2: SQL Support (Multi-Dialect) (2-2.5 weeks)
 
-**Goal:** Execute SQL queries against connected databases
+**Goal:** Execute SQL queries against any connected database with dialect-aware syntax highlighting & error handling
 
-1. **SQL Cell Execution**
+1. **SQL Dialect Registry** (New)
+   - [ ] Create `lib/sqlDialects.ts` with dialect definitions
+   - [ ] Dialect: PostgreSQL, MySQL, T-SQL, BigQuery, Oracle, Snowflake, DuckDB, Redshift, Databricks, SQLite
+   - [ ] Per-dialect: syntax rules, reserved keywords, error patterns, snippets
+   - [ ] Auto-detect dialect from connection.db_type
+
+2. **SQL Cell Execution**
    - [ ] POST `/api/databases/{id}/query` integration
    - [ ] Connection picker in SQL cells
-   - [ ] Query timeout handling (30s default)
-   - [ ] Result set pagination
+   - [ ] Auto-detect dialect from selected connection
+   - [ ] Query timeout handling (30s default, configurable per dialect)
+   - [ ] Result set pagination (1000 rows per page default)
+   - [ ] Dialect-specific query optimization hints
 
-2. **SQL Result Rendering**
+3. **SQL Syntax Highlighting & Autocompletion**
+   - [ ] Monaco SQL mode with dialect-aware keywords
+   - [ ] Dialect-specific snippets (templates for INSERT, UPDATE, JOIN, etc.)
+   - [ ] Schema-aware table/column completion (from useSchemaCache)
+   - [ ] Parameter placeholder detection (`:param`, `$1`, `@param`, `?` — dialect aware)
+
+4. **SQL Result Rendering**
    - [ ] Reuse existing DataFrameView component
    - [ ] Show row count + column types
-   - [ ] Allow exporting to CSV/JSON
+   - [ ] Support for large result sets (virtual scroll, pagination)
+   - [ ] Export to CSV/JSON/Parquet
+   - [ ] Dialect-specific type rendering (JSON, ARRAY, STRUCT for BigQuery, etc.)
 
-3. **SQL Error Handling**
-   - [ ] Parse database-specific errors
-   - [ ] Show line numbers + hints
-   - [ ] Suggest common fixes (syntax, missing tables)
+5. **SQL Error Handling** (Dialect-Aware)
+   - [ ] Parse database-specific errors (T-SQL syntax, Oracle constraints, BigQuery limits)
+   - [ ] Show line numbers + helpful hints
+   - [ ] Suggest common fixes:
+     - T-SQL: "Use square brackets for identifiers"
+     - BigQuery: "Use backticks for identifiers, check dataset name"
+     - Oracle: "Table not found — check schema prefix"
+   - [ ] Link to dialect docs
 
-4. **UI Components**
-   - [ ] Connection selector (dropdown)
-   - [ ] Query timeout input
+6. **UI Components**
+   - [ ] Connection selector (dropdown, shows dialect icon)
+   - [ ] Dialect badge in cell header
+   - [ ] Query timeout input (configurable)
+   - [ ] Performance hints (estimated rows, query cost for Snowflake/BigQuery)
    - [ ] Execute button (SQL-specific icon)
 
 **Files to Create/Modify:**
@@ -348,13 +401,23 @@ R Cell (type='code', language='r')
 
 ## Effort Estimate
 
-| Phase | Duration | Complexity | Effort |
-|-------|----------|-----------|--------|
-| Phase 1 | 2 weeks | Medium | 2 engineers |
-| Phase 2 | 1.5 weeks | Medium | 1 engineer |
-| Phase 3 | 1 week | Low | 1 engineer |
-| Phase 4 | 3-4 weeks | High | 2 engineers |
-| **Total** | **7-8 weeks** | Mixed | **6 engineer-weeks** |
+| Phase | Duration | Complexity | Effort | Notes |
+|-------|----------|-----------|--------|-------|
+| Phase 1 | 2 weeks | Medium | 2 engineers | Core infrastructure, language registry |
+| Phase 2 | 2-2.5 weeks | High | 2 engineers | **Multi-dialect SQL** — 10 dialects, error parsing, snippets |
+| Phase 3 | 1 week | Low | 1 engineer | Python refinement (plots, errors, autocomplete) |
+| Phase 4 | 3-4 weeks | High | 2 engineers | R kernel setup, execution, output rendering |
+| **Total** | **8-9.5 weeks** | Mixed | **7 engineer-weeks** | SQL dialect support increases complexity |
+
+**SQL Dialect Support Breakdown (Phase 2):**
+- Dialect registry + keyword mapping: 2 days
+- Syntax highlighting (Monaco modes): 2 days
+- Schema-aware completion: 2 days
+- Error parsing (10 dialects): 3 days
+- Result rendering (dialect-specific types): 2 days
+- UI (connection picker, dialect badge): 1 day
+- Testing (50+ E2E tests): 2-3 days
+- **Subtotal:** 14-15 days (2-2.5 weeks)
 
 ---
 
@@ -412,5 +475,27 @@ R Cell (type='code', language='r')
 
 ---
 
-**Recommendation:** Start with **Phase 1 + Phase 2** (SQL support) as a first MVP. R support can follow after getting user feedback on Python/SQL integration.
+**Recommendation (Multi-Dialect SQL Focus):** 
+
+**MVP Approach (Weeks 1-4):**
+1. **Phase 1** (2 weeks) — Core infrastructure with language selection
+2. **Phase 2a** (1 week) — SQL for 3 primary dialects:
+   - PostgreSQL (ANSI SQL baseline)
+   - BigQuery (modern cloud warehouse)
+   - Snowflake (popular data platform)
+
+**This gives users SQL execution immediately while expanding dialect support gradually.**
+
+**Scale Up (Weeks 5-9):**
+3. **Phase 2b** (1 week) — Add 7 more dialects: T-SQL, Oracle, MySQL, Redshift, Databricks, DuckDB, MariaDB
+4. **Phase 3** (1 week) — Python refinement (better errors, plots)
+5. **Phase 4** (3-4 weeks) — R kernel support
+
+**Advantages of this approach:**
+- Ship working SQL cells in 3 weeks
+- Support 10 SQL dialects by week 5
+- Test multi-language notebook workflow early
+- R follows once Python/SQL are proven
+
+**Start:** Immediately after v1.5.0 (Phase 2.1) launch
 
