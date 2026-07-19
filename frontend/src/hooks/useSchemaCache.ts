@@ -8,10 +8,8 @@
  */
 
 import { create } from 'zustand'
+import type { SchemaTable, ColumnInfo, ConstraintInfo } from '../lib/schemaParser'
 import {
-  SchemaTable,
-  ColumnInfo,
-  ConstraintInfo,
   buildSchemaQuery,
   buildColumnsQuery,
   buildConstraintsQuery,
@@ -19,7 +17,8 @@ import {
   parseSqlitePragmaTableInfo,
   parseSqliteForeignKeys,
 } from '../lib/schemaParser'
-import { inferRelationships, inferPrimaryKey, classifyTables, InferredRelationship, TableClassification } from '../lib/relationshipInference'
+import type { InferredRelationship, TableClassification } from '../lib/relationshipInference'
+import { inferRelationships } from '../lib/relationshipInference'
 import { queryDatabase } from '../api/data'
 
 type DbType = 'postgresql' | 'mysql' | 'sqlite' | 'duckdb' | 'snowflake' | 'bigquery'
@@ -105,10 +104,11 @@ const useSchemaCacheStore = create<SchemaCacheState>((set, get) => ({
       }
 
       // Parse results into SchemaTable objects
-      const tables = response.rows.map((row: any[], i: number) => {
-        const schema = response.columns[0]?.toLowerCase().includes('schema') ? row[0] : undefined
-        const nameIdx = response.columns.findIndex((c: string) => c.toLowerCase() === 'name')
-        const typeIdx = response.columns.findIndex((c: string) => c.toLowerCase() === 'type')
+      const tables = response.rows.map((row: any[]) => {
+        const col0 = String(response.columns[0] || '').toLowerCase()
+        const schema = col0.includes('schema') ? row[0] : undefined
+        const nameIdx = response.columns.findIndex((c: string | number) => String(c).toLowerCase() === 'name')
+        const typeIdx = response.columns.findIndex((c: string | number) => String(c).toLowerCase() === 'type')
 
         return {
           schema,
@@ -180,7 +180,8 @@ const useSchemaCacheStore = create<SchemaCacheState>((set, get) => ({
         // PRAGMA table_info returns different schema
         columns = parseSqlitePragmaTableInfo(colResponse.rows)
       } else if (colResponse?.rows) {
-        const parsed = parseQueryResults(colResponse.columns, colResponse.rows)
+        const colNames = (colResponse.columns as Array<string | number>).map(String)
+        const parsed = parseQueryResults(colNames, colResponse.rows)
         columns = parsed.map((row: any) => ({
           name: row.name || row.column_name,
           type: row.type || row.data_type || row.column_type,
@@ -197,7 +198,8 @@ const useSchemaCacheStore = create<SchemaCacheState>((set, get) => ({
         // PRAGMA foreign_key_list returns different schema
         constraints = parseSqliteForeignKeys(constraintResponse.rows)
       } else if (constraintResponse?.rows) {
-        const parsed = parseQueryResults(constraintResponse.columns, constraintResponse.rows)
+        const constraintNames = (constraintResponse.columns as Array<string | number>).map(String)
+        const parsed = parseQueryResults(constraintNames, constraintResponse.rows)
         constraints = parsed
           .map((row: any) => ({
             column: row.column,
@@ -246,7 +248,7 @@ const useSchemaCacheStore = create<SchemaCacheState>((set, get) => ({
     }
   },
 
-  profileColumn: async (connId: string, dbType: DbType, tableName: string, columnName: string, schemaName?: string) => {
+  profileColumn: async (connId: string, _dbType: DbType, tableName: string, columnName: string, schemaName?: string) => {
     const state = get()
     const key = `${connId}.${schemaName || 'main'}.${tableName}.${columnName}`
     const cached = state.columnProfiles[key]

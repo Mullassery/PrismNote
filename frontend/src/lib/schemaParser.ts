@@ -290,10 +290,10 @@ export function buildConstraintsQuery(
 /**
  * Build a SQL query to get row count and approximate table size
  */
-export function buildStatsQuery(dbType: DbType, tableName: string, schemaName?: string): string {
+export function buildStatsQuery(_dbType: DbType, tableName: string, schemaName?: string): string {
   const table = schemaName ? `${escapeSql(schemaName)}.${escapeSql(tableName)}` : escapeSql(tableName)
 
-  switch (dbType) {
+  switch (_dbType) {
     case 'postgresql':
       return `
         SELECT
@@ -336,7 +336,7 @@ export function buildStatsQuery(dbType: DbType, tableName: string, schemaName?: 
  * Returns: count, non_null_count, distinct_count, min_value, max_value
  */
 export function buildColumnProfileQuery(
-  dbType: DbType,
+  _dbType: DbType,
   tableName: string,
   columnName: string,
   schemaName?: string
@@ -359,7 +359,7 @@ export function buildColumnProfileQuery(
  * Build a SQL query to get top N distinct values for a column
  */
 export function buildTopValuesQuery(
-  dbType: DbType,
+  _dbType: DbType,
   tableName: string,
   columnName: string,
   schemaName?: string,
@@ -368,6 +368,7 @@ export function buildTopValuesQuery(
   const table = schemaName ? `${escapeSql(schemaName)}.${escapeSql(tableName)}` : escapeSql(tableName)
   const col = escapeSql(columnName)
 
+  // Database-agnostic query (works on most systems)
   return `
     SELECT
       ${col} AS value,

@@ -20,10 +20,11 @@ import {
   PanelBottom,
   Command as CommandIcon,
 } from 'lucide-react'
-import { Briefcase, GitBranch, Database, Table2, Library, BarChart3, Network } from 'lucide-react'
+import { Briefcase, GitBranch, Database, Table2, Library, BarChart3, Network, GitGraph } from 'lucide-react'
 import Notebook from './components/Notebook'
 import SchemaExplorer from './components/SchemaExplorer'
 import TableMetadataPanel from './components/TableMetadataPanel'
+import RelationshipMap from './components/RelationshipMap'
 import DataExplorer, { ExplorerPicker, type ExplorerTarget } from './components/DataExplorer'
 import DataCatalogPanel from './components/DataCatalogPanel'
 import { useViz } from './hooks/useViz'
@@ -76,6 +77,7 @@ function App() {
     schemaName: string
     dbType: string
   } | null>(null)
+  const [relationshipMapOpen, setRelationshipMapOpen] = useState(false)
   const { currentNotebookId, notebooks, currentNotebook, createNotebook, addCell, executeCell } = useNotebookStore()
   const openFolder = useWorkspace((s) => s.openFolder)
 
@@ -372,6 +374,7 @@ function App() {
           {railBtn(!!explorer || explorerPicker, openExplorer, 'Data Explorer  ⌘E', Table2)}
           {railBtn(dataOpen, () => toggleCenter(dataOpen, () => setDataOpen(true)), 'Data Querying', Database)}
           {railBtn(plotsOpen, () => setPlotsOpen(!plotsOpen), 'Plots & Dashboards', BarChart3)}
+          {railBtn(relationshipMapOpen, () => setRelationshipMapOpen(!relationshipMapOpen), 'Relationship Map', GitGraph)}
           <div className="w-7 my-1 border-t pn-bd" />
           {/* Workspace */}
           {railBtn(panels.notebook, () => togglePanel('notebook'), 'Data Science Notebook', BookOpen)}
@@ -599,6 +602,19 @@ function App() {
             schemaName={selectedTableMeta.schemaName}
             dbType={selectedTableMeta.dbType}
             onClose={() => setTableMetaOpen(false)}
+          />
+        )}
+
+        {/* Right: Relationship Map */}
+        {relationshipMapOpen && selectedTableMeta && (
+          <RelationshipMap
+            connId={selectedTableMeta.connId}
+            schemaName={selectedTableMeta.schemaName}
+            dbType={selectedTableMeta.dbType}
+            onTableClick={(_tableName) => {
+              setTableMetaOpen(true)
+            }}
+            onClose={() => setRelationshipMapOpen(false)}
           />
         )}
       </div>

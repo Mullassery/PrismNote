@@ -4,7 +4,8 @@
  * Accuracy: >90% on well-named schemas
  */
 
-import { SchemaTable, ColumnInfo, ConstraintInfo, singularize } from './schemaParser'
+import type { SchemaTable, ColumnInfo, ConstraintInfo } from './schemaParser'
+import { singularize } from './schemaParser'
 
 export interface InferredRelationship {
   fromTable: string
