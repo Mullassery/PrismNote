@@ -11,6 +11,9 @@ import { registerOllamaCompletions, registerSqlCompletions } from '../api/autoco
 import { registerPythonFormatter } from '../api/format'
 import { parseTraceback } from '../lib/pyerror'
 import { LANGUAGES, getMonacoMode, type CellLanguage } from '../lib/languages'
+import { executeSqlQuery, validateSqlQuery, type SqlExecutionError } from '../lib/sqlExecutor'
+import SqlConnectionPicker from './SqlConnectionPicker'
+import SqlResultsView from './SqlResultsView'
 
 interface CellProps {
   cell: any
@@ -42,6 +45,11 @@ function CellInner({ cell, cellIndex }: CellProps) {
   // Language support
   const [language, setLanguage] = useState<CellLanguage>(cell.language || 'python')
   const [showLanguageMenu, setShowLanguageMenu] = useState(false)
+
+  // SQL-specific state
+  const [selectedSqlConnection, setSelectedSqlConnection] = useState(cell.sqlConnection || '')
+  const [sqlResult, setSqlResult] = useState<any | null>(null)
+  const [sqlError, setSqlError] = useState<SqlExecutionError | null>(null)
 
   // AI state
   const [aiOpen, setAiOpen] = useState(false)
@@ -111,8 +119,44 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const handleRun = async () => {
     setIsExecuting(true)
     setLiveOut('')
+    setSqlResult(null)
+    setSqlError(null)
+
     try {
-      await executeCell(cellIndex, language, cell.sqlConnection)
+      // SQL execution path
+      if (language === 'sql') {
+        if (!selectedSqlConnection) {
+          setSqlError({
+            message: 'Please select a database connection',
+            dialect: 'sql',
+            originalError: 'No connection selected',
+          })
+          setIsExecuting(false)
+          return
+        }
+
+        const code = Array.isArray(cell.source) ? cell.source.join('') : cell.source
+
+        // Validate query
+        const validation = validateSqlQuery(code)
+        if (validation.warning) {
+          console.warn('SQL warning:', validation.warning)
+        }
+
+        // Execute query
+        try {
+          const result = await executeSqlQuery(selectedSqlConnection, cell.sqlConnection || 'postgresql', code)
+          setSqlResult(result)
+          setSqlError(null)
+        } catch (error: any) {
+          setSqlError(error)
+          setSqlResult(null)
+        }
+        return
+      }
+
+      // Python execution path (existing behavior)
+      await executeCell(cellIndex, language, selectedSqlConnection)
     } finally {
       setIsExecuting(false)
       setLiveOut('')
@@ -290,6 +334,17 @@ function CellInner({ cell, cellIndex }: CellProps) {
           )}
 
           {cell.cell_type === 'markdown' && <span className="text-xs pn-faint">Markdown</span>}
+
+          {/* SQL connection picker for SQL cells */}
+          {cell.cell_type === 'code' && language === 'sql' && (
+            <SqlConnectionPicker
+              selectedConnId={selectedSqlConnection}
+              onSelect={(connId, dbType) => {
+                setSelectedSqlConnection(connId)
+                updateCell(cellIndex, { sqlConnection: connId })
+              }}
+            />
+          )}
         </div>
         <div className="flex gap-1">
           {cell.cell_type === 'code' && (
@@ -487,6 +542,36 @@ function CellInner({ cell, cellIndex }: CellProps) {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> live
           </div>
           <pre className="whitespace-pre-wrap font-mono text-sm pn-text">{liveOut}</pre>
+        </div>
+      )}
+
+      {/* SQL results */}
+      {language === 'sql' && sqlResult && (
+        <div className="border-t pn-bd bg-[var(--pn-hover)] p-4">
+          <SqlResultsView result={sqlResult} />
+        </div>
+      )}
+
+      {/* SQL error */}
+      {language === 'sql' && sqlError && (
+        <div className="border-t pn-bd bg-red-900/20 p-4">
+          <div className="text-sm font-semibold text-red-400 mb-2">{sqlError.message}</div>
+          {sqlError.code && (
+            <div className="text-xs pn-faint mb-1">
+              Error code: <span className="font-mono">{sqlError.code}</span>
+            </div>
+          )}
+          {sqlError.line && (
+            <div className="text-xs pn-faint mb-1">Line {sqlError.line}</div>
+          )}
+          <details className="mt-2">
+            <summary className="text-xs pn-faint cursor-pointer hover:pn-text">
+              Raw error
+            </summary>
+            <pre className="mt-1 text-[10px] font-mono pn-faint bg-black/20 p-2 rounded overflow-auto max-h-40">
+              {sqlError.originalError}
+            </pre>
+          </details>
         </div>
       )}
 
