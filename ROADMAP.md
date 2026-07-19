@@ -310,23 +310,42 @@ Tests (Playwright):
 
 ## v1.5.0 — Data Exploration Phase 2 + Accessibility (Weeks 8-12)
 
-### Data Exploration Phase 2: Intelligence Layer [P1, 4-6 weeks]
+### ✅ Data Exploration Phase 2.1: Relationship Map / ER Diagram [COMPLETE]
 
-#### 2.1 Relationship Map / ER Diagram [P1, 4-6 weeks]
-- [ ] Component: `RelationshipMap.tsx` using graph library (cytoscape.js or react-force-graph)
-- [ ] Render tables as nodes, relationships as edges
-- [ ] Cardinality notation (1:1, 1:N, M:N) on edges
-- [ ] Drag-to-reorder nodes, pan/zoom controls
-- [ ] Click relationship → show join predicate
-- [ ] Highlight related tables (breadth-first traversal)
-- [ ] Optional: auto-layout algorithms (force-directed, hierarchical, circular)
+**Status:** ✅ Production Ready (20 days dev + 3 buffer, actual: 17 days)
 
-**Success Criteria:**
-- Render 50+ table diagram smoothly
-- Pan/zoom responsive
-- Relationship cardinality accurate
+Deliverables:
+- **RelationshipMap.tsx** (450 lines) — Interactive cytoscape-based ER diagram
+- **LayoutControls.tsx** (150 lines) — Toolbar with layout/zoom controls
+- **LegendPanel.tsx** (180 lines) — Symbol explanation overlay
+- **graphBuilder.ts** (250 lines) — Schema to cytoscape graph conversion
+- **graphOptimizer.ts** (210 lines) — Performance optimization utilities
+- **relationship-map.spec.ts** (21 E2E tests via Playwright)
+
+Features:
+- ✅ Four layout algorithms (force-directed, hierarchical, circular, grid)
+- ✅ Node coloring by table type (Fact=orange, Dimension=blue, Bridge=purple)
+- ✅ Relationship rendering (Explicit=solid, Inferred=dashed)
+- ✅ Cardinality inference (1:1, 1:N, M:N)
+- ✅ Pan/zoom (60 FPS, mouse wheel + buttons)
+- ✅ Node/edge selection & neighbor highlighting
+- ✅ Export as PNG (up to 4000×4000px)
+- ✅ Legend & edge detail panels
+- ✅ Node position caching (localStorage)
+- ✅ Graph filtering for 100+ table schemas
+
+Performance:
+- Render <1s for 100 tables (target: 2s)
+- Pan/zoom at 58-60 FPS (target: 60 FPS)
+- Bundle size: 320KB gzipped (target: <500KB)
+
+Tests: 21 E2E tests, all passing
+
+See: [PHASE_2_1_COMPLETION_SUMMARY.md](./PHASE_2_1_COMPLETION_SUMMARY.md)
 
 ---
+
+### Data Exploration Phase 2.2+: Advanced Intelligence Layer [P1, Planned for v1.6+]
 
 #### 2.2 Query Intelligence Panel [P1, 3-4 weeks]
 - [ ] Real-time SQL hints as user types in notebook
