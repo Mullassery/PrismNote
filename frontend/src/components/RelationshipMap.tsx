@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { X, AlertCircle, Loader2 } from 'lucide-react'
+import { X, AlertCircle, Loader2, HelpCircle } from 'lucide-react'
 import cytoscape from 'cytoscape'
 import type { Core, EventObject } from 'cytoscape'
 import coseLayout from 'cytoscape-cose-bilkent'
@@ -13,6 +13,7 @@ import dagreLayout from 'cytoscape-dagre'
 import { useSchemaCache } from '../hooks/useSchemaCache'
 import { buildRelationshipGraph, type CytoscapeEdge, type RelationshipGraph } from '../lib/graphBuilder'
 import LayoutControls, { type LayoutMode } from './LayoutControls'
+import LegendPanel from './LegendPanel'
 
 // Register layout algorithms
 cytoscape.use(coseLayout)
@@ -50,6 +51,7 @@ export default function RelationshipMap({
   const [selectedEdge, setSelectedEdge] = useState<EdgeDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showLegend, setShowLegend] = useState(false)
 
   // Build graph from schema data
   const graph = useMemo(() => {
@@ -286,6 +288,18 @@ export default function RelationshipMap({
             </div>
           </div>
         )}
+
+        {/* Legend Button */}
+        <button
+          onClick={() => setShowLegend(!showLegend)}
+          className="absolute top-4 left-4 z-20 p-2 rounded-full pn-surface border pn-bd hover:bg-pn-hover transition"
+          title="Show legend"
+        >
+          <HelpCircle size={18} className="text-blue-400" />
+        </button>
+
+        {/* Legend Panel */}
+        {showLegend && <LegendPanel onClose={() => setShowLegend(false)} />}
 
         <div ref={containerRef} className="flex-1" />
       </div>
