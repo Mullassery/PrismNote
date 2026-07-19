@@ -1,7 +1,7 @@
 import Editor, { DiffEditor } from '@monaco-editor/react'
 import MDPreview from '@uiw/react-markdown-preview'
 import { useEffect, useRef, useState, useCallback, memo } from 'react'
-import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown, GripVertical } from 'lucide-react'
+import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown, GripVertical, Database, Code2 } from 'lucide-react'
 import Output from './Output'
 import { useNotebookStore } from '../hooks/useNotebookRedux'
 import { aiEdit, aiFix, aiExplain } from '../api/ai'
@@ -10,6 +10,7 @@ import { subscribeCellStream } from '../api/stream'
 import { registerOllamaCompletions, registerSqlCompletions } from '../api/autocomplete'
 import { registerPythonFormatter } from '../api/format'
 import { parseTraceback } from '../lib/pyerror'
+import { LANGUAGES, getMonacoMode, type CellLanguage } from '../lib/languages'
 
 interface CellProps {
   cell: any
@@ -37,6 +38,10 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const { updateCell, deleteCell, executeCell, currentNotebook } = useNotebookStore()
   const [isExecuting, setIsExecuting] = useState(false)
   const [liveOut, setLiveOut] = useState('')
+
+  // Language support
+  const [language, setLanguage] = useState<CellLanguage>(cell.language || 'python')
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
 
   // AI state
   const [aiOpen, setAiOpen] = useState(false)
@@ -107,7 +112,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
     setIsExecuting(true)
     setLiveOut('')
     try {
-      await executeCell(cellIndex)
+      await executeCell(cellIndex, language, cell.sqlConnection)
     } finally {
       setIsExecuting(false)
       setLiveOut('')
@@ -248,7 +253,43 @@ function CellInner({ cell, cellIndex }: CellProps) {
               <span className="text-xs pn-muted">[{cell.execution_count || '-'}]</span>
             )}
           </div>
-          <span className="text-xs pn-faint">{cell.cell_type}</span>
+
+          {/* Language selector for code cells */}
+          {cell.cell_type === 'code' && (
+            <div className="relative">
+              <button
+                onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+                className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded ${LANGUAGES[language].color} hover:opacity-80 transition`}
+                title="Select language"
+              >
+                <span>{LANGUAGES[language].name}</span>
+                <ChevronDown size={12} />
+              </button>
+
+              {/* Language dropdown menu */}
+              {showLanguageMenu && (
+                <div className="absolute top-6 left-0 z-20 min-w-[180px] pn-surface border pn-bd rounded-lg shadow-lg py-1">
+                  {Object.entries(LANGUAGES).map(([langId, langConfig]) => (
+                    <button
+                      key={langId}
+                      onClick={() => {
+                        setLanguage(langId as CellLanguage)
+                        updateCell(cellIndex, { language: langId as CellLanguage })
+                        setShowLanguageMenu(false)
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                        language === langId ? 'bg-blue-500/20 pn-text' : 'pn-faint hover:pn-text'
+                      }`}
+                    >
+                      {langConfig.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {cell.cell_type === 'markdown' && <span className="text-xs pn-faint">Markdown</span>}
         </div>
         <div className="flex gap-1">
           {cell.cell_type === 'code' && (
@@ -363,7 +404,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
           </div>
           <DiffEditor
             height="220px"
-            language="python"
+            language={getMonacoMode(language)}
             original={sourceText}
             modified={proposal}
             theme={isDark() ? 'vs-dark' : 'light'}
@@ -382,7 +423,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
         <div className="border-t pn-bd">
           <Editor
             height="200px"
-            language="python"
+            language={getMonacoMode(language)}
             value={sourceText}
             onMount={handleEditorMount}
             // split *keeping* the trailing \n on each line so join('') round-trips
