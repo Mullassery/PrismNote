@@ -20,8 +20,10 @@ import {
   PanelBottom,
   Command as CommandIcon,
 } from 'lucide-react'
-import { Briefcase, GitBranch, Rocket, Database, Table2, Library, BarChart3 } from 'lucide-react'
+import { Briefcase, GitBranch, Database, Table2, Library, BarChart3, Network } from 'lucide-react'
 import Notebook from './components/Notebook'
+import SchemaExplorer from './components/SchemaExplorer'
+import TableMetadataPanel from './components/TableMetadataPanel'
 import DataExplorer, { ExplorerPicker, type ExplorerTarget } from './components/DataExplorer'
 import DataCatalogPanel from './components/DataCatalogPanel'
 import { useViz } from './hooks/useViz'
@@ -65,6 +67,15 @@ function App() {
   const [terminalHistory, setTerminalHistory] = useState<{ cmd: string; out: string }[]>([
     { cmd: '', out: 'PrismNote terminal — type a command. (python, ls, pip …)' },
   ])
+  // Schema explorer state
+  const [leftPanel, setLeftPanel] = useState<'files' | 'schema'>('files')
+  const [tableMetaOpen, setTableMetaOpen] = useState(false)
+  const [selectedTableMeta, setSelectedTableMeta] = useState<{
+    connId: string
+    tableName: string
+    schemaName: string
+    dbType: string
+  } | null>(null)
   const { currentNotebookId, notebooks, currentNotebook, createNotebook, addCell, executeCell } = useNotebookStore()
   const openFolder = useWorkspace((s) => s.openFolder)
 
@@ -181,6 +192,11 @@ function App() {
   const toggleTheme = () => applyTheme(theme === 'light' ? 'dark' : 'light')
 
   const togglePanel = (p: 'files' | 'terminal' | 'notebook') => setPanels((s) => ({ ...s, [p]: !s[p] }))
+
+  const openTableMeta = (connId: string, tableName: string, schemaName: string, dbType: string) => {
+    setSelectedTableMeta({ connId, tableName, schemaName, dbType })
+    setTableMetaOpen(true)
+  }
 
   // The center column hosts several full-bleed overlays (Data Explorer, Data &
   // SQL, Jobs, Git, Deploy). They are mutually exclusive — opening one closes
@@ -359,14 +375,13 @@ function App() {
           <div className="w-7 my-1 border-t pn-bd" />
           {/* Workspace */}
           {railBtn(panels.notebook, () => togglePanel('notebook'), 'Data Science Notebook', BookOpen)}
-          {railBtn(panels.files, () => togglePanel('files'), 'Files', Files)}
-          {railBtn(searchOpen, () => setSearchOpen((v) => !v), 'Search  ⌘K', SearchIcon)}
+          {railBtn(panels.files && leftPanel === 'files', () => { setPanels(p => ({...p, files: true})); setLeftPanel('files') }, 'Files', Files)}
+          {railBtn(panels.files && leftPanel === 'schema', () => { setPanels(p => ({...p, files: true})); setLeftPanel('schema') }, 'Schema Browser', Network)}
           {railBtn(panels.terminal, () => togglePanel('terminal'), 'Terminal Console', TerminalSquare)}
           <div className="w-7 my-1 border-t pn-bd" />
           {/* Operations */}
           {railBtn(gitOpen, () => toggleCenter(gitOpen, () => setGitOpen(true)), 'Source Control', GitBranch)}
           {railBtn(jobsOpen, () => toggleCenter(jobsOpen, () => setJobsOpen(true)), 'Jobs', Briefcase)}
-          {railBtn(deployOpen, () => toggleCenter(deployOpen, () => setDeployOpen(true)), 'Deploy to Cloud', Rocket)}
           <div className="flex-1" />
           {railBtn(railMenu === 'accounts', () => setRailMenu(railMenu === 'accounts' ? null : 'accounts'), 'Accounts', CircleUserRound, true)}
           {railBtn(railMenu === 'settings', () => setRailMenu(railMenu === 'settings' ? null : 'settings'), 'Settings', SettingsIcon, true)}
@@ -431,8 +446,8 @@ function App() {
           </div>
         )}
 
-        {/* Left: file explorer */}
-        {panels.files && <FileExplorer />}
+        {/* Left: file explorer or schema browser */}
+        {panels.files && (leftPanel === 'schema' ? <SchemaExplorer onSelectTable={openTableMeta} /> : <FileExplorer />)}
 
         {/* Center: code panel + bottom panel */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
@@ -575,6 +590,17 @@ function App() {
 
         {/* Right: Plots & Dashboards */}
         {plotsOpen && <PlotsPanel onClose={() => setPlotsOpen(false)} />}
+
+        {/* Right: Table Metadata */}
+        {tableMetaOpen && selectedTableMeta && (
+          <TableMetadataPanel
+            connId={selectedTableMeta.connId}
+            tableName={selectedTableMeta.tableName}
+            schemaName={selectedTableMeta.schemaName}
+            dbType={selectedTableMeta.dbType}
+            onClose={() => setTableMetaOpen(false)}
+          />
+        )}
       </div>
 
       {/* Status bar */}
