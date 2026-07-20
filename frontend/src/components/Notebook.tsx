@@ -5,6 +5,7 @@ import Toolbar from './Toolbar'
 import ExecutionMinimap from './ExecutionMinimap'
 import { Plus, FileCode, Code2, Type, Minus, ChevronDown } from 'lucide-react'
 import { useFontSize } from '../hooks/useFontSize'
+import { ErrorBoundary } from './ErrorBoundary'
 
 export default function Notebook() {
             
@@ -119,7 +120,16 @@ const [collapsed, setCollapsed] = useState(false)
                   selectedCellIndex === idx ? 'ring-2 ring-blue-500/70' : 'ring-1 ring-transparent hover:ring-slate-700'
                 }`}
               >
-                <Cell cell={cell} cellIndex={idx} />
+                <ErrorBoundary
+                  key={cell.id}
+                  fallback={
+                    <div className="p-4 m-2 bg-red-900/20 border border-red-700 rounded-lg text-red-400 text-sm">
+                      Cell {idx + 1} encountered an error. You can delete this cell and recreate it.
+                    </div>
+                  }
+                >
+                  <Cell cell={cell} cellIndex={idx} />
+                </ErrorBoundary>
               </div>
               <Inserter at={idx + 1} />
             </div>

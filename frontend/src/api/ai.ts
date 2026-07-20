@@ -47,6 +47,7 @@ export interface AIConfigDetail {
   openai_model: string | null
   claude_key_set: boolean
   openai_key_set: boolean
+  tavily_key_set: boolean
 }
 
 export interface AIConfigInput {
@@ -57,6 +58,7 @@ export interface AIConfigInput {
   claude_model?: string
   openai_api_key?: string
   openai_model?: string
+  tavily_api_key?: string
 }
 
 /** Provider-agnostic chat for the agent panel (Claude/OpenAI via backend). */
@@ -87,3 +89,13 @@ export async function setAiConfig(cfg: AIConfigInput): Promise<void> {
  *  autocomplete). Set in Settings → AI. */
 export const ollamaEndpoint = (): string =>
   localStorage.getItem('pn-ollama') || 'http://localhost:11434'
+
+/** Validate Tavily API key (used by AI Agent for web search). */
+export async function validateTavilyKey(key: string): Promise<boolean> {
+  try {
+    const res = await axios.post<{ valid: boolean }>(`${API}/ai/validate-tavily`, { key })
+    return res.data.valid
+  } catch {
+    return false
+  }
+}

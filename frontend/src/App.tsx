@@ -20,8 +20,11 @@ import {
   PanelBottom,
   Command as CommandIcon,
 } from 'lucide-react'
-import { Briefcase, GitBranch, Rocket, Database, Table2, Library, BarChart3 } from 'lucide-react'
+import { Briefcase, GitBranch, Database, Table2, Library, BarChart3, Network, GitGraph } from 'lucide-react'
 import Notebook from './components/Notebook'
+import SchemaExplorer from './components/SchemaExplorer'
+import TableMetadataPanel from './components/TableMetadataPanel'
+import RelationshipMap from './components/RelationshipMap'
 import DataExplorer, { ExplorerPicker, type ExplorerTarget } from './components/DataExplorer'
 import DataCatalogPanel from './components/DataCatalogPanel'
 import { useViz } from './hooks/useViz'
@@ -31,7 +34,7 @@ import GitPanel from './components/GitPanel'
 import DeployPanel from './components/DeployPanel'
 import DataPanel from './components/DataPanel'
 import FileExplorer from './components/FileExplorer'
-import BottomPanel from './components/BottomPanel'
+import BottomPanel, { type BottomPanelTab } from './components/BottomPanel'
 import PlotsPanel from './components/PlotsPanel'
 import MenuBar from './components/MenuBar'
 import UnifiedSearch from './components/UnifiedSearch'
@@ -59,6 +62,22 @@ function App() {
   const [explorerPicker, setExplorerPicker] = useState(false)
   const [railMenu, setRailMenu] = useState<null | 'settings' | 'accounts'>(null)
   const [overlay, setOverlay] = useState<null | 'command' | 'settings' | 'theme'>(null)
+  // BottomPanel state — lifted from component so it persists when panel is toggled off/on
+  const [bottomTab, setBottomTab] = useState<BottomPanelTab>('output')
+  const [bottomHeight, setBottomHeight] = useState(240)
+  const [terminalHistory, setTerminalHistory] = useState<{ cmd: string; out: string }[]>([
+    { cmd: '', out: 'PrismNote terminal — type a command. (python, ls, pip …)' },
+  ])
+  // Schema explorer state
+  const [leftPanel, setLeftPanel] = useState<'files' | 'schema'>('files')
+  const [tableMetaOpen, setTableMetaOpen] = useState(false)
+  const [selectedTableMeta, setSelectedTableMeta] = useState<{
+    connId: string
+    tableName: string
+    schemaName: string
+    dbType: string
+  } | null>(null)
+  const [relationshipMapOpen, setRelationshipMapOpen] = useState(false)
   const { currentNotebookId, notebooks, currentNotebook, createNotebook, addCell, executeCell } = useNotebookStore()
   const openFolder = useWorkspace((s) => s.openFolder)
 
@@ -133,8 +152,14 @@ function App() {
       } else if (mod && e.shiftKey && e.key === 'Enter') {
         e.preventDefault()
         ;(async () => {
-          for (let i = 0; i < (currentNotebook?.cells ?? []).length; i++) {
-            if (currentNotebook?.cells[i].cell_type === 'code') await executeCell(i)
+          // Read fresh state — currentNotebook in closure is stale at mount time.
+          // Use getNotebookState() pattern (same as saveCurrent) to ensure we iterate
+          // over the current notebook's cells, not the mount-time null value.
+          const nb = getNotebookState().currentNotebook
+          if (nb) {
+            for (let i = 0; i < nb.cells.length; i++) {
+              if (nb.cells[i].cell_type === 'code') await executeCell(i)
+            }
           }
         })()
 
@@ -169,6 +194,11 @@ function App() {
   const toggleTheme = () => applyTheme(theme === 'light' ? 'dark' : 'light')
 
   const togglePanel = (p: 'files' | 'terminal' | 'notebook') => setPanels((s) => ({ ...s, [p]: !s[p] }))
+
+  const openTableMeta = (connId: string, tableName: string, schemaName: string, dbType: string) => {
+    setSelectedTableMeta({ connId, tableName, schemaName, dbType })
+    setTableMetaOpen(true)
+  }
 
   // The center column hosts several full-bleed overlays (Data Explorer, Data &
   // SQL, Jobs, Git, Deploy). They are mutually exclusive — opening one closes
@@ -344,23 +374,23 @@ function App() {
           {railBtn(!!explorer || explorerPicker, openExplorer, 'Data Explorer  ⌘E', Table2)}
           {railBtn(dataOpen, () => toggleCenter(dataOpen, () => setDataOpen(true)), 'Data Querying', Database)}
           {railBtn(plotsOpen, () => setPlotsOpen(!plotsOpen), 'Plots & Dashboards', BarChart3)}
+          {railBtn(relationshipMapOpen, () => setRelationshipMapOpen(!relationshipMapOpen), 'Relationship Map', GitGraph)}
           <div className="w-7 my-1 border-t pn-bd" />
           {/* Workspace */}
           {railBtn(panels.notebook, () => togglePanel('notebook'), 'Data Science Notebook', BookOpen)}
-          {railBtn(panels.files, () => togglePanel('files'), 'Files', Files)}
-          {railBtn(searchOpen, () => setSearchOpen((v) => !v), 'Search  ⌘K', SearchIcon)}
+          {railBtn(panels.files && leftPanel === 'files', () => { setPanels(p => ({...p, files: true})); setLeftPanel('files') }, 'Files', Files)}
+          {railBtn(panels.files && leftPanel === 'schema', () => { setPanels(p => ({...p, files: true})); setLeftPanel('schema') }, 'Schema Browser', Network)}
           {railBtn(panels.terminal, () => togglePanel('terminal'), 'Terminal Console', TerminalSquare)}
           <div className="w-7 my-1 border-t pn-bd" />
           {/* Operations */}
           {railBtn(gitOpen, () => toggleCenter(gitOpen, () => setGitOpen(true)), 'Source Control', GitBranch)}
           {railBtn(jobsOpen, () => toggleCenter(jobsOpen, () => setJobsOpen(true)), 'Jobs', Briefcase)}
-          {railBtn(deployOpen, () => toggleCenter(deployOpen, () => setDeployOpen(true)), 'Deploy to Cloud', Rocket)}
           <div className="flex-1" />
           {railBtn(railMenu === 'accounts', () => setRailMenu(railMenu === 'accounts' ? null : 'accounts'), 'Accounts', CircleUserRound, true)}
           {railBtn(railMenu === 'settings', () => setRailMenu(railMenu === 'settings' ? null : 'settings'), 'Settings', SettingsIcon, true)}
         </div>
 
-        {/* VS Code-style rail popups (Settings gear / Accounts) */}
+        {/* Activity rail popups (Settings gear / Accounts) */}
         {railMenu && (
           <div
             className="fixed left-12 bottom-7 z-50 min-w-[230px] pn-solid-bg border pn-bd pn-text rounded-lg shadow-2xl shadow-black/50 py-1 text-[13px]"
@@ -419,8 +449,8 @@ function App() {
           </div>
         )}
 
-        {/* Left: file explorer */}
-        {panels.files && <FileExplorer />}
+        {/* Left: file explorer or schema browser */}
+        {panels.files && (leftPanel === 'schema' ? <SchemaExplorer onSelectTable={openTableMeta} /> : <FileExplorer />)}
 
         {/* Center: code panel + bottom panel */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
@@ -551,12 +581,42 @@ function App() {
               notebookVisible={panels.notebook}
               onClose={() => togglePanel('terminal')}
               onOpenExplorer={(target, title) => showExplorer(target, title)}
+              tab={bottomTab}
+              onTabChange={setBottomTab}
+              height={bottomHeight}
+              onHeightChange={setBottomHeight}
+              terminalHistory={terminalHistory}
+              onTerminalHistoryChange={setTerminalHistory}
             />
           )}
         </div>
 
         {/* Right: Plots & Dashboards */}
         {plotsOpen && <PlotsPanel onClose={() => setPlotsOpen(false)} />}
+
+        {/* Right: Table Metadata */}
+        {tableMetaOpen && selectedTableMeta && (
+          <TableMetadataPanel
+            connId={selectedTableMeta.connId}
+            tableName={selectedTableMeta.tableName}
+            schemaName={selectedTableMeta.schemaName}
+            dbType={selectedTableMeta.dbType}
+            onClose={() => setTableMetaOpen(false)}
+          />
+        )}
+
+        {/* Right: Relationship Map */}
+        {relationshipMapOpen && selectedTableMeta && (
+          <RelationshipMap
+            connId={selectedTableMeta.connId}
+            schemaName={selectedTableMeta.schemaName}
+            dbType={selectedTableMeta.dbType}
+            onTableClick={(_tableName) => {
+              setTableMetaOpen(true)
+            }}
+            onClose={() => setRelationshipMapOpen(false)}
+          />
+        )}
       </div>
 
       {/* Status bar */}

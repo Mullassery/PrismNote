@@ -7,20 +7,42 @@ import LineageViewer from './LineageViewer'
 import AgentPanel from './AgentPanel'
 import type { ExplorerTarget } from './DataExplorer'
 
-type Tab = 'terminal' | 'output' | 'lineage' | 'variables' | 'contents' | 'ai'
+export type BottomPanelTab = 'terminal' | 'output' | 'lineage' | 'variables' | 'contents' | 'ai'
 
 interface BottomPanelProps {
   notebookVisible?: boolean
   onClose: () => void
   onOpenExplorer?: (target: ExplorerTarget, title: string) => void
+  tab?: BottomPanelTab
+  onTabChange?: (tab: BottomPanelTab) => void
+  height?: number
+  onHeightChange?: (height: number) => void
+  terminalHistory?: { cmd: string; out: string }[]
+  onTerminalHistoryChange?: (history: { cmd: string; out: string }[]) => void
 }
 
-export default function BottomPanel({ notebookVisible = true, onClose, onOpenExplorer }: BottomPanelProps) {
-    
+export default function BottomPanel({
+  notebookVisible = true,
+  onClose,
+  onOpenExplorer,
+  tab: propTab,
+  onTabChange,
+  height: propHeight,
+  onHeightChange,
+  terminalHistory: propTerminalHistory,
+  onTerminalHistoryChange,
+}: BottomPanelProps) {
   const { currentNotebook } = useNotebookStore()
-const [tab, setTab] = useState<Tab>('output')
+  // Use passed props if available (from App), otherwise fall back to local state
+  const [localTab, setLocalTab] = useState<BottomPanelTab>('output')
+  const tab = propTab ?? localTab
+  const setTab = onTabChange ?? setLocalTab
+
   const [collapsed, setCollapsed] = useState(false)
-  const [height, setHeight] = useState(240)
+  const [localHeight, setLocalHeight] = useState(240)
+  const height = propHeight ?? localHeight
+  const setHeight = onHeightChange ?? setLocalHeight
+
   const [selectedTable, setSelectedTable] = useState<string | null>(null)
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null)
   const dragging = useRef(false)
@@ -53,9 +75,11 @@ const [tab, setTab] = useState<Tab>('output')
   }, [])
 
   // ---- terminal state ----
-  const [history, setHistory] = useState<{ cmd: string; out: string }[]>([
+  const [localHistory, setLocalHistory] = useState<{ cmd: string; out: string }[]>([
     { cmd: '', out: 'PrismNote terminal — type a command. (python, ls, pip …)' },
   ])
+  const history = propTerminalHistory ?? localHistory
+  const setHistory = onTerminalHistoryChange ?? setLocalHistory
   const [cmd, setCmd] = useState('')
   const termEndRef = useRef<HTMLDivElement>(null)
   useEffect(() => {

@@ -4,13 +4,18 @@ import axios from 'axios'
 
 const API_BASE = '/api'
 
+export type CellLanguage = 'python' | 'sql' | 'r' | 'javascript'
+
 interface Cell {
   id: string
   cell_type: 'code' | 'markdown'
+  language?: CellLanguage // NEW: language for code cells (default: 'python' for backward compat)
   source: string[]
   outputs: any[]
   execution_count: number | null
   metadata: Record<string, any>
+  // SQL-specific metadata
+  sqlConnection?: string // Connection ID for SQL cells
 }
 
 interface Notebook {
@@ -82,10 +87,24 @@ export const setCurrentNotebook = createAsyncThunk(
 
 export const executeCell = createAsyncThunk(
   'notebook/executeCell',
-  async ({ notebookId, cellId, code }: { notebookId: string; cellId: string; code: string }) => {
+  async ({
+    notebookId,
+    cellId,
+    code,
+    language,
+    sqlConnection,
+  }: {
+    notebookId: string
+    cellId: string
+    code: string
+    language?: CellLanguage
+    sqlConnection?: string
+  }) => {
     const res = await axios.post(`${API_BASE}/notebooks/${notebookId}/execute`, {
       cell_id: cellId,
       code,
+      language: language || 'python', // Default to Python for backward compat
+      sql_connection: sqlConnection, // For SQL cells
     })
     return { cellId, ...res.data }
   }

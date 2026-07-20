@@ -64,12 +64,20 @@ export function useNotebookStore() {
   )
 
   const executeCell = useCallback(
-    async (index: number) => {
+    async (index: number, language?: string, sqlConnection?: string) => {
       if (!currentNotebook) return
       const cell = currentNotebook.cells[index]
       if (!cell) return
       const code = Array.isArray(cell.source) ? cell.source.join('') : cell.source
-      dispatch(executeCellAction({ notebookId: currentNotebook.id, cellId: cell.id, code }))
+      dispatch(
+        executeCellAction({
+          notebookId: currentNotebook.id,
+          cellId: cell.id,
+          code,
+          language: language as any,
+          sqlConnection,
+        })
+      )
     },
     [dispatch, currentNotebook]
   )

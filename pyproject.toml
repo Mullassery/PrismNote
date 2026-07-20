@@ -4,8 +4,8 @@ build-backend = "maturin.build"
 
 [project]
 name = "prismnote"
-version = "1.3.0"
-description = "Modern data-science notebook with Rust performance. SQL execution, Spark integration, 8 cloud warehouse connectors. Real-time collaboration, global search, VSCode-inspired layout. Jupyter-compatible with AI assistant built-in."
+version = "1.6.0"
+description = "PrismNote — High-performance data science notebook. SQL & Python execution, 10 SQL dialects, 8 cloud warehouses, AI Agent with web search, visual data exploration, real-time collaboration, Jupyter-compatible."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
@@ -94,13 +94,6 @@ openai = ["openai==1.0"]
 
 # Big data
 spark = ["pyspark==3.0", "pyarrow==10"]
-
-# Development
-dev = [
-    "pytest==7.0",
-    "black==22.0",
-    "ruff==0.1.0",
-]
 
 [project.urls]
 Homepage = "https://github.com/Mullassery/prismnote"

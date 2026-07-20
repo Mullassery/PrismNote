@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { X, Palette, Type, Columns3, Bot, Check, Loader2 } from 'lucide-react'
-import { getAiConfig, setAiConfig, CLAUDE_MODELS, OPENAI_MODELS } from '../api/ai'
+import { X, Palette, Type, Columns3, Bot, Check, Loader2, Search } from 'lucide-react'
+import { getAiConfig, setAiConfig, CLAUDE_MODELS, OPENAI_MODELS, validateTavilyKey } from '../api/ai'
 
 interface Props {
   onClose: () => void
@@ -61,10 +61,33 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
   const [claudeModel, setClaudeModel] = useState('claude-sonnet-4-6')
   const [openaiKey, setOpenaiKey] = useState('')
   const [openaiModel, setOpenaiModel] = useState('gpt-4o')
+  const [tavilyKey, setTavilyKey] = useState('')
   const [claudeKeySet, setClaudeKeySet] = useState(false)
   const [openaiKeySet, setOpenaiKeySet] = useState(false)
+  const [tavilyKeySet, setTavilyKeySet] = useState(false)
+  const [tavilyStatus, setTavilyStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
   const [aiState, setAiState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'up' | 'down'>('checking')
+
+  // Execution settings
+  const [defaultCellLanguage, setDefaultCellLanguage] = useState<'python' | 'sql' | 'javascript'>(() =>
+    (localStorage.getItem('pn-default-lang') as any) || 'python'
+  )
+  const [queryTimeout, setQueryTimeout] = useState<number>(() =>
+    parseInt(localStorage.getItem('pn-query-timeout') || '30', 10)
+  )
+  const [outputTruncation, setOutputTruncation] = useState<number>(() =>
+    parseInt(localStorage.getItem('pn-output-trunc') || '10000', 10)
+  )
+  const [autoSave, setAutoSave] = useState(() => localStorage.getItem('pn-autosave') !== 'false')
+
+  // Search settings
+  const [searchResultCount, setSearchResultCount] = useState<number>(() =>
+    parseInt(localStorage.getItem('pn-search-results') || '5', 10)
+  )
+  const [searchDepth, setSearchDepth] = useState<'basic' | 'advanced'>(() =>
+    (localStorage.getItem('pn-search-depth') as any) || 'basic'
+  )
 
   // Live-check the selected provider's connection when switching tabs / editing URL.
   useEffect(() => {
@@ -96,6 +119,7 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
         if (c.openai_model) setOpenaiModel(c.openai_model)
         setClaudeKeySet(c.claude_key_set)
         setOpenaiKeySet(c.openai_key_set)
+        setTavilyKeySet(c.tavily_key_set)
       })
       .catch(() => {})
   }, [])
@@ -111,12 +135,19 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
         claude_model: claudeModel || undefined,
         openai_api_key: openaiKey || undefined,
         openai_model: openaiModel || undefined,
+        tavily_api_key: tavilyKey || undefined,
       })
       // keep the shared Ollama endpoint in sync (chat agent + autocomplete read it)
       localStorage.setItem('pn-ollama', ollamaUrl)
       if (claudeKey) setClaudeKeySet(true)
       if (openaiKey) setOpenaiKeySet(true)
-      setClaudeKey(''); setOpenaiKey('')
+      if (tavilyKey) {
+        setTavilyStatus('checking')
+        const valid = await validateTavilyKey(tavilyKey)
+        setTavilyStatus(valid ? 'valid' : 'invalid')
+        if (valid) setTavilyKeySet(true)
+      }
+      setClaudeKey(''); setOpenaiKey(''); setTavilyKey('')
       setAiState('saved')
       // tell the RHS AI panel to reload the provider/model/connection
       window.dispatchEvent(new Event('pn-ai-config'))
@@ -130,6 +161,18 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
     document.documentElement.style.setProperty('--pn-code-size', `${fontSize}px`)
     localStorage.setItem('pn-code-size', String(fontSize))
   }, [fontSize])
+
+  const saveExecutionSettings = () => {
+    localStorage.setItem('pn-default-lang', defaultCellLanguage)
+    localStorage.setItem('pn-query-timeout', String(queryTimeout))
+    localStorage.setItem('pn-output-trunc', String(outputTruncation))
+    localStorage.setItem('pn-autosave', String(autoSave))
+  }
+
+  const saveSearchSettings = () => {
+    localStorage.setItem('pn-search-results', String(searchResultCount))
+    localStorage.setItem('pn-search-depth', searchDepth)
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -257,6 +300,18 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
               </>
             )}
 
+            {/* Tavily web search API (optional for web search) */}
+            <Row label="Tavily API key (optional)" hint={tavilyKeySet ? 'Set — enables web search for AI queries' : 'Optional for web search capability'}>
+              <div className="flex items-center gap-2">
+                <input type="password" value={tavilyKey} onChange={(e) => setTavilyKey(e.target.value)}
+                  placeholder={tavilyKeySet ? '•••••••• saved' : 'tvly-…'}
+                  className="w-52 text-[12px] px-2 py-1 rounded-lg pn-solid-bg border pn-bd pn-text outline-none focus:border-blue-500/60" />
+                {tavilyStatus === 'checking' && <Loader2 size={14} className="animate-spin pn-muted" />}
+                {tavilyStatus === 'valid' && <Check size={14} className="text-emerald-400" />}
+                {tavilyStatus === 'invalid' && <span className="text-[11px] text-rose-400">Invalid key</span>}
+              </div>
+            </Row>
+
             <div className="flex items-center justify-between pt-2">
               <span className="text-[12px] pn-faint flex items-center gap-1.5">
                 {aiState === 'saved' && <><Check size={13} className="text-emerald-400" /> Saved</>}
@@ -268,6 +323,49 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
                 {aiState === 'saving' && <Loader2 size={13} className="animate-spin" />} Save AI settings
               </button>
             </div>
+          </Section>
+
+          <Section icon={<Columns3 size={13} />} title="Execution">
+            <Row label="Default cell language" hint="Language for new cells">
+              <select value={defaultCellLanguage} onChange={(e) => { setDefaultCellLanguage(e.target.value as any); saveExecutionSettings() }}
+                className="w-52 text-[12px] px-2 py-1 rounded-lg pn-solid-bg border pn-bd pn-text outline-none focus:border-blue-500/60">
+                <option value="python">Python</option>
+                <option value="sql">SQL</option>
+                <option value="javascript">JavaScript</option>
+              </select>
+            </Row>
+            <Row label="Query timeout" hint={`${queryTimeout}s max execution time`}>
+              <input type="range" min={5} max={300} value={queryTimeout} step={5}
+                onChange={(e) => { setQueryTimeout(parseInt(e.target.value)); saveExecutionSettings() }}
+                className="w-52 accent-blue-500" />
+            </Row>
+            <Row label="Output truncation" hint={`${outputTruncation} chars per cell output`}>
+              <input type="range" min={1000} max={100000} value={outputTruncation} step={1000}
+                onChange={(e) => { setOutputTruncation(parseInt(e.target.value)); saveExecutionSettings() }}
+                className="w-52 accent-blue-500" />
+            </Row>
+            <Row label="Auto-save notebook"><Toggle on={autoSave} onClick={() => { setAutoSave(!autoSave); localStorage.setItem('pn-autosave', String(!autoSave)) }} /></Row>
+          </Section>
+
+          <Section icon={<Search size={13} />} title="Web Search">
+            <Row label="Search results per query" hint="Tavily API result count (1–10)">
+              <input type="range" min={1} max={10} value={searchResultCount}
+                onChange={(e) => { setSearchResultCount(parseInt(e.target.value)); saveSearchSettings() }}
+                className="w-52 accent-blue-500" />
+            </Row>
+            <Row label="Search depth" hint="Basic = faster, Advanced = thorough">
+              <div className="flex rounded-lg bg-[var(--pn-hover)] p-0.5 text-[12px]">
+                {(['basic', 'advanced'] as const).map((d) => (
+                  <button key={d} onClick={() => { setSearchDepth(d); saveSearchSettings() }}
+                    className={`px-3 py-1 rounded-md capitalize ${searchDepth === d ? 'prism-bg text-white' : 'pn-muted'}`}>
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </Row>
+            <Row label="Note" hint="Settings saved to browser storage">
+              <span className="text-[11px] pn-faint">Tavily API key required in AI Provider section</span>
+            </Row>
           </Section>
         </div>
       </div>

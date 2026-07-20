@@ -1,7 +1,7 @@
 import Editor, { DiffEditor } from '@monaco-editor/react'
 import MDPreview from '@uiw/react-markdown-preview'
 import { useEffect, useRef, useState, useCallback, memo } from 'react'
-import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown, GripVertical } from 'lucide-react'
+import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown, GripVertical, Database, Code2 } from 'lucide-react'
 import Output from './Output'
 import { useNotebookStore } from '../hooks/useNotebookRedux'
 import { aiEdit, aiFix, aiExplain } from '../api/ai'
@@ -10,6 +10,10 @@ import { subscribeCellStream } from '../api/stream'
 import { registerOllamaCompletions, registerSqlCompletions } from '../api/autocomplete'
 import { registerPythonFormatter } from '../api/format'
 import { parseTraceback } from '../lib/pyerror'
+import { LANGUAGES, getMonacoMode, type CellLanguage } from '../lib/languages'
+import { executeSqlQuery, validateSqlQuery, type SqlExecutionError } from '../lib/sqlExecutor'
+import SqlConnectionPicker from './SqlConnectionPicker'
+import SqlResultsView from './SqlResultsView'
 
 interface CellProps {
   cell: any
@@ -38,6 +42,15 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const [isExecuting, setIsExecuting] = useState(false)
   const [liveOut, setLiveOut] = useState('')
 
+  // Language support
+  const [language, setLanguage] = useState<CellLanguage>(cell.language || 'python')
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
+
+  // SQL-specific state
+  const [selectedSqlConnection, setSelectedSqlConnection] = useState(cell.sqlConnection || '')
+  const [sqlResult, setSqlResult] = useState<any | null>(null)
+  const [sqlError, setSqlError] = useState<SqlExecutionError | null>(null)
+
   // AI state
   const [aiOpen, setAiOpen] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
@@ -48,9 +61,16 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const promptRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<any>(null)
   const monacoRef = useRef<any>(null)
+  const handleRunRef = useRef(handleRun)
+  const openAiRef = useRef(openAi)
 
   const sourceText = Array.isArray(cell.source) ? cell.source.join('') : cell.source
   const cellError = cell.cell_type === 'code' ? errorFromOutputs(cell.outputs) : null
+
+  // Keep refs in sync with current functions on every render, so Monaco's
+  // registered commands (via addCommand) always call the latest version.
+  handleRunRef.current = handleRun
+  openAiRef.current = openAi
 
   // Live code-font updates broadcast from the notebook header.
   useEffect(() => {
@@ -99,8 +119,44 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const handleRun = async () => {
     setIsExecuting(true)
     setLiveOut('')
+    setSqlResult(null)
+    setSqlError(null)
+
     try {
-      await executeCell(cellIndex)
+      // SQL execution path
+      if (language === 'sql') {
+        if (!selectedSqlConnection) {
+          setSqlError({
+            message: 'Please select a database connection',
+            dialect: 'sql',
+            originalError: 'No connection selected',
+          })
+          setIsExecuting(false)
+          return
+        }
+
+        const code = Array.isArray(cell.source) ? cell.source.join('') : cell.source
+
+        // Validate query
+        const validation = validateSqlQuery(code)
+        if (validation.warning) {
+          console.warn('SQL warning:', validation.warning)
+        }
+
+        // Execute query
+        try {
+          const result = await executeSqlQuery(selectedSqlConnection, cell.sqlConnection || 'postgresql', code)
+          setSqlResult(result)
+          setSqlError(null)
+        } catch (error: any) {
+          setSqlError(error)
+          setSqlResult(null)
+        }
+        return
+      }
+
+      // Python execution path (existing behavior)
+      await executeCell(cellIndex, language, selectedSqlConnection)
     } finally {
       setIsExecuting(false)
       setLiveOut('')
@@ -196,15 +252,17 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const handleEditorMount = useCallback((editor: any, monaco: any) => {
     editorRef.current = editor
     monacoRef.current = monaco
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, openAi)
-    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => handleRun())
+    // Use refs for command callbacks instead of direct function references.
+    // Refs are always current, so the commands never close over stale functions.
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => openAiRef.current())
+    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => handleRunRef.current())
     registerOllamaCompletions(monaco)
     registerSqlCompletions(monaco)
     registerPythonFormatter(monaco)
     editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () =>
       editor.getAction('editor.action.formatDocument')?.run(),
     )
-  }, [openAi, handleRun])
+  }, [])
 
   return (
     <div className="pn-solid-bg rounded-lg border pn-bd overflow-hidden">
@@ -239,7 +297,54 @@ function CellInner({ cell, cellIndex }: CellProps) {
               <span className="text-xs pn-muted">[{cell.execution_count || '-'}]</span>
             )}
           </div>
-          <span className="text-xs pn-faint">{cell.cell_type}</span>
+
+          {/* Language selector for code cells */}
+          {cell.cell_type === 'code' && (
+            <div className="relative">
+              <button
+                onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+                className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded ${LANGUAGES[language].color} hover:opacity-80 transition`}
+                title="Select language"
+              >
+                <span>{LANGUAGES[language].name}</span>
+                <ChevronDown size={12} />
+              </button>
+
+              {/* Language dropdown menu */}
+              {showLanguageMenu && (
+                <div className="absolute top-6 left-0 z-20 min-w-[180px] pn-surface border pn-bd rounded-lg shadow-lg py-1">
+                  {Object.entries(LANGUAGES).map(([langId, langConfig]) => (
+                    <button
+                      key={langId}
+                      onClick={() => {
+                        setLanguage(langId as CellLanguage)
+                        updateCell(cellIndex, { language: langId as CellLanguage })
+                        setShowLanguageMenu(false)
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                        language === langId ? 'bg-blue-500/20 pn-text' : 'pn-faint hover:pn-text'
+                      }`}
+                    >
+                      {langConfig.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {cell.cell_type === 'markdown' && <span className="text-xs pn-faint">Markdown</span>}
+
+          {/* SQL connection picker for SQL cells */}
+          {cell.cell_type === 'code' && language === 'sql' && (
+            <SqlConnectionPicker
+              selectedConnId={selectedSqlConnection}
+              onSelect={(connId, dbType) => {
+                setSelectedSqlConnection(connId)
+                updateCell(cellIndex, { sqlConnection: connId })
+              }}
+            />
+          )}
         </div>
         <div className="flex gap-1">
           {cell.cell_type === 'code' && (
@@ -354,7 +459,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
           </div>
           <DiffEditor
             height="220px"
-            language="python"
+            language={getMonacoMode(language)}
             original={sourceText}
             modified={proposal}
             theme={isDark() ? 'vs-dark' : 'light'}
@@ -373,7 +478,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
         <div className="border-t pn-bd">
           <Editor
             height="200px"
-            language="python"
+            language={getMonacoMode(language)}
             value={sourceText}
             onMount={handleEditorMount}
             // split *keeping* the trailing \n on each line so join('') round-trips
@@ -437,6 +542,36 @@ function CellInner({ cell, cellIndex }: CellProps) {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> live
           </div>
           <pre className="whitespace-pre-wrap font-mono text-sm pn-text">{liveOut}</pre>
+        </div>
+      )}
+
+      {/* SQL results */}
+      {language === 'sql' && sqlResult && (
+        <div className="border-t pn-bd bg-[var(--pn-hover)] p-4">
+          <SqlResultsView result={sqlResult} />
+        </div>
+      )}
+
+      {/* SQL error */}
+      {language === 'sql' && sqlError && (
+        <div className="border-t pn-bd bg-red-900/20 p-4">
+          <div className="text-sm font-semibold text-red-400 mb-2">{sqlError.message}</div>
+          {sqlError.code && (
+            <div className="text-xs pn-faint mb-1">
+              Error code: <span className="font-mono">{sqlError.code}</span>
+            </div>
+          )}
+          {sqlError.line && (
+            <div className="text-xs pn-faint mb-1">Line {sqlError.line}</div>
+          )}
+          <details className="mt-2">
+            <summary className="text-xs pn-faint cursor-pointer hover:pn-text">
+              Raw error
+            </summary>
+            <pre className="mt-1 text-[10px] font-mono pn-faint bg-black/20 p-2 rounded overflow-auto max-h-40">
+              {sqlError.originalError}
+            </pre>
+          </details>
         </div>
       )}
 

@@ -172,9 +172,231 @@
 
 ---
 
-## v1.5.0 — Accessibility & Performance (4-6 weeks after v1.4)
+## v1.4.5 — Data Exploration Phase 1: Schema Discovery (Parallel with v1.5, 6-8 weeks)
 
-### Accessibility (WCAG 2.1 AA)
+**Goal:** Intelligent database discovery — help users understand schema structure 20x faster than writing SQL queries.
+
+### Phase 1: Foundation (Weeks 1-2)
+**Critical gaps addressed:** Schema browser, metadata visibility, FK inference, data profiling
+
+#### 1.1 Schema Browser Panel [P0, 1-2 weeks]
+- [ ] New component: `SchemaExplorer.tsx`
+- [ ] Tree view: Schemas → Tables → Columns
+- [ ] Click to expand/collapse hierarchy
+- [ ] Search/filter tables by name
+- [ ] Icon indicators: PK, FK, indexed
+- [ ] Display data types and nullability
+- [ ] Integration with DataExplorer (click to view data)
+
+**Deliverables:**
+- `frontend/src/components/SchemaExplorer.tsx` — Tree browser UI
+- `frontend/src/lib/schemaParser.ts` — Parse INFORMATION_SCHEMA
+- `frontend/src/hooks/useSchemaCache.ts` — Memoized schema queries
+- Sidebar integration (switch between FileExplorer and SchemaExplorer)
+
+**Success Criteria:**
+- Navigate 1000-table schema in <2 seconds
+- Search finds table in <500ms
+- Schema tree is collapsible, searchable, responsive
+
+---
+
+#### 1.2 Table Metadata Panel [P0, 2 weeks]
+- [ ] Right-panel showing rich metadata when table selected
+- [ ] Display: row count, size on disk, primary key, foreign keys, indexes
+- [ ] Show last modified date (if available)
+- [ ] Sample data preview (first 10 rows inline)
+- [ ] Column-level stats: nullability %, distinctness
+- [ ] Links to related tables (via FKs)
+
+**Deliverables:**
+- `frontend/src/components/TableMetadataPanel.tsx` — Metadata display
+- `frontend/src/hooks/useTableStats.ts` — Query system tables
+- Integration with schema browser (click table → show metadata)
+
+**Success Criteria:**
+- Metadata loads in <1 second for tables up to 10M rows
+- Shows all constraint types (PK, FK, CHECK, NOT NULL)
+- Sample data renders correctly with truncation for long values
+
+---
+
+#### 1.3 FK Inference (Smart Relationship Detection) [P1, 1-2 weeks]
+- [ ] Algorithm: detect probable foreign keys based on naming conventions
+- [ ] Patterns:
+  - `{singular_table_name}_id` → FK to `{table}.id`
+  - `{table_name_singular}_pk` → likely PK marker
+  - UUID patterns: `{name}_uuid`
+- [ ] Show inferred relationships in schema browser (dotted lines vs solid)
+- [ ] Display cardinality (1:1, 1:N, M:N) when possible
+- [ ] User can toggle inferred vs explicit FKs
+
+**Deliverables:**
+- `frontend/src/lib/relationshipInference.ts` — FK detection algorithm
+- `frontend/src/hooks/useRelationshipInference.ts` — Run & cache inference
+- Visual indicators in schema browser (dotted vs solid connector lines)
+
+**Success Criteria:**
+- Inference accuracy >90% (minimal false positives)
+- Handles 1000+ table schemas without performance degradation
+- User can filter to show only explicit FKs if desired
+
+---
+
+#### 1.4 Data Profiling (Quick Stats) [P1, 2-3 weeks]
+- [ ] One-click "Profile" button in metadata panel
+- [ ] Shows for selected column:
+  - Null count & %
+  - Distinct count & cardinality ratio
+  - Min/Max (numeric columns)
+  - Length stats (string columns)
+  - Top 10 values (categorical)
+- [ ] Async execution with progress indicator
+- [ ] Caching (avoid re-profiling same column)
+- [ ] Sampling for very large tables (>100M rows)
+
+**Deliverables:**
+- `frontend/src/components/DataProfilePanel.tsx` — Profiling UI
+- `frontend/src/hooks/useDataProfiler.ts` — Query execution + caching
+- Integration with table metadata panel (profile button per column)
+
+**Success Criteria:**
+- Profile completes in <3 seconds for 10M row tables
+- Accurate null/distinct counts
+- Graceful handling of timeout (tables >500M rows sampled)
+
+---
+
+### Phase 1 Deliverables Summary
+
+```
+Components Created:
+  ✓ SchemaExplorer.tsx
+  ✓ TableMetadataPanel.tsx
+  ✓ DataProfilePanel.tsx
+
+Hooks Created:
+  ✓ useSchemaCache.ts
+  ✓ useTableStats.ts
+  ✓ useRelationshipInference.ts
+  ✓ useDataProfiler.ts
+
+Utilities Created:
+  ✓ schemaParser.ts
+  ✓ relationshipInference.ts
+
+UI Changes:
+  ✓ Sidebar: Add SchemaExplorer toggle
+  ✓ RightPanel: Add TableMetadataPanel
+  ✓ BottomPanel: Add DataProfilePanel (or inline)
+
+Tests (Playwright):
+  ✓ schema-explorer.spec.ts (8 tests)
+  ✓ table-metadata.spec.ts (6 tests)
+  ✓ data-profiler.spec.ts (5 tests)
+```
+
+---
+
+### Phase 1 Success Metrics
+
+- ✅ Users discover new table in <5 min (vs 20+ min with SQL)
+- ✅ FK inference accuracy >90%
+- ✅ Data profiling on 10M row table <3 seconds
+- ✅ Schema browser handles 1000+ tables responsively
+- ✅ Adoption: >60% of users interact with schema browser in first week
+
+---
+
+## v1.5.0 — Data Exploration Phase 2 + Accessibility (Weeks 8-12)
+
+### ✅ Data Exploration Phase 2.1: Relationship Map / ER Diagram [COMPLETE]
+
+**Status:** ✅ Production Ready (20 days dev + 3 buffer, actual: 17 days)
+
+Deliverables:
+- **RelationshipMap.tsx** (450 lines) — Interactive cytoscape-based ER diagram
+- **LayoutControls.tsx** (150 lines) — Toolbar with layout/zoom controls
+- **LegendPanel.tsx** (180 lines) — Symbol explanation overlay
+- **graphBuilder.ts** (250 lines) — Schema to cytoscape graph conversion
+- **graphOptimizer.ts** (210 lines) — Performance optimization utilities
+- **relationship-map.spec.ts** (21 E2E tests via Playwright)
+
+Features:
+- ✅ Four layout algorithms (force-directed, hierarchical, circular, grid)
+- ✅ Node coloring by table type (Fact=orange, Dimension=blue, Bridge=purple)
+- ✅ Relationship rendering (Explicit=solid, Inferred=dashed)
+- ✅ Cardinality inference (1:1, 1:N, M:N)
+- ✅ Pan/zoom (60 FPS, mouse wheel + buttons)
+- ✅ Node/edge selection & neighbor highlighting
+- ✅ Export as PNG (up to 4000×4000px)
+- ✅ Legend & edge detail panels
+- ✅ Node position caching (localStorage)
+- ✅ Graph filtering for 100+ table schemas
+
+Performance:
+- Render <1s for 100 tables (target: 2s)
+- Pan/zoom at 58-60 FPS (target: 60 FPS)
+- Bundle size: 320KB gzipped (target: <500KB)
+
+Tests: 21 E2E tests, all passing
+
+See: [PHASE_2_1_COMPLETION_SUMMARY.md](./PHASE_2_1_COMPLETION_SUMMARY.md)
+
+---
+
+### Data Exploration Phase 2.2+: Advanced Intelligence Layer [P1, Planned for v1.6+]
+
+#### 2.2 Query Intelligence Panel [P1, 3-4 weeks]
+- [ ] Real-time SQL hints as user types in notebook
+- [ ] Join suggestions, unused columns, missing joins
+- [ ] Cost estimation (Snowflake, BigQuery)
+- [ ] SQL anti-patterns: "Avoid SELECT * when using <5 columns"
+
+**Implementation:**
+- `frontend/src/components/QueryIntelligencePanel.tsx`
+- `frontend/src/lib/queryAnalyzer.ts` — SQL parsing + hint logic
+- Integration with Monaco editor (show hints in gutter)
+
+**Success Criteria:**
+- Hints appear within 1 second of typing
+- <10% false positive rate
+
+---
+
+#### 2.3 Dimensional Modeling Detection [P2, 2-3 weeks]
+- [ ] Automated analysis: classify fact vs dimension tables
+- [ ] Label tables in schema browser
+- [ ] Report: "Detected star schema: sales (fact), customer/product/date (dims)"
+
+**Success Criteria:**
+- Classification accuracy >80%
+- Shows confidence scores
+
+---
+
+#### 2.4 Schema Audit Insights [P2, 2-3 weeks]
+- [ ] Automated checks: missing PKs, high nullability, wide tables, naming inconsistencies
+- [ ] Display as sidebar badge with expandable details
+- [ ] User can dismiss individual issues
+
+---
+
+#### 2.5 AI-Assisted Schema Explanation [P2, 1-2 weeks]
+- [ ] Right-click table → "Explain this table"
+- [ ] Right-click schema → "Explain this schema"
+- [ ] Generate sample queries
+- [ ] Reuse existing AgentPanel infrastructure
+
+**Success Criteria:**
+- Explanations <200 words, accurate
+- Generated queries syntactically correct
+
+---
+
+### UI Stability & Accessibility (Parallel with Phase 2)
+
+#### Accessibility (WCAG 2.1 AA)
 - [ ] Screen reader support (11 tests)
 - [ ] Color contrast verification (3 tests)
 - [ ] Focus indicators (3 tests)
@@ -192,32 +414,67 @@
 - [ ] Rendering (5 tests: tab switch < 300ms, cell creation < 100ms)
 - [ ] Memory (3 tests: no leaks after 100 cells/executions)
 
-**Total:** 51 new tests
+**Total:** 51 new tests (UI stability) + data exploration Phase 2 features
+
+### v1.5 Success Metrics
+- ✅ Users report 30% faster database onboarding
+- ✅ >60% adoption of schema explorer + metadata features
+- ✅ WCAG 2.1 AA compliance verified
+- ✅ Zero UI flakiness in keyboard navigation
 
 ---
 
-## v2.0.0 — Production Hardening (8-10 weeks after v1.5)
+## v2.0.0 — Data Exploration Phase 3 + Production Hardening (Weeks 16-24)
 
-### Testing Maturity
+### Data Exploration Phase 3: Refinement & Ecosystem [P3]
+
+#### 3.1 Query Lineage & Dependency Tracking [NICE-TO-HAVE]
+- [ ] Visualize data flow through notebooks
+- [ ] Lineage graph: orders → customer_segment_feature → reporting_query
+- [ ] Impact analysis: "If I change this table, what breaks?"
+- **Complexity:** High; **Value:** Medium (defer if needed)
+
+---
+
+#### 3.2 Advanced Visual Query Builder [DEFER]
+- Drag-to-join interface for query construction
+- Lower priority; SQL-first users may ignore
+
+---
+
+#### 3.3 External Integrations
+- [ ] dbt docs integration (link to existing dbt documentation)
+- [ ] "Open in Data Catalog" buttons (Collibra, Alation, DataHub)
+- [ ] GitHub wiki links (store schema documentation)
+
+---
+
+### Production Hardening & v2.0 Release
+
+#### Testing Maturity
 - [ ] E2E test coverage > 80% of UI code paths
 - [ ] Automated regression testing (CI)
-- [ ] Performance benchmarking (target: tab < 300ms)
-- [ ] Load testing (1000 cells)
+- [ ] Performance benchmarking (schema browser < 2s for 1000 tables)
+- [ ] Load testing (profile 100M+ row tables)
 
-### Stability
+#### Stability
 - [ ] Zero flaky tests (no retries)
-- [ ] Graceful error handling
-- [ ] Memory leak detection & fixes
+- [ ] Graceful error handling (invalid FK patterns, missing INFORMATION_SCHEMA)
+- [ ] Memory optimization (schema cache, query result paging)
 - [ ] Browser compatibility (Chrome, Firefox, Safari)
 
-### Documentation
+#### Documentation
+- [ ] Data exploration user guide
+- [ ] Contributing to data features guide
+- [ ] Schema browser architecture doc
 - [ ] Test architecture guide
-- [ ] Contributing to tests guide
 - [ ] UI stability runbook
 
 ---
 
-## Test Summary
+## Roadmap Summary
+
+### Testing & Stability Parallel Track
 
 | Phase | Category | Tests | Timeline |
 |-------|----------|-------|----------|
@@ -225,9 +482,46 @@
 | v1.4 Phase 2 | Keyboard | 34 | Week 2 |
 | v1.4 Phase 3 | UI Stability | 27 | Weeks 2-3 |
 | v1.4 Phase 4 | Execution | 43 | Weeks 3-4 |
-| v1.5 | Cells, Files, A11y, Perf | 51 | 4-6 weeks |
-| v2.0 | Maturity & Hardening | - | 8-10 weeks |
-| **TOTAL** | **155+ tests** | **26+ weeks** |
+| v1.5 | Cells, Files, A11y, Perf | 51 | Weeks 8-12 |
+| v2.0 | Maturity & Hardening | - | Weeks 16-24 |
+| **TOTAL UI TESTS** | **155+ tests** | **26+ weeks** |
+
+---
+
+### Data Exploration & Intelligence Parallel Track
+
+| Phase | Feature Set | Effort | Timeline | Value |
+|-------|-------------|--------|----------|-------|
+| **v1.4.5 Phase 1** | Schema browser, metadata, FK inference, profiling | 6-8 weeks | Weeks 1-8 | **CRITICAL** |
+| **v1.5 Phase 2** | ER diagram, query intelligence, dimensional modeling, audit, AI explanation | 8-10 weeks | Weeks 8-18 | **HIGH** |
+| **v2.0 Phase 3** | Query lineage, integrations, ecosystem polish | 4-6 weeks | Weeks 18-24 | **MEDIUM** |
+| **v2.0 Production** | Hardening, testing, documentation | 6-8 weeks | Weeks 16-24 | **CRITICAL** |
+| **TOTAL DATA FEATURES** | 3 phases | 18-24 weeks | Parallel | **Competitive advantage** |
+
+---
+
+### Recommended Execution Strategy
+
+**Parallel Tracks:** UI Stability (v1.4-v2.0) + Data Exploration (v1.4.5-v2.0)
+
+**Why parallel?**
+- Different teams can own each track (UI Engineering vs Data Intelligence)
+- Feedback loop: stability fixes completed by week 4, data features start week 1
+- Both ship in v2.0 (month 6) with significant impact
+
+**Gate for Phase 2 (ER Diagram, Query Intelligence):**
+- Phase 1 (schema browser) adoption >60% after 2 weeks
+- FK inference accuracy >90% verified
+- User feedback positive on discoverability improvements
+
+---
+
+## Related Documents
+
+- [Data Exploration & Database Intelligence Gap Analysis](DATA_EXPLORATION_GAP_ANALYSIS.md) — Full analysis of competitive gaps
+- [TESTING_PLAN_UI_KEYBOARD.md](./TESTING_PLAN_UI_KEYBOARD.md) — Detailed test plan (149 tests, 26 days)
+- [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — Frontend architecture
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — Development setup
 
 ---
 
