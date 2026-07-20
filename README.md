@@ -2,9 +2,11 @@
 
 # ◆ PrismNote
 
-**A modern data science notebook that makes exploring and understanding data faster than writing code.**
+**Data science intelligence platform. Explore, validate, and govern data with quality-aware analysis and automatic lineage tracking.**
 
 No more `df.head()` → Explore data visually · Build charts without coding · Automatic governance & quality checks · Local AI assistant — all in one tool.
+
+**Architectural Role:** Owns analyst interaction layer and data exploration. Applies quality validation automatically during exploration, tracks lineage of all analysis, and provides AI-assisted insights with data context.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/prismnote.svg)](https://pypi.org/project/prismnote/)
