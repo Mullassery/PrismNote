@@ -471,7 +471,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ---
 
-**Made with Rust + React | Open Source | MIT Licensed**
+**Made with Rust + React | Open Source | Proprietary Licensed**
 
 ⭐ **If you find PrismNote useful, please star us on [GitHub](https://github.com/Mullassery/prismnote)!**
 

@@ -267,7 +267,7 @@ To contribute to the Homebrew formula:
 
 ## License
 
-MIT License - See [LICENSE](../LICENSE)
+Proprietary License - See [LICENSE](../LICENSE)
 
 ## Support
 

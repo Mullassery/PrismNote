@@ -140,7 +140,7 @@ conn.close()
 
 ---
 
-## DuckDB (MIT Licensed)
+## DuckDB (Proprietary Licensed)
 
 **Best for:** Analytics, OLAP queries, columnar storage, CSV/Parquet processing
 

@@ -19,7 +19,7 @@ homebrew-prismnote/
 ├── Formula/
 │   └── prismnote.rb          # Main formula
 ├── README.md                  # Installation instructions
-├── LICENSE                    # MIT License
+├── LICENSE                    # Proprietary License
 └── .github/
     └── workflows/
         └── test.yml          # CI/CD for formula validation
