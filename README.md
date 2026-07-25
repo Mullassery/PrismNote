@@ -400,7 +400,7 @@ A: Jupyter is great for coding. PrismNote adds instant data exploration (no code
 - **GitHub Stars:** [Watch us grow](https://github.com/Mullassery/prismnote/stargazers)
 - **PyPI Downloads:** [Chart](https://pypi.org/project/prismnote/)
 - **Contributors:** [Join us](https://github.com/Mullassery/prismnote/graphs/contributors)
-- **License:** MIT (completely free, even for commercial use)
+- **License:** Proprietary (completely free, even for commercial use)
 
 ---
 
