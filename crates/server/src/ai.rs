@@ -84,6 +84,91 @@ impl AIEngine {
         }
     }
 
+    /// Generate SQL from natural language description (Phase 2.3)
+    ///
+    /// Takes a natural language question/request and converts it to SQL.
+    /// Optionally uses schema context to improve accuracy.
+    ///
+    /// Example:
+    ///   nl_to_sql("Show me the top 10 customers by revenue",
+    ///             Some("Tables: customers (id, name, email), orders (id, customer_id, amount)"))
+    ///   → "SELECT c.id, c.name, SUM(o.amount) as total_revenue
+    ///        FROM customers c
+    ///        JOIN orders o ON c.id = o.customer_id
+    ///        GROUP BY c.id, c.name
+    ///        ORDER BY total_revenue DESC LIMIT 10"
+    pub async fn nl_to_sql(&self, query: &str, schema_context: Option<&str>) -> Result<String> {
+        let prompt = if let Some(schema) = schema_context {
+            format!(
+                "You are an expert SQL query generator. Generate a single, optimized SQL query based on the user's natural language request.\n\n\
+                 Schema Information:\n{}\n\n\
+                 User Request: {}\n\n\
+                 Return ONLY the SQL query. No explanation, no markdown, no commentary. Just the SQL.",
+                schema, query
+            )
+        } else {
+            format!(
+                "You are an expert SQL query generator. Generate a single, optimized SQL query based on the user's natural language request.\n\n\
+                 User Request: {}\n\n\
+                 Return ONLY the SQL query. No explanation, no markdown, no commentary. Just the SQL.",
+                query
+            )
+        };
+
+        match self.config.provider.as_str() {
+            "claude" => self.claude_nl_to_sql(&prompt).await,
+            "openai" => self.openai_nl_to_sql(&prompt).await,
+            "ollama" => self.ollama_nl_to_sql(&prompt).await,
+            _ => Err(anyhow!("Unknown AI provider")),
+        }
+    }
+
+    /// Claude-based NL-to-SQL (Phase 2.3)
+    async fn claude_nl_to_sql(&self, prompt: &str) -> Result<String> {
+        let api_key = self
+            .config
+            .claude_api_key
+            .as_ref()
+            .ok_or(anyhow!("Claude API key not configured"))?;
+
+        let raw = self.claude_request(api_key, prompt).await?;
+        Ok(strip_code_fences(&raw))
+    }
+
+    /// OpenAI-based NL-to-SQL (Phase 2.3)
+    async fn openai_nl_to_sql(&self, prompt: &str) -> Result<String> {
+        let api_key = self
+            .config
+            .openai_api_key
+            .as_ref()
+            .ok_or(anyhow!("OpenAI API key not configured"))?;
+        let model = self
+            .config
+            .openai_model
+            .as_ref()
+            .ok_or(anyhow!("OpenAI model not selected"))?;
+
+        let raw = self.openai_request(api_key, model, prompt).await?;
+        Ok(strip_code_fences(&raw))
+    }
+
+    /// Ollama-based NL-to-SQL (Phase 2.3)
+    async fn ollama_nl_to_sql(&self, prompt: &str) -> Result<String> {
+        let url = self
+            .config
+            .ollama_url
+            .as_ref()
+            .ok_or(anyhow!("Ollama URL not configured"))?;
+        let model = self
+            .config
+            .ollama_model
+            .as_ref()
+            .ok_or(anyhow!("Ollama model not selected"))?;
+
+        let raw = self.ollama_request(url, model, prompt).await?;
+        Ok(strip_code_fences(&raw))
+    }
+
     /// Rewrite a cell of code according to a natural-language instruction.
     /// Returns code only (markdown fences stripped) so the result can be
     /// dropped straight back into the editor.
