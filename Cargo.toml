@@ -6,7 +6,7 @@ resolver = "2"
 version = "1.7.0"
 edition = "2021"
 authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
-license = "MIT"
+license = "Proprietary"
 repository = "https://github.com/Mullassery/prismnote"
 
 [workspace.dependencies]

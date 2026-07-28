@@ -1,6 +1,6 @@
 # PrismNote
 
-**Open-source data science notebook with support for 15+ programming languages, SQL execution across 9+ databases, and intelligent code assistance.**
+**Data science notebook with support for 15+ programming languages, SQL execution across 9+ databases, and intelligent code assistance.**
 
 A local-first notebook for data exploration, analysis, and systems programming. Works offline, requires no cloud account, and integrates seamlessly with your existing infrastructure.
 
@@ -653,64 +653,18 @@ which rustc
 
 ---
 
-## Development
+## Support & Resources
 
-### Contributing
-
-PrismNote welcomes contributions:
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/name`)
-3. Make changes
-4. Run tests (`npm test`)
-5. Submit pull request
-
-### Building from Source
-
-```bash
-git clone https://github.com/Mullassery/prismnote.git
-cd prismnote
-
-# Install dependencies
-npm install
-
-# Development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Run tests
-npm test
-```
-
-### Documentation
-
-- User guide: docs/GETTING_STARTED.md
-- Architecture: docs/ARCHITECTURE.md
-- API reference: docs/API.md
-- Contributing: CONTRIBUTING.md
-
----
-
-## Community
-
-- GitHub Issues: Report bugs or suggest features
+- GitHub Issues: Report bugs or request features
 - GitHub Discussions: Ask questions and share ideas
 - Releases: View changelog and download binaries
-- Contributing: Join the development community
+- Documentation: GETTING_STARTED.md and docs/
 
 ---
 
 ## License
 
-MIT License - See LICENSE file for details
-
-You are free to:
-- Use in any project (personal or commercial)
-- Modify the source code
-- Distribute your changes
-- Use for any purpose
+Proprietary Software - See LICENSE file for details
 
 ---
 
