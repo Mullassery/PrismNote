@@ -3,6 +3,7 @@ import { useNotebookStore } from '../hooks/useNotebookRedux'
 import Cell from './Cell'
 import Toolbar from './Toolbar'
 import ExecutionMinimap from './ExecutionMinimap'
+import EmptyState from './EmptyState'
 import { Plus, FileCode, Code2, Type, Minus, ChevronDown } from 'lucide-react'
 import { useFontSize } from '../hooks/useFontSize'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -46,7 +47,25 @@ const [collapsed, setCollapsed] = useState(false)
   }
 
   if (!currentNotebook) {
-    return <div className="p-4">No notebook selected</div>
+    return (
+      <EmptyState
+        icon={<FileCode size={64} className="text-blue-500/30" />}
+        title="No Notebook Selected"
+        description="Create a new notebook or open an existing one to get started"
+        action={{
+          label: 'Create New Notebook',
+          onClick: () => {
+            // This will be triggered from App.tsx
+            window.dispatchEvent(new CustomEvent('pn-new-notebook'))
+          },
+        }}
+        tips={[
+          'Press Cmd/Ctrl+N to create a new notebook',
+          'Press Cmd/Ctrl+O to open an existing notebook',
+          'Press ? to see all keyboard shortcuts',
+        ]}
+      />
+    )
   }
 
   // Slim hover strip shown between cells (and above the first) so a Code or
@@ -96,8 +115,25 @@ const [collapsed, setCollapsed] = useState(false)
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto p-4 min-w-0" style={{ fontSize: `${notebookZoom}px` }}>
           <div className="w-full min-w-0">
-          <Inserter at={0} />
-          {currentNotebook.cells.map((cell, idx) => (
+          {currentNotebook.cells.length === 0 ? (
+            <EmptyState
+              icon={<Code2 size={64} className="text-blue-500/30" />}
+              title="Create Your First Cell"
+              description="Write Python, SQL, JavaScript, or Markdown to get started"
+              action={{
+                label: 'Add Code Cell',
+                onClick: () => addCell('code', 0),
+              }}
+              tips={[
+                'Press Shift+Enter to execute a cell',
+                'Press Cmd/Ctrl+E to explore data',
+                'Use ? to see all shortcuts',
+              ]}
+            />
+          ) : (
+            <>
+              <Inserter at={0} />
+              {currentNotebook.cells.map((cell, idx) => (
             <div
               key={cell.id}
               data-cell-index={idx}
@@ -133,7 +169,9 @@ const [collapsed, setCollapsed] = useState(false)
               </div>
               <Inserter at={idx + 1} />
             </div>
-          ))}
+              ))}
+            </>
+          )}
 
           <div className="mt-2 flex items-center justify-center gap-2">
             <button

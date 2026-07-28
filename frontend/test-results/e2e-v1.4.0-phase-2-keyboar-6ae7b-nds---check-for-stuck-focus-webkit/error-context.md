@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts >> Keyboard Stress: Tab Navigation >> [STRESS-008] Tab after rapid modal open/close - verify focus restoration
-- Location: tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:219:3
+- Name: e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts >> Keyboard Stress: Tab Navigation >> [STRESS-005] Sustained Tab hold (2 seconds) - check for stuck focus
+- Location: tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:146:3
 
 # Error details
 
@@ -29,7 +29,7 @@ Call log:
   - generic [ref=e4]: "[plugin:vite:import-analysis] Failed to resolve import \"../lib/sqlExecutor\" from \"src/components/Cell.tsx\". Does the file exist?"
   - generic [ref=e5]: /Users/georgimullassery/prismnote/frontend/src/components/Cell.tsx:14:74
   - generic [ref=e6]: "12 | import { parseTraceback } from \"../lib/pyerror\"; 13 | import { LANGUAGES, getMonacoMode } from \"../lib/languages\"; 14 | import { executeSqlQuery, validateSqlQuery } from \"../lib/sqlExecutor\"; | ^ 15 | import SqlConnectionPicker from \"./SqlConnectionPicker\"; 16 | import SqlResultsView from \"./SqlResultsView\";"
-  - generic [ref=e7]: at TransformPluginContext._formatLog (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:30602:39) at TransformPluginContext.error (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:30599:14) at normalizeUrl (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:27842:18) at async file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:27905:30 at async Promise.all (index 13) at async TransformPluginContext.transform (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:27873:4) at async EnvironmentPluginContainer.transform (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:30387:14) at async loadAndTransform (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:24646:26)
+  - generic [ref=e7]: at TransformPluginContext._formatLog (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:30602:39) at TransformPluginContext.error (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:30599:14) at normalizeUrl (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:27842:18) at async file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:27905:30 at async Promise.all (index 13) at async TransformPluginContext.transform (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:27873:4) at async EnvironmentPluginContainer.transform (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:30387:14) at async loadAndTransform (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:24646:26) at async viteTransformMiddleware (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:24440:20)
   - generic [ref=e8]:
     - text: Click outside, press Esc key, or fix the code to dismiss.
     - text: You can also disable this overlay by setting
@@ -44,6 +44,76 @@ Call log:
 # Test source
 
 ```ts
+  50  |       console.log('Errors during rapid tab:', errors)
+  51  |     }
+  52  |     expect(errors).toHaveLength(0)
+  53  | 
+  54  |     // Memory didn't explode (allow 5MB growth for normal operation)
+  55  |     if (memStart && memEnd) {
+  56  |       const memGrowth = (memEnd.usedJSHeapSize - memStart.usedJSHeapSize) / 1024 / 1024 // in MB
+  57  |       console.log(`Memory growth: ${memGrowth.toFixed(2)} MB`)
+  58  |       expect(memGrowth).toBeLessThan(10) // 10MB is reasonable
+  59  |     }
+  60  |   })
+  61  | 
+  62  |   test('[STRESS-002] Extreme speed tab (no delay) 200x - find race conditions', async () => {
+  63  |     const errors: any[] = []
+  64  |     stress.captureConsoleErrors((err) => errors.push(err))
+  65  | 
+  66  |     await page.click('[data-testid="notebook-container"]')
+  67  |     await page.waitForTimeout(100)
+  68  | 
+  69  |     const focusLog: any[] = []
+  70  |     let lastFocus = await stress.getFocusedElement()
+  71  |     focusLog.push({ step: 0, ...lastFocus })
+  72  | 
+  73  |     // Tab at absolute maximum speed (no artificial delay)
+  74  |     for (let i = 0; i < 200; i++) {
+  75  |       await page.keyboard.press('Tab')
+  76  |       if (i % 20 === 0) {
+  77  |         const current = await stress.getFocusedElement()
+  78  |         focusLog.push({ step: i, ...current })
+  79  |       }
+  80  |     }
+  81  | 
+  82  |     const finalFocus = await stress.getFocusedElement()
+  83  |     expect(finalFocus).toBeDefined()
+  84  | 
+  85  |     // Did focus stay within the app?
+  86  |     expect(finalFocus.id || finalFocus.class).not.toBe('none')
+  87  | 
+  88  |     console.log('Focus progression:', focusLog)
+  89  |     console.log('Errors:', errors.length > 0 ? errors : 'NONE')
+  90  |   })
+  91  | 
+  92  |   test('[STRESS-003] Reverse tab (Shift+Tab) 100x - check backward navigation', async () => {
+  93  |     const errors: any[] = []
+  94  |     stress.captureConsoleErrors((err) => errors.push(err))
+  95  |     stress.captureUnhandledRejections((err) => errors.push(err))
+  96  | 
+  97  |     await page.click('[data-testid="notebook-container"]')
+  98  |     await page.waitForTimeout(100)
+  99  | 
+  100 |     const memStart = await stress.getMemoryUsage()
+  101 | 
+  102 |     // Rapid Shift+Tab 100 times
+  103 |     await stress.reverseTabCycles(100, 15)
+  104 | 
+  105 |     const memEnd = await stress.getMemoryUsage()
+  106 | 
+  107 |     const focused = await stress.getFocusedElement()
+  108 |     expect(focused).toBeDefined()
+  109 | 
+  110 |     expect(errors).toHaveLength(0)
+  111 | 
+  112 |     if (memStart && memEnd) {
+  113 |       const memGrowth = (memEnd.usedJSHeapSize - memStart.usedJSHeapSize) / 1024 / 1024
+  114 |       console.log(`Reverse tab memory growth: ${memGrowth.toFixed(2)} MB`)
+  115 |       expect(memGrowth).toBeLessThan(10)
+  116 |     }
+  117 |   })
+  118 | 
+  119 |   test('[STRESS-004] Alternating Tab/Shift+Tab 150x - check navigation order corruption', async () => {
   120 |     const errors: any[] = []
   121 |     const focusChanges: any[] = []
   122 | 
@@ -74,7 +144,8 @@ Call log:
   147 |     const errors: any[] = []
   148 |     stress.captureConsoleErrors((err) => errors.push(err))
   149 | 
-  150 |     await page.click('[data-testid="notebook-container"]')
+> 150 |     await page.click('[data-testid="notebook-container"]')
+      |                ^ Error: page.click: Test timeout of 60000ms exceeded.
   151 |     await page.waitForTimeout(100)
   152 | 
   153 |     const focusBefore = await stress.getFocusedElement()
@@ -144,8 +215,7 @@ Call log:
   217 |   })
   218 | 
   219 |   test('[STRESS-008] Tab after rapid modal open/close - verify focus restoration', async () => {
-> 220 |     await page.click('[data-testid="notebook-container"]')
-      |                ^ Error: page.click: Test timeout of 60000ms exceeded.
+  220 |     await page.click('[data-testid="notebook-container"]')
   221 | 
   222 |     // Open and close settings modal 10 times rapidly
   223 |     for (let i = 0; i < 10; i++) {
@@ -176,53 +246,4 @@ Call log:
   248 | 
   249 |     // Tab 30 times inside modal
   250 |     await stress.rapidTabCycles(30, 20)
-  251 | 
-  252 |     // Focus should still be inside modal (no escape)
-  253 |     try {
-  254 |       await stress.assertFocusInContainer('[role="dialog"]')
-  255 |       console.log('✓ Focus trap working correctly (focus stayed in modal)')
-  256 |     } catch (e) {
-  257 |       console.log('✗ Focus trap broken (focus escaped modal):', e.message)
-  258 |       throw e
-  259 |     }
-  260 | 
-  261 |     // Close modal
-  262 |     await page.keyboard.press('Escape')
-  263 |     await page.waitForTimeout(100)
-  264 |   })
-  265 | 
-  266 |   test('[STRESS-010] Stress test with memory monitoring - detect leaks', async ({ page: testPage }) => {
-  267 |     const memorySnapshots: number[] = []
-  268 | 
-  269 |     // Warm up
-  270 |     await page.click('[data-testid="notebook-container"]')
-  271 |     await page.waitForTimeout(200)
-  272 | 
-  273 |     // Tab cycle with memory monitoring
-  274 |     for (let cycle = 0; cycle < 5; cycle++) {
-  275 |       const mem = await stress.getMemoryUsage()
-  276 |       if (mem) memorySnapshots.push(mem.usedJSHeapSize)
-  277 | 
-  278 |       // 50 rapid tabs per cycle
-  279 |       await stress.rapidTabCycles(50, 10)
-  280 | 
-  281 |       await page.waitForTimeout(100)
-  282 |     }
-  283 | 
-  284 |     // Analyze memory trend
-  285 |     console.log('Memory snapshots (MB):', memorySnapshots.map((m) => (m / 1024 / 1024).toFixed(2)))
-  286 | 
-  287 |     if (memorySnapshots.length >= 2) {
-  288 |       const firstMem = memorySnapshots[0]
-  289 |       const lastMem = memorySnapshots[memorySnapshots.length - 1]
-  290 |       const growthPercent = ((lastMem - firstMem) / firstMem) * 100
-  291 | 
-  292 |       console.log(`Memory growth: ${growthPercent.toFixed(1)}%`)
-  293 | 
-  294 |       // Should not grow more than 30%
-  295 |       expect(growthPercent).toBeLessThan(30)
-  296 |     }
-  297 |   })
-  298 | })
-  299 | 
 ```
