@@ -40,6 +40,7 @@ import MenuBar from './components/MenuBar'
 import UnifiedSearch from './components/UnifiedSearch'
 import CommandPalette, { type Command } from './components/CommandPalette'
 import SettingsModal from './components/SettingsModal'
+import KeyboardShortcutsModal from './components/KeyboardShortcutsModal'
 import { useNotebookStore, getNotebookState, getReduxDispatch } from './hooks/useNotebookRedux'
 import { setNotebooks } from './store/notebookSlice'
 import { useWorkspace, openNotebookFile, saveJsonAs } from './hooks/useWorkspace'
@@ -62,6 +63,7 @@ function App() {
   const [explorerPicker, setExplorerPicker] = useState(false)
   const [railMenu, setRailMenu] = useState<null | 'settings' | 'accounts'>(null)
   const [overlay, setOverlay] = useState<null | 'command' | 'settings' | 'theme'>(null)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   // BottomPanel state — lifted from component so it persists when panel is toggled off/on
   const [bottomTab, setBottomTab] = useState<BottomPanelTab>('output')
   const [bottomHeight, setBottomHeight] = useState(240)
@@ -180,6 +182,9 @@ function App() {
       } else if (mod && e.key.toLowerCase() === 's') {
         e.preventDefault()
         saveCurrent()
+      } else if (e.key === '?') {
+        e.preventDefault()
+        setShortcutsOpen(true)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -639,6 +644,7 @@ function App() {
       {overlay === 'settings' && (
         <SettingsModal onClose={() => setOverlay(null)} theme={theme} setTheme={applyTheme} panels={panels} togglePanel={togglePanel} />
       )}
+      <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   )
 }

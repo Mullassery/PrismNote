@@ -1,153 +1,351 @@
 import { useState } from 'react'
 import { X, Search } from 'lucide-react'
 
-interface ShortcutGroup {
+interface Shortcut {
+  key: string
+  action: string
   category: string
-  shortcuts: Array<{ keys: string; action: string }>
+  description?: string
 }
 
-const SHORTCUTS: ShortcutGroup[] = [
-  {
-    category: 'File',
-    shortcuts: [
-      { keys: '⌘N', action: 'New Notebook' },
-      { keys: '⌘O', action: 'Open File' },
-      { keys: '⌘S', action: 'Save Notebook' },
-    ]
-  },
-  {
-    category: 'Explore',
-    shortcuts: [
-      { keys: '⌘E', action: 'Open Data Explorer' },
-      { keys: '⌘K', action: 'Search (Cmd+K in cell for AI)' },
-      { keys: '⇧⌘P', action: 'Command Palette' },
-    ]
-  },
-  {
-    category: 'Edit',
-    shortcuts: [
-      { keys: '⌘Z', action: 'Undo (⌘Y Redo)' },
-      { keys: '⌘X', action: 'Cut Cell' },
-      { keys: '⌘C', action: 'Copy Cell' },
-      { keys: '⌘V', action: 'Paste Cell' },
-      { keys: 'Delete', action: 'Delete Cell' },
-      { keys: 'Arrow Up/Down', action: 'Navigate Between Cells' },
-    ]
-  },
-  {
-    category: 'Run',
-    shortcuts: [
-      { keys: '⇧⏎', action: 'Run Current Cell' },
-      { keys: '⌘⇧⏎', action: 'Run All Cells' },
-      { keys: 'Ctrl+C', action: 'Interrupt Kernel' },
-    ]
-  },
-  {
-    category: 'View',
-    shortcuts: [
-      { keys: 'Cmd+,', action: 'Open Settings' },
-      { keys: '—', action: 'Toggle Files Panel' },
-      { keys: '—', action: 'Toggle Terminal & Console' },
-      { keys: '—', action: 'Toggle AI Assistant' },
-    ]
-  },
-  {
-    category: 'Preferences',
-    shortcuts: [
-      { keys: 'Cmd+,', action: 'Settings' },
-      { keys: '—', action: 'Theme: Dark/Light' },
-      { keys: '—', action: 'Code Font Size' },
-    ]
-  },
+const SHORTCUTS: Shortcut[] = [
+  // Navigation
+  { category: 'Navigation', key: 'Cmd/Ctrl + K', action: 'Search', description: 'Global search across notebooks' },
+  { category: 'Navigation', key: 'Cmd/Ctrl + Shift + P', action: 'Command Palette', description: 'Execute commands' },
+  { category: 'Navigation', key: 'Cmd/Ctrl + E', action: 'Data Explorer', description: 'Explore and visualize data' },
+  { category: 'Navigation', key: '?', action: 'Keyboard Shortcuts', description: 'Show this help' },
+
+  // File Operations
+  { category: 'File', key: 'Cmd/Ctrl + N', action: 'New Notebook', description: 'Create a new notebook' },
+  { category: 'File', key: 'Cmd/Ctrl + O', action: 'Open Notebook', description: 'Open an existing notebook' },
+  { category: 'File', key: 'Cmd/Ctrl + S', action: 'Save', description: 'Save current notebook' },
+
+  // Cell Operations
+  { category: 'Cell', key: 'Shift + Enter', action: 'Execute Cell', description: 'Run current cell' },
+  { category: 'Cell', key: 'Cmd/Ctrl + Shift + Enter', action: 'Run All Cells', description: 'Execute all cells in notebook' },
+  { category: 'Cell', key: 'Enter', action: 'New Cell', description: 'Create new cell below' },
+  { category: 'Cell', key: 'Backspace', action: 'Delete Cell', description: 'Delete current cell (when empty)' },
+
+  // Editor
+  { category: 'Editor', key: 'Cmd/Ctrl + Z', action: 'Undo', description: 'Undo last change' },
+  { category: 'Editor', key: 'Cmd/Ctrl + Shift + Z', action: 'Redo', description: 'Redo last undone change' },
+  { category: 'Editor', key: 'Cmd/Ctrl + /', action: 'Toggle Comment', description: 'Comment/uncomment lines' },
+
+  // UI
+  { category: 'UI', key: 'Cmd/Ctrl + ,', action: 'Settings', description: 'Open settings' },
+  { category: 'UI', key: 'Esc', action: 'Close Modal', description: 'Close any open dialog' },
 ]
 
-interface KeyboardShortcutsModalProps {
+export default function KeyboardShortcutsModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean
   onClose: () => void
-}
+}) {
+  const [searchTerm, setSearchTerm] = useState('')
 
-export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsModalProps) {
-  const [filter, setFilter] = useState('')
+  if (!isOpen) return null
 
-  const filtered = SHORTCUTS.map(group => ({
-    ...group,
-    shortcuts: group.shortcuts.filter(s =>
-      s.action.toLowerCase().includes(filter.toLowerCase()) ||
-      s.keys.toLowerCase().includes(filter.toLowerCase())
-    )
-  })).filter(g => g.shortcuts.length > 0)
+  const categories = Array.from(new Set(SHORTCUTS.map((s) => s.category)))
+  const filteredShortcuts = searchTerm.trim()
+    ? SHORTCUTS.filter(
+        (s) =>
+          s.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (s.description && s.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    : SHORTCUTS
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="shortcuts-title"
-        className="bg-slate-800 rounded-lg border border-slate-700 w-full max-w-2xl max-h-[80vh] flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700">
-          <h2 id="shortcuts-title" className="text-lg font-semibold pn-text">Keyboard Shortcuts</h2>
+    <div className="shortcuts-modal-backdrop" onClick={onClose}>
+      <div className="shortcuts-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="shortcuts-modal-header">
+          <h2>Keyboard Shortcuts</h2>
           <button
+            className="shortcuts-close"
             onClick={onClose}
-            className="p-1 hover:bg-slate-700 rounded transition"
-            title="Close (Esc)"
+            aria-label="Close shortcuts"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Search */}
-        <div className="px-4 py-3 border-b border-slate-700">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-2.5 pn-faint" />
-            <input
-              type="text"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder="Search shortcuts…"
-              autoFocus
-              className="w-full pl-9 pr-4 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            />
-          </div>
+        <div className="shortcuts-search">
+          <Search size={18} />
+          <input
+            type="text"
+            placeholder="Search shortcuts..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            autoFocus
+            className="shortcuts-search-input"
+          />
         </div>
 
-        {/* Shortcuts List */}
-        <div className="flex-1 overflow-y-auto">
-          {filtered.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="pn-faint">No shortcuts found matching "{filter}"</p>
+        <div className="shortcuts-content">
+          {filteredShortcuts.length === 0 ? (
+            <div className="shortcuts-empty">
+              <p>No shortcuts found matching "{searchTerm}"</p>
             </div>
           ) : (
-            <div className="space-y-4 p-4">
-              {filtered.map((group) => (
-                <div key={group.category}>
-                  <h3 className="text-xs font-semibold uppercase pn-faint mb-2">
-                    {group.category}
-                  </h3>
-                  <div className="space-y-1">
-                    {group.shortcuts.map((shortcut, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between px-3 py-2 rounded hover:bg-slate-700 transition"
-                      >
-                        <span className="pn-text text-sm">{shortcut.action}</span>
-                        <kbd className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs font-mono text-blue-300">
-                          {shortcut.keys}
-                        </kbd>
-                      </div>
-                    ))}
+            <div className="shortcuts-list">
+              {categories.map((category) => {
+                const items = filteredShortcuts.filter((s) => s.category === category)
+                if (items.length === 0) return null
+
+                return (
+                  <div key={category} className="shortcuts-category">
+                    <h3>{category}</h3>
+                    <div className="shortcuts-items">
+                      {items.map((shortcut) => (
+                        <div key={`${category}-${shortcut.key}`} className="shortcut-item">
+                          <div className="shortcut-key">
+                            {shortcut.key.split('/').map((k, i) => (
+                              <span key={i}>
+                                {i > 0 && <span className="key-or">/</span>}
+                                <kbd>{k.trim()}</kbd>
+                              </span>
+                            ))}
+                          </div>
+                          <div className="shortcut-info">
+                            <div className="shortcut-action">{shortcut.action}</div>
+                            {shortcut.description && (
+                              <div className="shortcut-description">{shortcut.description}</div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-700 text-xs pn-faint">
-          Tip: Press <kbd className="px-1 bg-slate-700 rounded">⇧⌘P</kbd> for command palette (searchable)
+        <div className="shortcuts-footer">
+          <p>Press <kbd>?</kbd> anytime to show this help</p>
         </div>
       </div>
+
+      <style>{`
+        .shortcuts-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2000;
+          animation: fadeIn 150ms ease-out;
+        }
+
+        .shortcuts-modal {
+          background: var(--bg-primary);
+          border-radius: 12px;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+          max-width: 700px;
+          width: 90%;
+          max-height: 80vh;
+          display: flex;
+          flex-direction: column;
+          animation: slideUp 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .shortcuts-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .shortcuts-modal-header h2 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .shortcuts-close {
+          background: none;
+          border: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px;
+          transition: all 150ms ease-out;
+        }
+
+        .shortcuts-close:hover {
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+        }
+
+        .shortcuts-search {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 20px;
+          border-bottom: 1px solid var(--border);
+          color: var(--text-secondary);
+        }
+
+        .shortcuts-search-input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          color: var(--text-primary);
+          font-size: 14px;
+          outline: none;
+        }
+
+        .shortcuts-search-input::placeholder {
+          color: var(--text-secondary);
+        }
+
+        .shortcuts-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 0;
+        }
+
+        .shortcuts-list {
+          padding: 20px;
+        }
+
+        .shortcuts-category {
+          margin-bottom: 24px;
+        }
+
+        .shortcuts-category:last-child {
+          margin-bottom: 0;
+        }
+
+        .shortcuts-category h3 {
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          margin: 0 0 12px 0;
+          letter-spacing: 0.5px;
+        }
+
+        .shortcuts-items {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .shortcut-item {
+          display: flex;
+          gap: 16px;
+          padding: 10px;
+          border-radius: 8px;
+          transition: background-color 150ms ease-out;
+        }
+
+        .shortcut-item:hover {
+          background: var(--bg-secondary);
+        }
+
+        .shortcut-key {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          min-width: 140px;
+        }
+
+        .key-or {
+          font-size: 12px;
+          color: var(--text-secondary);
+          margin: 0 4px;
+        }
+
+        kbd {
+          display: inline-block;
+          padding: 4px 8px;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+          border-radius: 4px;
+          font-size: 12px;
+          font-family: monospace;
+          color: var(--text-primary);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          white-space: nowrap;
+        }
+
+        .shortcut-info {
+          flex: 1;
+        }
+
+        .shortcut-action {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+
+        .shortcut-description {
+          font-size: 13px;
+          color: var(--text-secondary);
+          margin-top: 2px;
+        }
+
+        .shortcuts-empty {
+          padding: 40px 20px;
+          text-align: center;
+          color: var(--text-secondary);
+        }
+
+        .shortcuts-footer {
+          padding: 16px 20px;
+          border-top: 1px solid var(--border);
+          font-size: 13px;
+          color: var(--text-secondary);
+          text-align: center;
+        }
+
+        .shortcuts-footer kbd {
+          padding: 2px 6px;
+        }
+
+        @media (max-width: 768px) {
+          .shortcuts-modal {
+            width: 95%;
+            max-height: 90vh;
+          }
+
+          .shortcut-item {
+            flex-direction: column;
+            gap: 8px;
+          }
+
+          .shortcut-key {
+            min-width: auto;
+          }
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 }
