@@ -517,16 +517,30 @@ Memory usage: ~45 MB baseline, scales with data size.
 
 ## Documentation
 
-Full documentation is available in the `/docs` directory:
+Comprehensive documentation organized by topic:
 
-- **[Getting Started](docs/GETTING_STARTED.md)** - Installation and setup
-- **[Multi-Language Support](docs/guides/MULTI_LANGUAGE_SUPPORT.md)** - 15+ languages
-- **[AI Integration](docs/guides/AI_MCP_INTEGRATION.md)** - Claude, OpenAI, Ollama
-- **[Multi-Terminal Guide](docs/guides/MULTI_TERMINAL_GUIDE.md)** - Split panes
-- **[Contributing](docs/development/CONTRIBUTING.md)** - How to contribute
-- **[Roadmap](docs/development/ROADMAP.md)** - Feature roadmap
+### 🚀 Getting Started
+- **[Installation & Setup](docs/guides/GETTING_STARTED.md)** - Quick start guide
+- **[Multi-Language Support](docs/guides/MULTI_LANGUAGE_SUPPORT.md)** - Python, R, Rust, Go, etc.
+- **[Multi-Terminal Guide](docs/guides/MULTI_TERMINAL_GUIDE.md)** - Split terminals tutorial
+- **[Deployment Guides](docs/guides/)** - Docker, AWS, Azure, GCP, Kubernetes
 
-See [Documentation Index](docs/README.md) for complete documentation.
+### 📚 Reference
+- **[API Documentation](docs/reference/API_REFERENCE.md)** - REST API endpoints
+- **[Settings Reference](docs/reference/SETTINGS_REFERENCE.md)** - Configuration options
+- **[Security](docs/reference/SECURITY.md)** - Security model and best practices
+- **[Contributing](docs/reference/CONTRIBUTING.md)** - Contribution guidelines
+
+### 🛠️ Development
+- **[Product Vision](docs/development/PRODUCT_VISION.md)** - Strategic direction
+- **[Features Status](docs/development/FEATURES_STATUS.md)** - Implemented vs planned
+- **[Roadmap](docs/reference/ROADMAP.md)** - Technical roadmap
+
+### 🤖 AI & Integration
+- **[Claude Integration](docs/guides/AI_MCP_INTEGRATION.md)** - MCP protocol, Claude API
+- **[Advanced Execution](docs/guides/EXECUTION_BACKENDS.md)** - Docker, Kubernetes backends
+
+See [Complete Documentation Index](docs/README.md) for all resources.
 
 ## Troubleshooting
 
@@ -608,7 +622,7 @@ which rustc
 
 ## Project Status
 
-**Version:** 1.7.0  
+**Version:** 1.8.0  
 **Status:** Production Ready  
 **License:** Proprietary  
 **GitHub:** github.com/Mullassery/prismnote  

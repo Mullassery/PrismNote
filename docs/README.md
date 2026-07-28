@@ -4,9 +4,10 @@ Welcome to the PrismNote documentation. This guide covers everything you need to
 
 ## Quick Links
 
-- **New to PrismNote?** → Start with [Getting Started](./GETTING_STARTED.md)
-- **Want to contribute?** → See [Contributing Guide](./development/CONTRIBUTING.md)
-- **Looking for roadmap?** → Check [Roadmap](./development/ROADMAP.md)
+- **New to PrismNote?** → Start with [Getting Started](./guides/GETTING_STARTED.md)
+- **Want to contribute?** → See [Contributing Guide](./reference/CONTRIBUTING.md)
+- **Looking for roadmap?** → Check [Roadmap](./reference/ROADMAP.md)
+- **Need deployment help?** → See [Deployment Guides](./guides/)
 
 ## Documentation Structure
 
@@ -19,9 +20,12 @@ Comprehensive guides for using PrismNote features:
 
 ### [Reference](./reference/)
 Technical reference documentation:
+- [API Reference](./reference/API_REFERENCE.md) - REST API endpoints and schema
 - [Security](./reference/SECURITY.md) - Security policies and practices
-- [Keyboard Shortcuts](./reference/KEYBOARD_SHORTCUTS.md) - Complete keyboard reference
+- [Settings Reference](./reference/SETTINGS_REFERENCE.md) - Configuration options
+- [Release Information](./reference/RELEASES.md) - Release notes and version history
 - [Release Sync Verification](./reference/RELEASE_SYNC_VERIFICATION.md) - Release process details
+- [Code of Conduct](./reference/CODE_OF_CONDUCT.md) - Community standards
 
 ### [Development](./development/)
 For contributors and developers:
@@ -29,8 +33,12 @@ For contributors and developers:
 - [Roadmap](./development/ROADMAP.md) - Feature roadmap and milestones
 - [Homebrew Setup](./development/HOMEBREW_TAP_SETUP.md) - Setting up Homebrew tap
 
-### [Getting Started](./GETTING_STARTED.md)
-Step-by-step guide to get up and running with PrismNote.
+### [Getting Started](./guides/GETTING_STARTED.md)
+Step-by-step guide to get up and running with PrismNote:
+- Installation instructions for all platforms
+- First notebook setup
+- Configuration and settings
+- Troubleshooting common issues
 
 ## Installation
 
@@ -45,7 +53,7 @@ brew tap Mullassery/prismnote
 brew install prismnote
 ```
 
-See [Getting Started](./GETTING_STARTED.md) for detailed installation instructions.
+See [Getting Started](./guides/GETTING_STARTED.md) for detailed installation instructions.
 
 ## Features
 
