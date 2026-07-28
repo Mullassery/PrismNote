@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts >> Keyboard Stress: Tab Navigation >> [STRESS-007] Tab through all major UI sections - verify coverage
-- Location: tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:197:3
+- Name: e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts >> Keyboard Stress: Tab Navigation >> [STRESS-008] Tab after rapid modal open/close - verify focus restoration
+- Location: tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:219:3
 
 # Error details
 
@@ -44,25 +44,6 @@ Call log:
 # Test source
 
 ```ts
-  101 | 
-  102 |     // Rapid Shift+Tab 100 times
-  103 |     await stress.reverseTabCycles(100, 15)
-  104 | 
-  105 |     const memEnd = await stress.getMemoryUsage()
-  106 | 
-  107 |     const focused = await stress.getFocusedElement()
-  108 |     expect(focused).toBeDefined()
-  109 | 
-  110 |     expect(errors).toHaveLength(0)
-  111 | 
-  112 |     if (memStart && memEnd) {
-  113 |       const memGrowth = (memEnd.usedJSHeapSize - memStart.usedJSHeapSize) / 1024 / 1024
-  114 |       console.log(`Reverse tab memory growth: ${memGrowth.toFixed(2)} MB`)
-  115 |       expect(memGrowth).toBeLessThan(10)
-  116 |     }
-  117 |   })
-  118 | 
-  119 |   test('[STRESS-004] Alternating Tab/Shift+Tab 150x - check navigation order corruption', async () => {
   120 |     const errors: any[] = []
   121 |     const focusChanges: any[] = []
   122 | 
@@ -144,8 +125,7 @@ Call log:
   198 |     const focusSequence: string[] = []
   199 |     const expectedSections = ['notebook', 'sidebar', 'terminal', 'settings', 'deploy']
   200 | 
-> 201 |     await page.click('[data-testid="notebook-container"]')
-      |                ^ Error: page.click: Test timeout of 60000ms exceeded.
+  201 |     await page.click('[data-testid="notebook-container"]')
   202 | 
   203 |     // Tab 50 times and collect unique focus targets
   204 |     for (let i = 0; i < 50; i++) {
@@ -164,7 +144,8 @@ Call log:
   217 |   })
   218 | 
   219 |   test('[STRESS-008] Tab after rapid modal open/close - verify focus restoration', async () => {
-  220 |     await page.click('[data-testid="notebook-container"]')
+> 220 |     await page.click('[data-testid="notebook-container"]')
+      |                ^ Error: page.click: Test timeout of 60000ms exceeded.
   221 | 
   222 |     // Open and close settings modal 10 times rapidly
   223 |     for (let i = 0; i < 10; i++) {
