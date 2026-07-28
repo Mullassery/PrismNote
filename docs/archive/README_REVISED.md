@@ -2,7 +2,7 @@
 
 **Modern, open-source Jupyter-compatible notebook platform with Python code execution, SQL support, and cloud warehouse integration.**
 
-**License:** MIT | **Status:** Beta (v0.3) | **Latest:** 2026-06-20
+**License:** Proprietary | **Status:** Beta (v0.3) | **Latest:** 2026-06-20
 
 ---
 
@@ -448,7 +448,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ## License & Attribution
 
-**License:** MIT (free for personal, commercial, and educational use)
+**License:** Proprietary (free for personal, commercial, and educational use)
 
 **Built with:**
 - Rust (Axum, Tokio, Serde)
@@ -471,7 +471,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ---
 
-**Made with Rust + React | Open Source | MIT Licensed**
+**Made with Rust + React | Open Source | Proprietary Licensed**
 
 ⭐ **If you find PrismNote useful, please star us on [GitHub](https://github.com/Mullassery/prismnote)!**
 

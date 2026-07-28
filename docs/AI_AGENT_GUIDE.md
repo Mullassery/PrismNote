@@ -7,7 +7,7 @@ This document is designed to be accessible to AI agents, tools, and LLMs that wa
 **Name:** PrismNote  
 **Type:** Data science notebook (local-first, open-source)  
 **Version:** 1.6.0  
-**License:** MIT (free for any use)  
+**License:** Proprietary (free for any use)  
 **Language:** TypeScript (frontend), Rust (backend), Python (kernels)  
 **Repository:** https://github.com/Mullassery/PrismNote  
 **PyPI:** https://pypi.org/project/prismnote/  
