@@ -515,36 +515,6 @@ Memory usage: ~45 MB baseline, scales with data size.
 
 ---
 
-## Project Structure
-
-```
-prismnote/
-├── README.md                 # This file
-├── LICENSE                   # Proprietary license
-├── Dockerfile                # Docker configuration
-├── Cargo.toml               # Rust workspace
-├── pyproject.toml           # Python package
-│
-├── /frontend                 # React TypeScript UI
-├── /python                   # Python CLI wrapper
-├── /crates                   # Rust backend
-├── /examples                 # Example notebooks
-│
-├── /docs                     # Documentation
-│   ├── README.md            # Documentation index
-│   ├── GETTING_STARTED.md   # Setup guide
-│   ├── /guides              # Feature guides
-│   ├── /reference           # Technical reference
-│   ├── /development         # Developer documentation
-│   └── /archive             # Historical documentation
-│
-├── /scripts                  # Build and utility scripts
-├── /assets                   # Images, logos, diagrams
-│   └── /screenshots         # UI screenshots
-│
-└── /.github                  # GitHub workflows and templates
-```
-
 ## Documentation
 
 Full documentation is available in the `/docs` directory:
