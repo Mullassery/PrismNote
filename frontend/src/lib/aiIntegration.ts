@@ -337,24 +337,171 @@ function buildPrompt(template: string, request: AIRequest): string {
  * Call Claude API
  */
 async function callClaudeAPI(prompt: string, request: AIRequest): Promise<AIResponse> {
-  // This would make actual API call to Claude
-  // For now, return placeholder
-  return {
-    generated_code: '',
-    explanation: 'AI assistance pending',
-    provider: 'claude',
+  const apiKey = process.env.ANTHROPIC_API_KEY
+
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY not set. Configure it in environment settings.')
   }
+
+  const model = AI_PROVIDERS.claude.default_model
+  const temperature = request.temperature ?? 0.7
+  const maxTokens = request.maxTokens ?? 2048
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        system: getSystemPrompt(request.language),
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(`Claude API error: ${error.error?.message || response.statusText}`)
+    }
+
+    const data = await response.json()
+    const content = data.content[0]?.text || ''
+
+    // Parse response to extract code, explanation, suggestions
+    const codeMatch = content.match(/```[\w]*\n([\s\S]*?)```/)
+    const generatedCode = codeMatch ? codeMatch[1].trim() : undefined
+
+    // Extract suggestions (look for bullet points or numbered lists)
+    const suggestionsMatch = content.match(/(?:suggestions?|improvements?|notes?)[\s\n:]+([^]*?)(?=\n\n|$)/i)
+    const suggestionsText = suggestionsMatch ? suggestionsMatch[1] : ''
+    const suggestions = suggestionsText
+      .split('\n')
+      .filter(line => line.trim().match(/^[-•*\d.]/))
+      .map(line => line.replace(/^[-•*\d.]\s*/, '').trim())
+      .filter(Boolean)
+
+    return {
+      generated_code: generatedCode,
+      explanation: content.replace(/```[\w]*\n[\s\S]*?```/g, '').trim(),
+      suggestions: suggestions.length > 0 ? suggestions : undefined,
+      provider: 'claude',
+      tokens_used: data.usage?.output_tokens,
+    }
+  } catch (error) {
+    throw new Error(
+      `Claude API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
+  }
+}
+
+/**
+ * Get system prompt based on language
+ */
+function getSystemPrompt(language: CellLanguage): string {
+  const languageGuides: Record<CellLanguage, string> = {
+    python: 'You are an expert Python programmer. Provide clear, idiomatic Python code with explanations.',
+    r: 'You are an expert R programmer. Provide R code following tidyverse conventions.',
+    julia: 'You are an expert Julia programmer. Provide high-performance Julia code.',
+    sql: 'You are an expert SQL programmer. Provide optimized SQL queries with explanations.',
+    cpp: 'You are an expert C++ programmer. Use modern C++17/20 features.',
+    rust: 'You are an expert Rust programmer. Follow Rust idioms and ownership principles.',
+    go: 'You are an expert Go programmer. Write idiomatic, concurrent Go code.',
+    cuda: 'You are an expert CUDA programmer. Optimize for GPU performance.',
+    mojo: 'You are an expert Mojo programmer. Use systems programming performance.',
+    scala: 'You are an expert Scala programmer. Use functional programming patterns.',
+    typescript: 'You are an expert TypeScript programmer. Use strict typing and modern patterns.',
+    zig: 'You are an expert Zig programmer. Write safe, explicit systems code.',
+    javascript: 'You are an expert JavaScript/Node.js programmer. Use modern ES6+ features.',
+    markdown: 'You are an expert in Markdown formatting. Provide clear, well-structured documentation.',
+    raw: 'You are a helpful assistant.',
+  }
+
+  return (
+    languageGuides[language] ||
+    'You are a helpful programming assistant. Provide clear, correct code with explanations.'
+  )
 }
 
 /**
  * Call OpenAI API
  */
 async function callOpenAIAPI(prompt: string, request: AIRequest): Promise<AIResponse> {
-  // This would make actual API call to OpenAI
-  return {
-    generated_code: '',
-    explanation: 'AI assistance pending',
-    provider: 'openai',
+  const apiKey = process.env.OPENAI_API_KEY
+
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY not set. Configure it in environment settings.')
+  }
+
+  const model = AI_PROVIDERS.openai.default_model
+  const temperature = request.temperature ?? 0.7
+  const maxTokens = request.maxTokens ?? 2048
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        system: getSystemPrompt(request.language),
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(
+        `OpenAI API error: ${error.error?.message || response.statusText}`
+      )
+    }
+
+    const data = await response.json()
+    const content = data.choices[0]?.message?.content || ''
+
+    // Parse response
+    const codeMatch = content.match(/```[\w]*\n([\s\S]*?)```/)
+    const generatedCode = codeMatch ? codeMatch[1].trim() : undefined
+
+    const suggestionsMatch = content.match(
+      /(?:suggestions?|improvements?|notes?)[\s\n:]+([^]*?)(?=\n\n|$)/i
+    )
+    const suggestionsText = suggestionsMatch ? suggestionsMatch[1] : ''
+    const suggestions = suggestionsText
+      .split('\n')
+      .filter(line => line.trim().match(/^[-•*\d.]/))
+      .map(line => line.replace(/^[-•*\d.]\s*/, '').trim())
+      .filter(Boolean)
+
+    return {
+      generated_code: generatedCode,
+      explanation: content.replace(/```[\w]*\n[\s\S]*?```/g, '').trim(),
+      suggestions: suggestions.length > 0 ? suggestions : undefined,
+      provider: 'openai',
+      tokens_used: data.usage?.completion_tokens,
+    }
+  } catch (error) {
+    throw new Error(
+      `OpenAI API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
   }
 }
 
@@ -362,11 +509,64 @@ async function callOpenAIAPI(prompt: string, request: AIRequest): Promise<AIResp
  * Call Ollama API (local)
  */
 async function callOllamaAPI(prompt: string, request: AIRequest): Promise<AIResponse> {
-  // This would make actual API call to local Ollama
-  return {
-    generated_code: '',
-    explanation: 'AI assistance pending',
-    provider: 'ollama',
+  const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
+  const model = AI_PROVIDERS.ollama.default_model
+  const temperature = request.temperature ?? 0.7
+
+  try {
+    // Check if Ollama is running
+    const healthResp = await fetch(`${baseUrl}/api/tags`, {
+      method: 'GET',
+    }).catch(() => null)
+
+    if (!healthResp?.ok) {
+      throw new Error(
+        `Ollama not running at ${baseUrl}. Start with: ollama serve`
+      )
+    }
+
+    const response = await fetch(`${baseUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        prompt,
+        temperature,
+        stream: false,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    const content = data.response || ''
+
+    // Parse response
+    const codeMatch = content.match(/```[\w]*\n([\s\S]*?)```/)
+    const generatedCode = codeMatch ? codeMatch[1].trim() : undefined
+
+    const suggestionsMatch = content.match(
+      /(?:suggestions?|improvements?|notes?)[\s\n:]+([^]*?)(?=\n\n|$)/i
+    )
+    const suggestionsText = suggestionsMatch ? suggestionsMatch[1] : ''
+    const suggestions = suggestionsText
+      .split('\n')
+      .filter(line => line.trim().match(/^[-•*\d.]/))
+      .map(line => line.replace(/^[-•*\d.]\s*/, '').trim())
+      .filter(Boolean)
+
+    return {
+      generated_code: generatedCode,
+      explanation: content.replace(/```[\w]*\n[\s\S]*?```/g, '').trim(),
+      suggestions: suggestions.length > 0 ? suggestions : undefined,
+      provider: 'ollama',
+    }
+  } catch (error) {
+    throw new Error(
+      `Ollama API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
   }
 }
 
