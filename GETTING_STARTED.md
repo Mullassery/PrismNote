@@ -8,7 +8,7 @@
 
 ## Welcome to PrismNote
 
-A modern, open-source data science notebook with **15+ programming languages**, **AI-assisted coding**, **multi-terminal splits**, and **production-grade infrastructure** for analytics and systems programming.
+A modern data science notebook with **15+ programming languages**, **AI-assisted coding**, **multi-terminal splits**, and **production-grade infrastructure** for analytics and systems programming.
 
 ### Key Highlights
 ✨ **No Cloud**: Everything runs locally  
@@ -528,8 +528,8 @@ IRkernel::installspec()
 
 ---
 
-**PrismNote v1.0 - Production Ready**  
-Open-source, local-first data science notebook  
+**PrismNote v1.7.0 - Production Ready**  
+Local-first data science notebook  
 Built with React, Node.js, and Rust  
 14,000+ lines of production code  
 2,500+ tests  

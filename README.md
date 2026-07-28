@@ -597,7 +597,7 @@ which rustc
 
 **Version:** 1.7.0  
 **Status:** Production Ready  
-**License:** MIT (Open Source)  
+**License:** Proprietary  
 **GitHub:** github.com/Mullassery/prismnote  
 **Issues:** github.com/Mullassery/prismnote/issues  
 
@@ -618,14 +618,6 @@ which rustc
 ---
 
 ## Architecture Highlights
-
-### Open Source Foundation
-
-- MIT License - use freely in any project
-- No proprietary dependencies
-- No telemetry or usage tracking
-- Full source code available
-- Community contributions welcome
 
 ### Local-First Design
 

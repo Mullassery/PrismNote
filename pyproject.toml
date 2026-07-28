@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "prismnote"
 version = "1.7.0"
-description = "Open-source data science notebook. Support for 15+ programming languages, SQL execution across 9+ databases, multi-terminal splits, and intelligent code assistance."
+description = "Data science notebook with support for 15+ programming languages, SQL execution across 9+ databases, multi-terminal splits, and intelligent code assistance."
 readme = "README.md"
 license = { text = "Proprietary" }
 authors = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
