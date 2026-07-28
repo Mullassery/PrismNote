@@ -1,9 +1,9 @@
 # PrismNote Multi-Language Support System
 
-**Version:** 2.0  
+**Version:** 2.1  
 **Date:** 2026-07-28  
 **Status:** Architecture complete, execution backends in development  
-**Supported Languages:** 13 (Python, R, Julia, SQL, C++, Rust, Go, CUDA, Mojo, Scala, JavaScript, Markdown, Raw)
+**Supported Languages:** 15 (Python, R, Julia, SQL, C++, Rust, Go, CUDA, Mojo, Scala, TypeScript, Zig, JavaScript, Markdown, Raw)
 
 ---
 
@@ -21,7 +21,7 @@ PrismNote now supports a comprehensive ecosystem of programming languages for da
 
 ## Supported Languages by Category
 
-### Scripting Languages (5)
+### Scripting Languages (6)
 
 #### Python 3.8+
 - **Type:** Scripting, General-purpose
@@ -70,6 +70,19 @@ PrismNote now supports a comprehensive ecosystem of programming languages for da
   - Interop: Python, CUDA
 - **Best For:** AI/ML systems, performance-critical applications
 
+#### TypeScript
+- **Type:** Typed JavaScript
+- **File Extension:** `.ts`
+- **Kernel:** Node.js 14+, ts-node, Deno
+- **Features:**
+  - Syntax highlighting
+  - Full execution support
+  - Visualization (plotly, canvas)
+  - Type safety and inference
+  - Async/await, promises
+  - Interop: JavaScript, Python (via WebAssembly)
+- **Best For:** Type-safe web integration, data pipelines, large-scale applications
+
 #### JavaScript (Node.js)
 - **Type:** Scripting, web
 - **File Extension:** `.js`
@@ -79,12 +92,12 @@ PrismNote now supports a comprehensive ecosystem of programming languages for da
   - Full execution support
   - Visualization (plotly, canvas)
   - Async/await, promises
-  - Interop: Python (via WebAssembly)
+  - Interop: TypeScript, Python (via WebAssembly)
 - **Best For:** Data processing pipelines, web integration, async workflows
 
 ---
 
-### Compiled Languages (4)
+### Compiled Languages (5)
 
 #### C++17
 - **Type:** Compiled, high-performance
@@ -133,6 +146,19 @@ PrismNote now supports a comprehensive ecosystem of programming languages for da
   - Spark integration (big data)
   - Interop: Java, Python (via Spark)
 - **Best For:** Big data (Spark), functional programming, JVM ecosystem
+
+#### Zig 0.11+
+- **Type:** Compiled, modern systems
+- **File Extension:** `.zig`
+- **Kernel:** zig 0.11+
+- **Features:**
+  - Syntax highlighting
+  - Full execution support
+  - Explicit memory management
+  - Compile-time execution
+  - Error handling without exceptions
+  - Interop: C++, C, Rust, WebAssembly
+- **Best For:** Systems programming, performance-critical code, embedded systems
 
 ---
 
