@@ -319,6 +319,144 @@ impl AIEngine {
         })
     }
 
+    /// Get MCP tool definitions for Claude tool use
+    /// These tools are defined in the frontend but sent to Claude here
+    ///
+    /// Phase 2: Claude Tool Use Implementation
+    /// - Tools are defined with JSON schemas
+    /// - Sent to Claude in each request
+    /// - Claude can choose to use them for complex tasks
+    /// - Execution loop will be implemented in Phase 2.1.3
+    ///
+    /// Phase 3+: Multi-Model Support
+    /// - Will support AWS Bedrock, GCP Vertex AI, Azure, NVIDIA, Ollama
+    /// - Enterprise API billing routing (based on org configuration)
+    /// - Model selection based on cost/capability tradeoffs
+    fn get_mcp_tools() -> Vec<Value> {
+        vec![
+            json!({
+                "name": "code-formatter",
+                "description": "Format code according to language standards",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Code to format"
+                        },
+                        "language": {
+                            "type": "string",
+                            "description": "Programming language (python, rust, go, javascript, typescript, sql, etc.)"
+                        }
+                    },
+                    "required": ["code", "language"]
+                }
+            }),
+            json!({
+                "name": "test-generator",
+                "description": "Generate unit tests for code",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Code to generate tests for"
+                        },
+                        "language": {
+                            "type": "string",
+                            "description": "Programming language"
+                        },
+                        "framework": {
+                            "type": "string",
+                            "description": "Test framework (pytest, unittest, jest, etc.)"
+                        }
+                    },
+                    "required": ["code", "language"]
+                }
+            }),
+            json!({
+                "name": "performance-analyzer",
+                "description": "Analyze code for performance issues and optimization opportunities",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Code to analyze"
+                        },
+                        "language": {
+                            "type": "string",
+                            "description": "Programming language"
+                        }
+                    },
+                    "required": ["code", "language"]
+                }
+            }),
+            json!({
+                "name": "documentation-generator",
+                "description": "Generate documentation and comments for code",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Code to document"
+                        },
+                        "language": {
+                            "type": "string",
+                            "description": "Programming language"
+                        },
+                        "style": {
+                            "type": "string",
+                            "description": "Documentation style (docstring, comment, inline)"
+                        }
+                    },
+                    "required": ["code", "language"]
+                }
+            }),
+            json!({
+                "name": "security-scanner",
+                "description": "Scan code for security vulnerabilities",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Code to scan"
+                        },
+                        "language": {
+                            "type": "string",
+                            "description": "Programming language"
+                        }
+                    },
+                    "required": ["code", "language"]
+                }
+            }),
+            json!({
+                "name": "claude-code-generator",
+                "description": "Generate code from natural language description",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "description": {
+                            "type": "string",
+                            "description": "What code to generate"
+                        },
+                        "language": {
+                            "type": "string",
+                            "description": "Target programming language"
+                        },
+                        "context": {
+                            "type": "string",
+                            "description": "Additional context or requirements"
+                        }
+                    },
+                    "required": ["description", "language"]
+                }
+            })
+        ]
+    }
+
     async fn claude_request(&self, api_key: &str, message: &str) -> Result<String> {
         let client = reqwest::Client::new();
         let model = self
@@ -330,17 +468,24 @@ impl AIEngine {
         // Dynamic max_tokens based on message length and complexity
         let max_tokens = if message.len() > 5000 { 4096 } else { 2048 };
 
-        let body = json!({
-            "model": model,
-            "max_tokens": max_tokens,
-            "system": "You are an expert Python developer and data scientist assistant. Provide clear, concise, and accurate responses. For code explanations, explain both what the code does and why it's written that way.",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": message
-                }
-            ]
-        });
+        // Build request with tool definitions (Phase 2: Claude Tool Use)
+        let mut body_obj = serde_json::Map::new();
+        body_obj.insert("model".to_string(), json!(model));
+        body_obj.insert("max_tokens".to_string(), json!(max_tokens));
+        body_obj.insert("system".to_string(), json!(
+            "You are an expert Python developer and data scientist assistant. Provide clear, concise, and accurate responses. For code explanations, explain both what the code does and why it's written that way. You have access to tools to format code, generate tests, analyze performance, generate documentation, scan for security issues, and generate code. Use these tools when appropriate to provide complete solutions."
+        ));
+        body_obj.insert("messages".to_string(), json!([
+            {
+                "role": "user",
+                "content": message
+            }
+        ]));
+
+        // Include tool definitions (Phase 2: Claude Tool Use support)
+        body_obj.insert("tools".to_string(), json!(Self::get_mcp_tools()));
+
+        let body = Value::Object(body_obj);
 
         let response = client
             .post("https://api.anthropic.com/v1/messages")
@@ -352,20 +497,52 @@ impl AIEngine {
             .send()
             .await?;
 
-        if !response.status().is_success() {
-            let error_detail = response.text().await.unwrap_or_else(|_| response.status().to_string());
-            return Err(anyhow!("Claude API error ({}): {}", response.status(), error_detail));
+        let status = response.status();
+        if !status.is_success() {
+            let error_detail = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(anyhow!("Claude API error ({}): {}", status, error_detail));
         }
 
         let result: Value = response.json().await?;
 
-        // Validate response structure
-        let response_text = result["content"]
-            .get(0)
-            .and_then(|c| c.get("text"))
-            .and_then(|t| t.as_str())
-            .ok_or(anyhow!("Invalid Claude API response format"))?
-            .to_string();
+        // Validate response structure and handle tool use (Phase 2)
+        let response_text = if let Some(content_array) = result["content"].as_array() {
+            // Check if response contains tool_use blocks (Phase 2 Claude Tool Use)
+            let mut response_parts = Vec::new();
+            let mut tool_uses = Vec::new();
+
+            for content_block in content_array {
+                if let Some(block_type) = content_block.get("type").and_then(|t| t.as_str()) {
+                    match block_type {
+                        "text" => {
+                            if let Some(text) = content_block.get("text").and_then(|t| t.as_str()) {
+                                response_parts.push(text.to_string());
+                            }
+                        }
+                        "tool_use" => {
+                            // Phase 2: Log tool use (execution loop will be implemented in Phase 2.1.3)
+                            if let Some(tool_name) = content_block.get("name").and_then(|n| n.as_str()) {
+                                eprintln!("DEBUG: Claude wants to use tool: {}", tool_name);
+                                tool_uses.push(content_block.clone());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            // Return combined response (tool execution will be added in Phase 2.1.3)
+            if !response_parts.is_empty() {
+                response_parts.join("\n")
+            } else if !tool_uses.is_empty() {
+                eprintln!("DEBUG: Detected {} tool use calls (execution not yet implemented)", tool_uses.len());
+                "Claude wants to use tools for this request. Tool execution loop coming in Phase 2.".to_string()
+            } else {
+                return Err(anyhow!("Invalid Claude API response format (no text or tool_use)"));
+            }
+        } else {
+            return Err(anyhow!("Invalid Claude API response format (no content array)"));
+        };
 
         Ok(response_text)
     }
