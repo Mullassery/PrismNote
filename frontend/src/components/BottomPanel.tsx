@@ -5,6 +5,7 @@ import { useFontSize } from '../hooks/useFontSize'
 import TableOfContents from './TableOfContents'
 import LineageViewer from './LineageViewer'
 import AgentPanel from './AgentPanel'
+import TerminalSplitContainer, { type TerminalConfig } from './TerminalSplitContainer'
 import type { ExplorerTarget } from './DataExplorer'
 
 export type BottomPanelTab = 'terminal' | 'output' | 'lineage' | 'variables' | 'contents' | 'ai'
@@ -74,35 +75,25 @@ export default function BottomPanel({
     }
   }, [])
 
-  // ---- terminal state ----
-  const [localHistory, setLocalHistory] = useState<{ cmd: string; out: string }[]>([
-    { cmd: '', out: 'PrismNote terminal — type a command. (python, ls, pip …)' },
-  ])
-  const history = propTerminalHistory ?? localHistory
-  const setHistory = onTerminalHistoryChange ?? setLocalHistory
-  const [cmd, setCmd] = useState('')
-  const termEndRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    termEndRef.current?.scrollIntoView()
-  }, [history, tab])
+  // ---- terminal state (multi-terminal support) ----
+  const [terminalConfig, setTerminalConfig] = useState<TerminalConfig>({
+    id: 'root',
+    type: 'pane',
+    history: [{ cmd: '', out: 'PrismNote terminal — type a command. (python, ros2, launch, etc.)' }],
+  })
 
-  const runCmd = async () => {
-    const c = cmd.trim()
-    if (!c) return
-    setCmd('')
-    let out = ''
-    try {
-      const res = await fetch('/api/terminal/exec', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: c }),
+  // Legacy support: if using old single-terminal props, convert to new format
+  const legacyHistory = propTerminalHistory ?? []
+  useEffect(() => {
+    if (legacyHistory.length > 1 || (legacyHistory.length === 1 && legacyHistory[0].cmd)) {
+      setTerminalConfig({
+        id: 'root',
+        type: 'pane',
+        history: legacyHistory,
       })
-      out = res.ok ? (await res.json()).output ?? '' : `prismnote: backend unavailable (${res.status})`
-    } catch {
-      out = `prismnote: '${c.split(' ')[0]}' — no terminal backend connected`
     }
-    setHistory((h) => [...h, { cmd: c, out }])
-  }
+  }, []) // Only run on mount
+
 
 
   // ---- variable explorer (introspects the live kernel namespace) ----
@@ -199,30 +190,11 @@ export default function BottomPanel({
       {!collapsed && (
         <div className="flex-1 overflow-auto font-mono" style={{ fontSize }}>
           {tab === 'terminal' && (
-            <div className="p-2 pn-text">
-              {history.map((h, i) => (
-                <div key={i}>
-                  {h.cmd && (
-                    <div className="text-emerald-400">
-                      <span className="text-blue-400">prismnote</span> $ {h.cmd}
-                    </div>
-                  )}
-                  {h.out && <div className="whitespace-pre-wrap pn-muted">{h.out}</div>}
-                </div>
-              ))}
-              <div className="flex items-center gap-1 text-emerald-400">
-                <span className="text-blue-400">prismnote</span> $
-                <input
-                  autoFocus
-                  value={cmd}
-                  onChange={(e) => setCmd(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && runCmd()}
-                  className="flex-1 bg-transparent outline-none pn-text"
-                  placeholder="run a command…"
-                />
-              </div>
-              <div ref={termEndRef} />
-            </div>
+            <TerminalSplitContainer
+              config={terminalConfig}
+              onConfigChange={setTerminalConfig}
+              fontSize={fontSize}
+            />
           )}
 
           {tab === 'output' && (
