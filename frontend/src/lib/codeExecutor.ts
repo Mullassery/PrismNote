@@ -749,38 +749,343 @@ async function executeQuery(
   }
 }
 
+/**
+ * C++ executor - xeus-cling interactive C++ kernel
+ */
 async function executeCpp(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'C++ execution pending' }
+  const startTime = Date.now()
+
+  try {
+    let sessionInfo = sessionKernels.get(`cpp_${sessionId}`)
+
+    if (!sessionInfo) {
+      const kernelResp = await fetch('http://localhost:8888/api/kernels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'xeus-cling' }),
+      })
+
+      if (!kernelResp.ok) {
+        throw new Error(
+          'Failed to start C++ kernel. Install with: conda install -c conda-forge xeus-cling'
+        )
+      }
+
+      const kernel = await kernelResp.json()
+      sessionInfo = { kernelId: kernel.id }
+      sessionKernels.set(`cpp_${sessionId}`, sessionInfo)
+    }
+
+    const execResp = await fetch(
+      `http://localhost:8888/api/kernels/${sessionInfo.kernelId}/execute`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      }
+    )
+
+    if (!execResp.ok) {
+      return { status: 'error', errors: 'C++ compilation failed', output: await execResp.text() }
+    }
+
+    const result = await execResp.json()
+    return {
+      status: result.stderr ? 'error' : 'success',
+      output: result.stdout || result.output,
+      errors: result.stderr,
+      executionTime: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors: error instanceof Error ? error.message : 'C++ execution failed',
+    }
+  }
 }
 
+/**
+ * Rust executor - via cargo + rustc
+ */
 async function executeRust(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'Rust execution pending' }
+  const startTime = Date.now()
+
+  try {
+    const res = await fetch('/api/execute/rust', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, sessionId, timeout }),
+    })
+
+    if (!res.ok) {
+      throw new Error('Rust execution backend unavailable')
+    }
+
+    const result = await res.json()
+    return {
+      status: result.success ? 'success' : 'error',
+      output: result.stdout,
+      errors: result.stderr || result.error,
+      executionTime: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors:
+        error instanceof Error
+          ? error.message
+          : 'Ensure rustc is installed: curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh',
+    }
+  }
 }
 
+/**
+ * Go executor - via go run
+ */
 async function executeGo(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'Go execution pending' }
+  const startTime = Date.now()
+
+  try {
+    const res = await fetch('/api/execute/go', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, sessionId, timeout }),
+    })
+
+    if (!res.ok) {
+      throw new Error('Go execution backend unavailable')
+    }
+
+    const result = await res.json()
+    return {
+      status: result.success ? 'success' : 'error',
+      output: result.stdout,
+      errors: result.stderr || result.error,
+      executionTime: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors:
+        error instanceof Error ? error.message : 'Go execution failed. Install from: golang.org/dl',
+    }
+  }
 }
 
-async function executeCuda(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'CUDA execution pending' }
-}
-
-async function executeMojo(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'Mojo execution pending' }
-}
-
+/**
+ * Scala executor - via scala REPL
+ */
 async function executeScala(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'Scala execution pending' }
+  const startTime = Date.now()
+
+  try {
+    let sessionInfo = sessionKernels.get(`scala_${sessionId}`)
+
+    if (!sessionInfo) {
+      const kernelResp = await fetch('http://localhost:8888/api/kernels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'scala' }),
+      })
+
+      if (!kernelResp.ok) {
+        throw new Error('Failed to start Scala kernel. Install: cs install almond --channels=releases')
+      }
+
+      const kernel = await kernelResp.json()
+      sessionInfo = { kernelId: kernel.id }
+      sessionKernels.set(`scala_${sessionId}`, sessionInfo)
+    }
+
+    const execResp = await fetch(
+      `http://localhost:8888/api/kernels/${sessionInfo.kernelId}/execute`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      }
+    )
+
+    if (!execResp.ok) {
+      return { status: 'error', errors: 'Scala execution failed', output: await execResp.text() }
+    }
+
+    const result = await execResp.json()
+    return {
+      status: result.stderr ? 'error' : 'success',
+      output: result.stdout || result.output,
+      errors: result.stderr,
+      executionTime: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors: error instanceof Error ? error.message : 'Scala execution failed',
+    }
+  }
 }
 
-async function executeTypeScript(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'TypeScript execution pending' }
-}
-
+/**
+ * Zig executor - via zig build/run
+ */
 async function executeZig(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'Zig execution pending' }
+  const startTime = Date.now()
+
+  try {
+    const res = await fetch('/api/execute/zig', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, sessionId, timeout }),
+    })
+
+    if (!res.ok) {
+      throw new Error('Zig execution backend unavailable')
+    }
+
+    const result = await res.json()
+    return {
+      status: result.success ? 'success' : 'error',
+      output: result.stdout,
+      errors: result.stderr || result.error,
+      executionTime: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors: error instanceof Error ? error.message : 'Zig execution failed',
+    }
+  }
 }
 
+/**
+ * CUDA executor - via NVIDIA CUDA Toolkit
+ */
+async function executeCuda(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
+  const startTime = Date.now()
+
+  try {
+    const res = await fetch('/api/execute/cuda', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, sessionId, timeout }),
+    })
+
+    if (!res.ok) {
+      throw new Error('CUDA execution backend unavailable')
+    }
+
+    const result = await res.json()
+    return {
+      status: result.success ? 'success' : 'error',
+      output: result.stdout,
+      errors: result.stderr || result.error,
+      executionTime: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors: error instanceof Error
+        ? error.message
+        : 'CUDA execution failed. Requires NVIDIA GPU and CUDA Toolkit (developer.nvidia.com/cuda-downloads)',
+    }
+  }
+}
+
+/**
+ * Mojo executor - via Mojo compiler
+ */
+async function executeMojo(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
+  const startTime = Date.now()
+
+  try {
+    const res = await fetch('/api/execute/mojo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, sessionId, timeout }),
+    })
+
+    if (!res.ok) {
+      throw new Error('Mojo execution backend unavailable')
+    }
+
+    const result = await res.json()
+    return {
+      status: result.success ? 'success' : 'error',
+      output: result.stdout,
+      errors: result.stderr || result.error,
+      executionTime: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors: error instanceof Error ? error.message : 'Mojo execution failed. Install: get.modular.com',
+    }
+  }
+}
+
+/**
+ * TypeScript executor - via ts-node or Deno
+ */
+async function executeTypeScript(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
+  const startTime = Date.now()
+
+  try {
+    const res = await fetch('/api/execute/typescript', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, sessionId, timeout }),
+    })
+
+    if (!res.ok) {
+      throw new Error('TypeScript execution backend unavailable')
+    }
+
+    const result = await res.json()
+    return {
+      status: result.success ? 'success' : 'error',
+      output: result.stdout,
+      errors: result.stderr || result.error,
+      executionTime: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors:
+        error instanceof Error
+          ? error.message
+          : 'TypeScript execution failed. Install ts-node: npm install -g ts-node',
+    }
+  }
+}
+
+/**
+ * JavaScript executor - via Node.js
+ */
 async function executeJavaScript(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'JavaScript execution pending' }
+  const startTime = Date.now()
+
+  try {
+    const res = await fetch('/api/execute/javascript', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, sessionId, timeout }),
+    })
+
+    if (!res.ok) {
+      throw new Error('JavaScript execution backend unavailable')
+    }
+
+    const result = await res.json()
+    return {
+      status: result.success ? 'success' : 'error',
+      output: result.stdout,
+      errors: result.stderr || result.error,
+      executionTime: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors: error instanceof Error ? error.message : 'Ensure Node.js is installed: nodejs.org',
+    }
+  }
 }
