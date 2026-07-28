@@ -46,10 +46,10 @@ export function sanitizeForAI(text: string): string {
 export function buildEnvironmentContext(): string {
   const { dataset, workspace, files } = useAIContext.getState()
   const parts: string[] = []
-  // PrismNote is a local, single-user OSS build — there is no login/account.
+  // PrismNote is a local, single-user application — there is no login/account.
   // AI has access to all data visible in the notebook and data explorer,
   // but Settings/Security tabs are off-limits (never sent to AI).
-  parts.push('Session: local workspace (open-source build, no account / login).')
+  parts.push('Session: local workspace (no account / login).')
   if (workspace) {
     const list = files.slice(0, 40).join(', ')
     parts.push(`Workspace folder: ${workspace}${list ? `\nFiles: ${list}${files.length > 40 ? ', …' : ''}` : ''}`)

@@ -189,7 +189,7 @@ const [open, setOpen] = useState<string | null>(null)
       { label: 'Clone Repository…', action: () => onOpenGit?.('clone') },
     ],
     Help: [
-      { label: 'About PrismNote', action: () => window.alert('PrismNote — a modern, open-source data-science notebook.\nRust engine · React UI.') },
+      { label: 'About PrismNote', action: () => window.alert('PrismNote — a modern data-science notebook.\nRust engine · React UI.') },
       { label: 'Documentation', action: () => window.open('https://github.com/Mullassery/prismnote#readme', '_blank') },
       { label: 'Keyboard Shortcuts', action: () => setShortcutsOpen(true) },
     ],

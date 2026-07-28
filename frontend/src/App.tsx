@@ -413,7 +413,7 @@ function App() {
                   { label: 'Command Palette…', shortcut: '⇧⌘P', action: () => setOverlay('command') },
                   { label: 'Settings', shortcut: '⌘,', action: () => setOverlay('settings') },
                   { label: 'Color Theme…', action: () => setOverlay('theme'), sep: true },
-                  { label: 'About PrismNote', action: () => alert('PrismNote — a modern, open-source data-science notebook.\nRust engine · React UI.') },
+                  { label: 'About PrismNote', action: () => alert('PrismNote — a modern data-science notebook.\nRust engine · React UI.') },
                 ].map((it: any, i) => (
                   <div key={i}>
                     <button

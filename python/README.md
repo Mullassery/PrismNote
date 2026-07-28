@@ -189,7 +189,7 @@ Connect to your data wherever it lives:
 - **On your server:** PostgreSQL, MySQL
 - **Data warehouses:** Snowflake, BigQuery, Redshift, Databricks, Athena, Trino, Presto, Synapse
 
-PrismNote uses open-source drivers you control. No proprietary code bundled. See [CONNECTORS.md](CONNECTORS.md) for setup.
+PrismNote uses standard database drivers you control. No bloatware bundled. See [CONNECTORS.md](CONNECTORS.md) for setup.
 
 ### ⚙️ Turn Notebooks into Workflows
 **Run on a schedule:** Execute a notebook daily, hourly, or on-demand. See run history and logs. Integrates with Airflow.
@@ -238,8 +238,7 @@ Here's the detailed comparison:
 **In short:** choose **JupyterLab** for its vast kernel/extension ecosystem and real-time
 collaboration, **Zeppelin** for JVM/Spark-centric multi-interpreter workloads, **PyCharm**
 for a full desktop IDE with deep refactoring and DB tools (paid Pro), and **PrismNote**
-when you want fast, no-setup **data exploration + charts + local AI** in one free,
-open-source local binary. See also [ZEPPELIN_COMPARISON.md](ZEPPELIN_COMPARISON.md) and
+when you want fast, no-setup **data exploration + charts + local AI** in one local binary. See also [ZEPPELIN_COMPARISON.md](ZEPPELIN_COMPARISON.md) and
 [NOTEBOOK_COMPARISON_MATRIX.md](NOTEBOOK_COMPARISON_MATRIX.md).
 
 ---
