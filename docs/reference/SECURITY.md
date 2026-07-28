@@ -2,43 +2,81 @@
 
 ## Reporting Security Issues
 
-Please do not open public GitHub issues for security vulnerabilities.
+**DO NOT** open public GitHub issues for security vulnerabilities.
 
-Email security concerns to: mullassery@gmail.com
+If you discover a security vulnerability, please email: **mullassery@gmail.com**
 
 Include:
 - Description of the vulnerability
-- Steps to reproduce
+- Steps to reproduce (if applicable)
 - Potential impact
-- Suggested fix (if any)
+- Suggested fix (if you have one)
 
-We will acknowledge receipt within 24 hours and provide updates on remediation progress.
+## Known Limitations & Mitigations
 
-## Supported Versions
+### This Version (0.4.5)
 
-| Version | Supported |
-|---------|-----------|
-| Latest | Yes |
-| Previous | Limited |
-| Older | No |
+- **NO PRODUCTION USE** - This is a beta release
+- Limited security hardening - see PRODUCTION_AUDIT_REPORT.md for details
+- See PRODUCTION_AUDIT_REPORT.md for specific security issues
 
-## Security Best Practices
+### SQL Injection (CRITICAL)
 
-- Always use the latest version
-- Report vulnerabilities privately
-- Never share vulnerability details publicly before patch
-- Use environment variables for secrets (not hardcoded)
-- Keep dependencies updated
-- Enable GitHub security features
+**Status:** ⚠️ MITIGATED (Validation added, requires parameterized queries)
 
-## Vulnerability Disclosure
+PrismNote currently performs basic SQL injection prevention via query validation:
+- Allowlist validation for SQL keywords
+- Blocklist for dangerous operations (CREATE, DROP, DELETE, ALTER, etc.)
+- Pattern-based detection of common injection techniques
+- Input length limits (100KB max)
+- Query nesting depth limits
 
-When a security issue is confirmed:
-1. We develop and test a fix
-2. We release a new version with security patch
-3. We notify users of the vulnerability and fix
-4. We credit the reporter (if desired)
+**Important:** These mitigations are defense-in-depth ONLY. Real production use requires:
+1. Parameterized queries for all database backends
+2. Prepared statements (no string concatenation)
+3. Least-privilege database users
+4. Query execution logging and monitoring
 
-## Contact
+See `SQL_INJECTION_AUDIT.md` for detailed findings and remediation roadmap.
 
-Security Team: mullassery@gmail.com
+**Affected Components:**
+- DuckDB query execution (mitigated with validation)
+- PostgreSQL, MySQL, SQLite, DuckDB backends (partially implemented, need parameterized queries)
+- Cloud warehouse backends (Snowflake, BigQuery, Redshift, Azure Synapse, Databricks, Athena, Presto, Trino)
+
+**Timeline for Full Fix:** TIER 2 (Weeks 2-3)
+
+## Security Updates
+
+Security patches will be released as minor/patch versions when vulnerabilities are discovered.
+
+## Dependency Security
+
+This project uses:
+- Python 3.9+
+- Rust 1.70+ (for Rust components)
+
+Keep dependencies updated for latest security patches.
+
+## Compliance & Certifications
+
+This software is **NOT** currently:
+- SOC 2 certified
+- HIPAA compliant
+- GDPR compliant
+- PCI DSS compliant
+- ISO 27001 certified
+
+For compliance requirements, see PRODUCTION_AUDIT_REPORT.md.
+
+## Development Security
+
+When contributing:
+- Do not commit secrets, credentials, or API keys
+- Use environment variables for sensitive configuration
+- Run security checks: `ruff check .`, `cargo clippy`
+- Write tests for security-related code
+
+## Questions?
+
+For security questions (non-vulnerability): open a GitHub Discussion.
