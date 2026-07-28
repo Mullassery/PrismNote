@@ -6,9 +6,34 @@
 
 ---
 
+## ⚠️ CRITICAL DISCLAIMER
+
+**MCP tool use is NOT currently implemented.** While this document describes MCP tools and integration, Claude cannot yet autonomously call these tools. This is a planned feature for Phase 2-3 (estimated 2-4 weeks after Phase 1 completion).
+
+**What WORKS now:**
+- ✅ Claude API integration (direct calls, no tool use)
+- ✅ MCP client discovery (finding available tools)
+- ✅ MCP HTTP transport (basic connectivity)
+
+**What DOESN'T work:**
+- ❌ Claude calling MCP tools (not implemented)
+- ❌ Tool execution loops (not implemented)  
+- ❌ MCP stdio transport (stubbed only)
+- ❌ MCP socket transport (incomplete)
+
+**Timeline for MCP tool use:**
+- Phase 1 (Current): Documentation & setup
+- Phase 2 (2-3 weeks): Claude tool use implementation
+- Phase 3 (3-4 weeks): Complete MCP support with all 6 tools
+- Phase 4+ (4+ weeks): Advanced features
+
+See [DEVELOPMENT_ROADMAP.md](../../DEVELOPMENT_ROADMAP.md) for detailed implementation timeline and [FEATURES_STATUS.md](../FEATURES_STATUS.md) for complete feature matrix.
+
+---
+
 ## Overview
 
-PrismNote now includes comprehensive AI integration for code assistance across all 15+ supported languages. Integrates with Claude, OpenAI, Ollama, and supports Model Context Protocol (MCP) for extensible tool ecosystem.
+PrismNote includes Claude and multi-AI provider integration for code assistance. The MCP infrastructure is in place, but Claude tool use requires Phase 2 implementation. This document describes the intended architecture and planned capabilities.
 
 ---
 
@@ -34,16 +59,18 @@ Eight intelligent code actions available:
 - **Ollama** - Local, offline LLM support
 - **Custom** - Any OpenAI-compatible API
 
-### 3. MCP Tool Ecosystem
+### 3. MCP Tool Ecosystem (Planned - Phase 2-3)
 
-Available MCP tools for AI actions:
+The following MCP tools will be available once Claude tool use is implemented:
 
-- **claude-code-generator** - Generate code from descriptions
-- **code-formatter** - Format code to standards
-- **test-generator** - Generate unit tests
-- **performance-analyzer** - Identify bottlenecks
-- **documentation-generator** - Auto-document code
-- **security-scanner** - Find vulnerabilities
+- **claude-code-generator** - Generate code from descriptions *(Planned)*
+- **code-formatter** - Format code to standards *(Planned)*
+- **test-generator** - Generate unit tests *(Planned)*
+- **performance-analyzer** - Identify bottlenecks *(Planned)*
+- **documentation-generator** - Auto-document code *(Planned)*
+- **security-scanner** - Find vulnerabilities *(Planned)*
+
+**Current Status:** Tools are defined but Claude cannot call them yet.
 
 ### 4. Context-Aware Assistance
 
@@ -303,31 +330,33 @@ CUSTOM_LLM_BASE_URL=...
 
 ---
 
-## MCP Tool Catalog
+## MCP Tool Catalog (Planned - Phase 2-3)
 
-### Code Generation
-- Generate code from natural language
-- Generate tests and mocks
-- Generate configuration
-- Generate documentation
+These tools will be available once Claude tool use is implemented. Currently, they exist as infrastructure only.
 
-### Analysis
-- Code quality analysis
-- Performance profiling
-- Security scanning
-- Complexity analysis
+### Code Generation *(Planned)*
+- Generate code from natural language *(Phase 2)*
+- Generate tests and mocks *(Phase 3)*
+- Generate configuration *(Phase 3)*
+- Generate documentation *(Phase 3)*
 
-### Refactoring
-- Suggest improvements
-- Apply patterns
-- Modernize syntax
-- Optimize algorithms
+### Analysis *(Planned)*
+- Code quality analysis *(Phase 3)*
+- Performance profiling *(Phase 3)*
+- Security scanning *(Phase 3)*
+- Complexity analysis *(Phase 3)*
 
-### Integration
-- API documentation
-- Library recommendations
-- Integration patterns
-- Example code
+### Refactoring *(Planned)*
+- Suggest improvements *(Phase 4)*
+- Apply patterns *(Phase 4)*
+- Modernize syntax *(Phase 4)*
+- Optimize algorithms *(Phase 4)*
+
+### Integration *(Planned)*
+- API documentation *(Phase 4)*
+- Library recommendations *(Phase 4)*
+- Integration patterns *(Phase 4)*
+- Example code *(Phase 4)*
 
 ---
 
@@ -382,19 +411,29 @@ interface AIUsageStats {
 - Model knowledge cutoff
 - No real-time code execution feedback
 
-### Planned Improvements
-- Local model optimization
+### Planned Improvements (Roadmap)
+**Phase 1-2:**
+- MCP tool use implementation (Claude calling tools)
+- Better error recovery
+- Claude API v2024-06-01 optimization
+
+**Phase 3-4:**
 - Streaming responses
 - Better context management
 - MCP discovery UI
 - Usage dashboards
 - Cost estimation
-- A/B testing of providers
+- Tool chaining
 
-### Future Capabilities
+**Phase 5+:**
+- Local model optimization
+- A/B testing of providers
+- Custom fine-tuned models
+
+### Future Capabilities (Phase 4-6+)
 - Collaborative AI (multiple users)
 - Custom fine-tuned models
-- Tool chaining
+- Tool chaining (multi-step automation)
 - Autonomous code review
 - Predictive suggestions
 
@@ -446,25 +485,41 @@ interface AIUsageStats {
 
 ## Implementation Status
 
-### Complete
-- Architecture and interfaces
-- Provider abstraction
-- MCP tool definitions
-- UI component
-- Configuration system
+### Complete (v1.7.0)
+- ✅ Architecture and interfaces
+- ✅ Provider abstraction (Claude, OpenAI, Ollama)
+- ✅ MCP infrastructure (client, discovery, HTTP transport)
+- ✅ MCP tool definitions (6 tools)
+- ✅ UI component (AIAssistant)
+- ✅ Configuration system
+- ✅ Claude API v2024-06-01 integration
 
-### In Development
-- Claude API integration
-- OpenAI API integration
-- Ollama local support
-- MCP server connection
-- Usage tracking
+### In Development (Phase 2)
+- 🔄 Claude tool use (function calling)
+- 🔄 Tool execution loop
+- 🔄 Error recovery & retry logic
+- 🔄 Tests (15+ for tool use)
 
-### Planned
+### Planned (Phase 3-6)
+**Phase 3:**
+- MCP stdio transport (full implementation)
+- MCP socket transport (full implementation)
+- All 6 tool implementations
+- Lineage awareness (dbt/Airflow integration)
+- Tests (30+ for MCP tools)
+
+**Phase 4:**
 - Streaming responses
 - Tool chaining
+- Real-time collaboration
+- Query optimization agent
+- Tests (50+)
+
+**Phase 5+:**
 - Advanced context management
 - Performance optimization
+- Production monitoring
+- Custom models
 
 ---
 

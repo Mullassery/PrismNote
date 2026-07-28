@@ -1,7 +1,22 @@
 /**
  * MCP (Model Context Protocol) Client
  * Discovers and executes MCP tools for AI-powered code assistance
- * Supports stdio, HTTP, and local socket transports
+ *
+ * ⚠️ TRANSPORT IMPLEMENTATION STATUS
+ *
+ * ✅ HTTP Transport: Fully implemented & production-ready
+ *    - Works with real MCP servers
+ *    - Tested and stable
+ *
+ * ❌ Stdio Transport: NOT IMPLEMENTED (returns error)
+ *    - Currently returns error message
+ *    - Full implementation planned for Phase 3
+ *    - See: DEVELOPMENT_ROADMAP.md Phase 3.2.1
+ *
+ * ❌ Socket Transport: NOT IMPLEMENTED (falls back to HTTP with warning)
+ *    - Currently falls back to HTTP
+ *    - Full implementation planned for Phase 3
+ *    - See: DEVELOPMENT_ROADMAP.md Phase 3.2.2
  */
 
 export interface MCPTool {
@@ -263,11 +278,33 @@ class MCPClient {
   }
 
   /**
-   * Query MCP server via HTTP socket
+   * Query MCP server via socket transport
+   * ⚠️ INCOMPLETE - socket transport falls back to HTTP
+   *
+   * Current Status:
+   *   - Socket transport not fully implemented
+   *   - Falls back to HTTP connection
+   *   - This may cause issues with long-lived connections
+   *
+   * Timeline: Phase 3 (full implementation, 3-4 weeks)
+   * Recommendation: Use HTTP transport for reliability
+   *
+   * What needs to be done:
+   *   1. Setup WebSocket or socket.io connection
+   *   2. Handle connection pooling & reuse
+   *   3. Implement reconnection logic
+   *   4. Test under concurrent load
+   *
+   * See: DEVELOPMENT_ROADMAP.md Phase 3.2.2
    */
   private async _querySocket(path: string, data: any): Promise<any> {
-    // In production, use WebSocket or socket.io
-    // For now, fallback to HTTP
+    console.warn(
+      '⚠️ Socket transport incomplete, falling back to HTTP. ' +
+      'Full socket support coming in Phase 3.'
+    )
+
+    // Temporary fallback to HTTP
+    // This will be replaced with proper WebSocket implementation in Phase 3
     return fetch(`http://localhost:${this.config?.port}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -277,18 +314,26 @@ class MCPClient {
 
   /**
    * Query MCP server via stdio protocol
+   * ❌ NOT IMPLEMENTED - stdio transport is in development
+   *
+   * Timeline: Phase 3 (3-4 weeks after Phase 2 completion)
+   * Workaround: Use HTTP transport instead (http://localhost:3001)
+   *
+   * What needs to be done:
+   *   1. Spawn MCP server process
+   *   2. Setup stdin/stdout communication
+   *   3. Implement JSON-RPC protocol
+   *   4. Handle process lifecycle & errors
+   *
+   * See: DEVELOPMENT_ROADMAP.md Phase 3.2.1
    */
   private async _queryStdio(method: string, params: any): Promise<any> {
-    // In production, spawn process and communicate via stdin/stdout
-    // For now, return mock response
-    if (method === 'list_tools') {
-      return {
-        tools: [
-          { name: 'example-tool', description: 'Example MCP tool' },
-        ],
-      }
-    }
-    return { result: 'mock result' }
+    throw new Error(
+      'Stdio transport is not yet implemented.\n' +
+      'Please use HTTP transport instead (http://localhost:3001).\n' +
+      'Full implementation planned for Phase 3 (estimated 2-4 weeks).\n' +
+      'Track progress: https://github.com/Mullassery/prismnote/issues/16'
+    )
   }
 
   /**
