@@ -6,41 +6,16 @@
 
 # Test info
 
-- Name: e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts >> Keyboard Stress: Tab Navigation >> [STRESS-002] Extreme speed tab (no delay) 200x - find race conditions
-- Location: tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:62:3
+- Name: e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts >> Keyboard Stress: Tab Navigation >> [STRESS-009] Check for focus trap in modals - can you Tab out?
+- Location: tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:241:3
 
 # Error details
 
 ```
-Test timeout of 60000ms exceeded.
-```
-
-```
-Error: page.click: Test timeout of 60000ms exceeded.
+Error: page.goto: Could not connect to the server.
 Call log:
-  - waiting for locator('[data-testid="notebook-container"]')
-    - waiting for" http://localhost:5173/" navigation to finish...
-    - navigated to "http://localhost:5173/"
+  - navigating to "http://localhost:5173/", waiting until "load"
 
-```
-
-# Page snapshot
-
-```yaml
-- generic [ref=e3]:
-  - generic [ref=e4]: "[plugin:vite:import-analysis] Failed to resolve import \"../lib/sqlExecutor\" from \"src/components/Cell.tsx\". Does the file exist?"
-  - generic [ref=e5]: /Users/georgimullassery/prismnote/frontend/src/components/Cell.tsx:14:74
-  - generic [ref=e6]: "12 | import { parseTraceback } from \"../lib/pyerror\"; 13 | import { LANGUAGES, getMonacoMode } from \"../lib/languages\"; 14 | import { executeSqlQuery, validateSqlQuery } from \"../lib/sqlExecutor\"; | ^ 15 | import SqlConnectionPicker from \"./SqlConnectionPicker\"; 16 | import SqlResultsView from \"./SqlResultsView\";"
-  - generic [ref=e7]: at TransformPluginContext._formatLog (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:30602:39) at TransformPluginContext.error (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:30599:14) at normalizeUrl (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:27842:18) at async file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:27905:30 at async Promise.all (index 13) at async TransformPluginContext.transform (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:27873:4) at async EnvironmentPluginContainer.transform (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:30387:14) at async loadAndTransform (file:///Users/georgimullassery/prismnote/frontend/node_modules/vite/dist/node/chunks/node.js:24646:26)
-  - generic [ref=e8]:
-    - text: Click outside, press Esc key, or fix the code to dismiss.
-    - text: You can also disable this overlay by setting
-    - code [ref=e9]: server.hmr.overlay
-    - text: to
-    - code [ref=e10]: "false"
-    - text: in
-    - code [ref=e11]: vite.config.ts
-    - text: .
 ```
 
 # Test source
@@ -68,7 +43,8 @@ Call log:
   20  |   test.beforeEach(async ({ page: testPage }) => {
   21  |     page = testPage
   22  |     stress = new KeyboardStressTester(page)
-  23  |     await page.goto('/')
+> 23  |     await page.goto('/')
+      |                ^ Error: page.goto: Could not connect to the server.
   24  |     await page.waitForLoadState('networkidle')
   25  |   })
   26  | 
@@ -111,8 +87,7 @@ Call log:
   63  |     const errors: any[] = []
   64  |     stress.captureConsoleErrors((err) => errors.push(err))
   65  | 
-> 66  |     await page.click('[data-testid="notebook-container"]')
-      |                ^ Error: page.click: Test timeout of 60000ms exceeded.
+  66  |     await page.click('[data-testid="notebook-container"]')
   67  |     await page.waitForTimeout(100)
   68  | 
   69  |     const focusLog: any[] = []
@@ -170,47 +145,4 @@ Call log:
   121 |     const focusChanges: any[] = []
   122 | 
   123 |     stress.captureConsoleErrors((err) => errors.push(err))
-  124 | 
-  125 |     await page.click('[data-testid="notebook-container"]')
-  126 |     await page.waitForTimeout(100)
-  127 | 
-  128 |     // Alternate forward/backward rapidly
-  129 |     for (let i = 0; i < 150; i++) {
-  130 |       await page.keyboard.press(i % 2 === 0 ? 'Tab' : 'Shift+Tab', { delay: 10 })
-  131 |       if (i % 30 === 0) {
-  132 |         focusChanges.push(await stress.getFocusedElement())
-  133 |       }
-  134 |     }
-  135 | 
-  136 |     const finalFocus = await stress.getFocusedElement()
-  137 |     expect(finalFocus).toBeDefined()
-  138 | 
-  139 |     // Focus should be somewhere in the app
-  140 |     expect(finalFocus.tag).toBeTruthy()
-  141 | 
-  142 |     console.log('Focus changes:', focusChanges)
-  143 |     expect(errors).toHaveLength(0)
-  144 |   })
-  145 | 
-  146 |   test('[STRESS-005] Sustained Tab hold (2 seconds) - check for stuck focus', async () => {
-  147 |     const errors: any[] = []
-  148 |     stress.captureConsoleErrors((err) => errors.push(err))
-  149 | 
-  150 |     await page.click('[data-testid="notebook-container"]')
-  151 |     await page.waitForTimeout(100)
-  152 | 
-  153 |     const focusBefore = await stress.getFocusedElement()
-  154 | 
-  155 |     // Hold Tab for 2 seconds (re-press every 50ms to simulate hold)
-  156 |     await stress.sustainedKeyHold('Tab', 2000)
-  157 | 
-  158 |     const focusAfter = await stress.getFocusedElement()
-  159 | 
-  160 |     // Focus should have moved (Tab was held down)
-  161 |     expect(focusAfter).toBeDefined()
-  162 |     expect(focusAfter.tag).toBeTruthy()
-  163 | 
-  164 |     console.log('Focus before hold:', focusBefore)
-  165 |     console.log('Focus after hold:', focusAfter)
-  166 |     console.log('Errors:', errors)
 ```

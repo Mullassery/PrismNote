@@ -1,0 +1,2047 @@
+{
+  "config": {
+    "argv": [
+      "/opt/homebrew/Cellar/node/26.5.0/bin/node",
+      "/Users/georgimullassery/prismnote/frontend/node_modules/.bin/playwright",
+      "test",
+      "tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+      "--workers=1"
+    ],
+    "configFile": "/Users/georgimullassery/prismnote/frontend/playwright.config.ts",
+    "rootDir": "/Users/georgimullassery/prismnote/frontend/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/georgimullassery/prismnote/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/georgimullassery/prismnote/frontend/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/georgimullassery/prismnote/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/georgimullassery/prismnote/frontend/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/georgimullassery/prismnote/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/georgimullassery/prismnote/frontend/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.61.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+      "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Keyboard Stress: Tab Navigation",
+          "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+          "line": 16,
+          "column": 6,
+          "specs": [
+            {
+              "title": "[STRESS-001] Rapid tab forward 100x - no crashes",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60061,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 33
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  31 |\n  32 |     // Start with keyboard focus in the app (click notebook area)\n> 33 |     await page.click('[data-testid=\"notebook-container\"]')\n     |                ^\n  34 |     await page.waitForTimeout(100)\n  35 |\n  36 |     const memStart = await stress.getMemoryUsage()\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:33:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T11:52:26.717Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-e3b34-b-forward-100x---no-crashes-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-e3b34-b-forward-100x---no-crashes-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-176431145d786bb13c8d",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-002] Extreme speed tab (no delay) 200x - find race conditions",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60066,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 66
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  64 |     stress.captureConsoleErrors((err) => errors.push(err))\n  65 |\n> 66 |     await page.click('[data-testid=\"notebook-container\"]')\n     |                ^\n  67 |     await page.waitForTimeout(100)\n  68 |\n  69 |     const focusLog: any[] = []\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:66:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T11:53:27.000Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-cd4c2-200x---find-race-conditions-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-cd4c2-200x---find-race-conditions-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-63f76a8360c9c0d4798d",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-003] Reverse tab (Shift+Tab) 100x - check backward navigation",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60052,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 97
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n   95 |     stress.captureUnhandledRejections((err) => errors.push(err))\n   96 |\n>  97 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n   98 |     await page.waitForTimeout(100)\n   99 |\n  100 |     const memStart = await stress.getMemoryUsage()\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:97:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T11:54:27.295Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-a4d6d---check-backward-navigation-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-a4d6d---check-backward-navigation-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-4e5e32245b2cee836462",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 92,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-004] Alternating Tab/Shift+Tab 150x - check navigation order corruption",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60054,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 125
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  123 |     stress.captureConsoleErrors((err) => errors.push(err))\n  124 |\n> 125 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  126 |     await page.waitForTimeout(100)\n  127 |\n  128 |     // Alternate forward/backward rapidly\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:125:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T11:55:27.571Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-5152b-navigation-order-corruption-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-5152b-navigation-order-corruption-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-8fdba385f6eeb1676f02",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 119,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-005] Sustained Tab hold (2 seconds) - check for stuck focus",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60054,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 150
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  148 |     stress.captureConsoleErrors((err) => errors.push(err))\n  149 |\n> 150 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  151 |     await page.waitForTimeout(100)\n  152 |\n  153 |     const focusBefore = await stress.getFocusedElement()\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:150:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T11:56:27.851Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-6ae7b-nds---check-for-stuck-focus-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-6ae7b-nds---check-for-stuck-focus-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-140bc1d63391de02cfd0",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 146,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-006] Focus shouldn't escape the app container (100 tab cycles)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60078,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 175
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  173 |     stress.captureConsoleErrors((err) => escapeEvents.push(err))\n  174 |\n> 175 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  176 |\n  177 |     for (let i = 0; i < 100; i++) {\n  178 |       await page.keyboard.press('Tab')\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:175:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T11:57:28.136Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-91ad3-p-container-100-tab-cycles--chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-91ad3-p-container-100-tab-cycles--chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-5a53ffed4736f618a550",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 171,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-007] Tab through all major UI sections - verify coverage",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60074,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 201
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  199 |     const expectedSections = ['notebook', 'sidebar', 'terminal', 'settings', 'deploy']\n  200 |\n> 201 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  202 |\n  203 |     // Tab 50 times and collect unique focus targets\n  204 |     for (let i = 0; i < 50; i++) {\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:201:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T11:58:28.437Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-94b0d--sections---verify-coverage-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-94b0d--sections---verify-coverage-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-f2d297095ab9ca40829b",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 197,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-008] Tab after rapid modal open/close - verify focus restoration",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60033,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 220
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  218 |\n  219 |   test('[STRESS-008] Tab after rapid modal open/close - verify focus restoration', async () => {\n> 220 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  221 |\n  222 |     // Open and close settings modal 10 times rapidly\n  223 |     for (let i = 0; i < 10; i++) {\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:220:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T11:59:28.736Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-f28fb----verify-focus-restoration-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-f28fb----verify-focus-restoration-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-002626d299023278412a",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 219,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-009] Check for focus trap in modals - can you Tab out?",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 876,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mnull\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mnull\u001b[39m\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:247:23",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 23,
+                          "line": 247
+                        },
+                        "snippet": "  245 |\n  246 |     const modalOpen = await page.$('[role=\"dialog\"]')\n> 247 |     expect(modalOpen).toBeTruthy() // Modal should be open\n      |                       ^\n  248 |\n  249 |     // Tab 30 times inside modal\n  250 |     await stress.rapidTabCycles(30, 20)"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 23,
+                            "line": 247
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mnull\u001b[39m\n\n  245 |\n  246 |     const modalOpen = await page.$('[role=\"dialog\"]')\n> 247 |     expect(modalOpen).toBeTruthy() // Modal should be open\n      |                       ^\n  248 |\n  249 |     // Tab 30 times inside modal\n  250 |     await stress.rapidTabCycles(30, 20)\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:247:23"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:00:29.003Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-56e6d-n-modals---can-you-Tab-out--chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-56e6d-n-modals---can-you-Tab-out--chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 23,
+                        "line": 247
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-480285207b6001ff1761",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 241,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-010] Stress test with memory monitoring - detect leaks",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60081,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 270
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  268 |\n  269 |     // Warm up\n> 270 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  271 |     await page.waitForTimeout(200)\n  272 |\n  273 |     // Tab cycle with memory monitoring\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:270:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:00:30.098Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-ef650-y-monitoring---detect-leaks-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-ef650-y-monitoring---detect-leaks-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-5c1dd21d6fb3a45d15bc",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 266,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-001] Rapid tab forward 100x - no crashes",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60080,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 33
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  31 |\n  32 |     // Start with keyboard focus in the app (click notebook area)\n> 33 |     await page.click('[data-testid=\"notebook-container\"]')\n     |                ^\n  34 |     await page.waitForTimeout(100)\n  35 |\n  36 |     const memStart = await stress.getMemoryUsage()\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:33:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:01:30.401Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-e3b34-b-forward-100x---no-crashes-firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-e3b34-b-forward-100x---no-crashes-firefox/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-4324e6f6cbe6a8d00f88",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-002] Extreme speed tab (no delay) 200x - find race conditions",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60080,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 66
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  64 |     stress.captureConsoleErrors((err) => errors.push(err))\n  65 |\n> 66 |     await page.click('[data-testid=\"notebook-container\"]')\n     |                ^\n  67 |     await page.waitForTimeout(100)\n  68 |\n  69 |     const focusLog: any[] = []\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:66:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:02:31.091Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-cd4c2-200x---find-race-conditions-firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-cd4c2-200x---find-race-conditions-firefox/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-8a7549600b537b89a6b5",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-003] Reverse tab (Shift+Tab) 100x - check backward navigation",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60083,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 97
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n   95 |     stress.captureUnhandledRejections((err) => errors.push(err))\n   96 |\n>  97 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n   98 |     await page.waitForTimeout(100)\n   99 |\n  100 |     const memStart = await stress.getMemoryUsage()\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:97:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:03:31.818Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-a4d6d---check-backward-navigation-firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-a4d6d---check-backward-navigation-firefox/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-d5a13736dbfc32f5ce92",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 92,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-004] Alternating Tab/Shift+Tab 150x - check navigation order corruption",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60081,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 125
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  123 |     stress.captureConsoleErrors((err) => errors.push(err))\n  124 |\n> 125 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  126 |     await page.waitForTimeout(100)\n  127 |\n  128 |     // Alternate forward/backward rapidly\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:125:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:04:32.506Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-5152b-navigation-order-corruption-firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-5152b-navigation-order-corruption-firefox/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-f001e7a24bda68bb90c5",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 119,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-005] Sustained Tab hold (2 seconds) - check for stuck focus",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60080,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 150
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  148 |     stress.captureConsoleErrors((err) => errors.push(err))\n  149 |\n> 150 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  151 |     await page.waitForTimeout(100)\n  152 |\n  153 |     const focusBefore = await stress.getFocusedElement()\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:150:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:05:33.181Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-6ae7b-nds---check-for-stuck-focus-firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-6ae7b-nds---check-for-stuck-focus-firefox/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-bc85a592444e38114cfb",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 146,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-006] Focus shouldn't escape the app container (100 tab cycles)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60084,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 175
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  173 |     stress.captureConsoleErrors((err) => escapeEvents.push(err))\n  174 |\n> 175 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  176 |\n  177 |     for (let i = 0; i < 100; i++) {\n  178 |       await page.keyboard.press('Tab')\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:175:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:06:33.858Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-91ad3-p-container-100-tab-cycles--firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-91ad3-p-container-100-tab-cycles--firefox/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-635b320a02778bd4f308",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 171,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-007] Tab through all major UI sections - verify coverage",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60097,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 201
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  199 |     const expectedSections = ['notebook', 'sidebar', 'terminal', 'settings', 'deploy']\n  200 |\n> 201 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  202 |\n  203 |     // Tab 50 times and collect unique focus targets\n  204 |     for (let i = 0; i < 50; i++) {\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:201:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:07:34.547Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-94b0d--sections---verify-coverage-firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-94b0d--sections---verify-coverage-firefox/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-7d98266d1220800168c7",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 197,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-008] Tab after rapid modal open/close - verify focus restoration",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 17,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60092,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 220
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  218 |\n  219 |   test('[STRESS-008] Tab after rapid modal open/close - verify focus restoration', async () => {\n> 220 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  221 |\n  222 |     // Open and close settings modal 10 times rapidly\n  223 |     for (let i = 0; i < 10; i++) {\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:220:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:08:35.260Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-f28fb----verify-focus-restoration-firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-f28fb----verify-focus-restoration-firefox/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-590aae66163287fb00da",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 219,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-009] Check for focus trap in modals - can you Tab out?",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 18,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1306,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mnull\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mnull\u001b[39m\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:247:23",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 23,
+                          "line": 247
+                        },
+                        "snippet": "  245 |\n  246 |     const modalOpen = await page.$('[role=\"dialog\"]')\n> 247 |     expect(modalOpen).toBeTruthy() // Modal should be open\n      |                       ^\n  248 |\n  249 |     // Tab 30 times inside modal\n  250 |     await stress.rapidTabCycles(30, 20)"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 23,
+                            "line": 247
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mnull\u001b[39m\n\n  245 |\n  246 |     const modalOpen = await page.$('[role=\"dialog\"]')\n> 247 |     expect(modalOpen).toBeTruthy() // Modal should be open\n      |                       ^\n  248 |\n  249 |     // Tab 30 times inside modal\n  250 |     await stress.rapidTabCycles(30, 20)\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:247:23"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:09:35.992Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-56e6d-n-modals---can-you-Tab-out--firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-56e6d-n-modals---can-you-Tab-out--firefox/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 23,
+                        "line": 247
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-09f0999de52f9149a8bc",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 241,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-010] Stress test with memory monitoring - detect leaks",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60076,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 270
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  268 |\n  269 |     // Warm up\n> 270 |     await page.click('[data-testid=\"notebook-container\"]')\n      |                ^\n  271 |     await page.waitForTimeout(200)\n  272 |\n  273 |     // Tab cycle with memory monitoring\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:270:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:09:37.962Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-ef650-y-monitoring---detect-leaks-firefox/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-ef650-y-monitoring---detect-leaks-firefox/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-cd022ecb2d8c3273a4c1",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 266,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-001] Rapid tab forward 100x - no crashes",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60083,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 33
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\n\n  31 |\n  32 |     // Start with keyboard focus in the app (click notebook area)\n> 33 |     await page.click('[data-testid=\"notebook-container\"]')\n     |                ^\n  34 |     await page.waitForTimeout(100)\n  35 |\n  36 |     const memStart = await stress.getMemoryUsage()\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:33:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:10:38.628Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-e3b34-b-forward-100x---no-crashes-webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-e3b34-b-forward-100x---no-crashes-webkit/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-0c65b230d9d7230283f5",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-002] Extreme speed tab (no delay) 200x - find race conditions",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 21,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60091,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 66
+                          },
+                          "message": "Error: page.click: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"notebook-container\"]')\u001b[22m\n\u001b[2m    - waiting for\" http://localhost:5173/\" navigation to finish...\u001b[22m\n\u001b[2m    - navigated to \"http://localhost:5173/\"\u001b[22m\n\n\n  64 |     stress.captureConsoleErrors((err) => errors.push(err))\n  65 |\n> 66 |     await page.click('[data-testid=\"notebook-container\"]')\n     |                ^\n  67 |     await page.waitForTimeout(100)\n  68 |\n  69 |     const focusLog: any[] = []\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:66:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:11:38.970Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-cd4c2-200x---find-race-conditions-webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-cd4c2-200x---find-race-conditions-webkit/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-159106aa6001e39806c7",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-003] Reverse tab (Shift+Tab) 100x - check backward navigation",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 22,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 249,
+                      "error": {
+                        "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 16,
+                          "line": 23
+                        },
+                        "snippet": "  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 23
+                          },
+                          "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:12:39.333Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-a4d6d---check-backward-navigation-webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-a4d6d---check-backward-navigation-webkit/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 16,
+                        "line": 23
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-7a9fcdc9b12e4eb4815d",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 92,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-004] Alternating Tab/Shift+Tab 150x - check navigation order corruption",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 23,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 232,
+                      "error": {
+                        "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 16,
+                          "line": 23
+                        },
+                        "snippet": "  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 23
+                          },
+                          "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:12:39.848Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-5152b-navigation-order-corruption-webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-5152b-navigation-order-corruption-webkit/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 16,
+                        "line": 23
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-0c61b7ea016989b6ef2a",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 119,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-005] Sustained Tab hold (2 seconds) - check for stuck focus",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 24,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 231,
+                      "error": {
+                        "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 16,
+                          "line": 23
+                        },
+                        "snippet": "  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 23
+                          },
+                          "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:12:40.336Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-6ae7b-nds---check-for-stuck-focus-webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-6ae7b-nds---check-for-stuck-focus-webkit/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 16,
+                        "line": 23
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-7fa5741c5294b483d692",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 146,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-006] Focus shouldn't escape the app container (100 tab cycles)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 25,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 233,
+                      "error": {
+                        "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 16,
+                          "line": 23
+                        },
+                        "snippet": "  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 23
+                          },
+                          "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:12:40.825Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-91ad3-p-container-100-tab-cycles--webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-91ad3-p-container-100-tab-cycles--webkit/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 16,
+                        "line": 23
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-c84703678afc25469fa1",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 171,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-007] Tab through all major UI sections - verify coverage",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 26,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 234,
+                      "error": {
+                        "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 16,
+                          "line": 23
+                        },
+                        "snippet": "  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 23
+                          },
+                          "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:12:41.319Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-94b0d--sections---verify-coverage-webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-94b0d--sections---verify-coverage-webkit/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 16,
+                        "line": 23
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-57219bae2aaf3963f2fd",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 197,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-008] Tab after rapid modal open/close - verify focus restoration",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 27,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 232,
+                      "error": {
+                        "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 16,
+                          "line": 23
+                        },
+                        "snippet": "  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 23
+                          },
+                          "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:12:41.814Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-f28fb----verify-focus-restoration-webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-f28fb----verify-focus-restoration-webkit/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 16,
+                        "line": 23
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-92c59091f969304fef62",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 219,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-009] Check for focus trap in modals - can you Tab out?",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 28,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 231,
+                      "error": {
+                        "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 16,
+                          "line": 23
+                        },
+                        "snippet": "  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 23
+                          },
+                          "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:12:42.309Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-56e6d-n-modals---can-you-Tab-out--webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-56e6d-n-modals---can-you-Tab-out--webkit/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 16,
+                        "line": 23
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-014bd529610b4533224c",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 241,
+              "column": 3
+            },
+            {
+              "title": "[STRESS-010] Stress test with memory monitoring - detect leaks",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 29,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 233,
+                      "error": {
+                        "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16",
+                        "location": {
+                          "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                          "column": 16,
+                          "line": 23
+                        },
+                        "snippet": "  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                            "column": 16,
+                            "line": 23
+                          },
+                          "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n  21 |     page = testPage\n  22 |     stress = new KeyboardStressTester(page)\n> 23 |     await page.goto('/')\n     |                ^\n  24 |     await page.waitForLoadState('networkidle')\n  25 |   })\n  26 |\n    at /Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts:23:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-28T12:12:42.807Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-ef650-y-monitoring---detect-leaks-webkit/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/georgimullassery/prismnote/frontend/test-results/e2e-v1.4.0-phase-2-keyboar-ef650-y-monitoring---detect-leaks-webkit/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/georgimullassery/prismnote/frontend/tests/e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+                        "column": 16,
+                        "line": 23
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "be841a4361ff26d69da7-d7084f408418cd25008f",
+              "file": "e2e/v1.4.0-phase-2-keyboard-stress/keyboard-stress-tabs.spec.ts",
+              "line": 266,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-07-28T11:52:26.536Z",
+    "duration": 1216615.8499999999,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 30,
+    "flaky": 0
+  }
+}
