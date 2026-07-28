@@ -770,27 +770,20 @@ Recommendation:
 - Jupyter: Better ecosystem integration
 - Winner: PrismNote for visual polish
 
-### vs Hex/Deepnote
-- PrismNote: Local-first, offline capable
-- Hex: Better collaboration features
-- Winner: Tie (different use cases)
+### PrismNote Unique Strengths
+- **SQL first-class citizen** - 10+ database backends natively
+- **Local-first architecture** - Your data stays on your machine
+- **AI integration** - Claude, OpenAI, Ollama with context awareness
+- **Schema/data exploration** - Visual inspection without code
+- **15+ programming languages** - One environment for all workflows
+- **Multi-terminal splits** - DevOps and ROS workflows
+- **Zero-setup deployment** - Single binary, no configuration
 
-### vs Observable
-- PrismNote: Better for data science
-- Observable: Better for web developers
-- Winner: Tie (different domains)
-
-### PrismNote Unique Advantages
-- SQL first-class citizen
-- Local-first architecture
-- AI integration with web search
-- Schema/data exploration built-in
-
-### PrismNote Gaps
-- No real-time collaboration
-- No publish/sharing features
-- No scheduled execution
-- Limited visualization options vs Hex
+### Future Enhancements
+- Real-time collaboration features
+- Notebook sharing and publishing
+- Scheduled execution pipelines
+- Advanced visualization gallery
 
 ---
 

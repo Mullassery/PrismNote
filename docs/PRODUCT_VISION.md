@@ -146,22 +146,22 @@ Export notebooks as `.ipynb` or `.py` scripts. Use `.ipynb` files from Jupyter. 
 
 ---
 
-## Why PrismNote is Different
+## Core Capabilities
 
-| Feature | Jupyter | Deepnote | Hex | PrismNote |
-|---------|---------|----------|-----|-----------|
-| Local first | ✓ | ✗ | ✗ | ✓ |
-| SQL first-class | ✗ | ✓ | ✓ | ✓ |
-| Visual data explore | ✗ | ✓ | ✓ | ✓ |
-| AI with context | ✗ | ✓ | ✓ | ✓ |
-| 10 SQL dialects | ✗ | ✗ | ✗ | ✓ |
-| Governance built-in | ✗ | ✗ | ✗ | ✓ |
-| Open source (MIT) | ✓ | ✗ | ✗ | ✓ |
-| Single binary | ✓ | ✗ | ✗ | ✓ |
-| Jupyter-compatible | ✓ | ~ish | ✗ | ✓ |
-| Web search for AI | ✗ | ✗ | ✗ | ✓ |
+| Feature | PrismNote |
+|---------|-----------|
+| Local first (no cloud) | ✓ |
+| SQL first-class (10 dialects) | ✓ |
+| Visual data exploration | ✓ |
+| AI with context (Claude, OpenAI, Ollama) | ✓ |
+| Governance built-in (PII detection, lineage) | ✓ |
+| Single binary (one download) | ✓ |
+| Jupyter-compatible (.ipynb export) | ✓ |
+| Multi-terminal splits (DevOps/ROS) | ✓ |
+| 15+ programming languages | ✓ |
+| Real-time collaboration-ready | ✓ |
 
-**PrismNote is:** Jupyter's speed + Deepnote's usability + Hex's SQL power + open source + local-first + governance + AI with context.
+**PrismNote delivers:** Local-first power + professional-grade SQL + intuitive data exploration + AI reasoning + governance — all in one production-ready tool.
 
 ---
 
