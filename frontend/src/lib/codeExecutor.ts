@@ -395,12 +395,188 @@ async function executePython(code: string, sessionId: string, timeout: number): 
   }
 }
 
+/**
+ * R executor - via Jupyter R kernel (IRkernel)
+ */
 async function executeR(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'R execution pending' }
+  const startTime = Date.now()
+
+  try {
+    // Get or create R kernel session
+    let sessionInfo = sessionKernels.get(`r_${sessionId}`)
+
+    if (!sessionInfo) {
+      const kernelResp = await fetch('http://localhost:8888/api/kernels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'ir' }),
+      })
+
+      if (!kernelResp.ok) {
+        throw new Error(
+          'Failed to start R kernel. Install with: install.packages("IRkernel"); IRkernel::installspec()'
+        )
+      }
+
+      const kernel = await kernelResp.json()
+      sessionInfo = {
+        kernelId: kernel.id,
+        wsUrl: `ws://localhost:8888/api/kernels/${kernel.id}/channels`,
+      }
+      sessionKernels.set(`r_${sessionId}`, sessionInfo)
+    }
+
+    // Execute code
+    const execResp = await fetch(
+      `http://localhost:8888/api/kernels/${sessionInfo.kernelId}/execute`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      }
+    )
+
+    if (!execResp.ok) {
+      return {
+        status: 'error',
+        errors: 'Failed to execute R code',
+        output: await execResp.text(),
+      }
+    }
+
+    const result = await execResp.json()
+    const executionTime = Date.now() - startTime
+
+    const output = result.stdout || result.output || ''
+    const errors = result.stderr || result.error || ''
+    const visualizations: ExecutionResult['visualizations'] = []
+
+    // Handle ggplot2/plotly outputs
+    if (result.display_data) {
+      if (result.display_data['image/png']) {
+        visualizations.push({
+          type: 'image',
+          data: result.display_data['image/png'],
+          metadata: { format: 'png' },
+        })
+      }
+      if (result.display_data['text/html']) {
+        visualizations.push({
+          type: 'html',
+          data: result.display_data['text/html'],
+        })
+      }
+    }
+
+    return {
+      status: errors ? 'error' : 'success',
+      output: output || undefined,
+      errors: errors || undefined,
+      result: result.result,
+      visualizations: visualizations.length > 0 ? visualizations : undefined,
+      executionTime,
+      warnings: result.warnings,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors: error instanceof Error ? error.message : 'Unknown error during R execution',
+    }
+  }
 }
 
-async function executeJulia(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
-  return { status: 'pending', output: 'Julia execution pending' }
+/**
+ * Julia executor - via IJulia kernel
+ */
+async function executeJulia(
+  code: string,
+  sessionId: string,
+  timeout: number
+): Promise<ExecutionResult> {
+  const startTime = Date.now()
+
+  try {
+    // Get or create Julia kernel session
+    let sessionInfo = sessionKernels.get(`julia_${sessionId}`)
+
+    if (!sessionInfo) {
+      const kernelResp = await fetch('http://localhost:8888/api/kernels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'julia-1.8' }),
+      })
+
+      if (!kernelResp.ok) {
+        throw new Error(
+          'Failed to start Julia kernel. Install with: ] add IJulia; using IJulia; installkernel("Julia")'
+        )
+      }
+
+      const kernel = await kernelResp.json()
+      sessionInfo = {
+        kernelId: kernel.id,
+        wsUrl: `ws://localhost:8888/api/kernels/${kernel.id}/channels`,
+      }
+      sessionKernels.set(`julia_${sessionId}`, sessionInfo)
+    }
+
+    // Execute code
+    const execResp = await fetch(
+      `http://localhost:8888/api/kernels/${sessionInfo.kernelId}/execute`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      }
+    )
+
+    if (!execResp.ok) {
+      return {
+        status: 'error',
+        errors: 'Failed to execute Julia code',
+        output: await execResp.text(),
+      }
+    }
+
+    const result = await execResp.json()
+    const executionTime = Date.now() - startTime
+
+    const output = result.stdout || result.output || ''
+    const errors = result.stderr || result.error || ''
+    const visualizations: ExecutionResult['visualizations'] = []
+
+    // Handle Plots.jl/Makie outputs
+    if (result.display_data) {
+      if (result.display_data['image/png']) {
+        visualizations.push({
+          type: 'image',
+          data: result.display_data['image/png'],
+          metadata: { format: 'png' },
+        })
+      }
+      if (result.display_data['text/html']) {
+        visualizations.push({
+          type: 'html',
+          data: result.display_data['text/html'],
+        })
+      }
+    }
+
+    return {
+      status: errors ? 'error' : 'success',
+      output: output || undefined,
+      errors: errors || undefined,
+      result: result.result,
+      visualizations: visualizations.length > 0 ? visualizations : undefined,
+      executionTime,
+      warnings: result.warnings,
+    }
+  } catch (error) {
+    return {
+      status: 'error',
+      errors: error instanceof Error ? error.message : 'Unknown error during Julia execution',
+    }
+  }
 }
 
 async function executeSql(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {

@@ -20,13 +20,14 @@ import {
   PanelBottom,
   Command as CommandIcon,
 } from 'lucide-react'
-import { Briefcase, GitBranch, Database, Table2, Library, BarChart3, Network, GitGraph } from 'lucide-react'
+import { Briefcase, GitBranch, Database, Table2, Library, BarChart3, Network, GitGraph, Sparkles } from 'lucide-react'
 import Notebook from './components/Notebook'
 import SchemaExplorer from './components/SchemaExplorer'
 import TableMetadataPanel from './components/TableMetadataPanel'
 import RelationshipMap from './components/RelationshipMap'
 import DataExplorer, { ExplorerPicker, type ExplorerTarget } from './components/DataExplorer'
 import DataCatalogPanel from './components/DataCatalogPanel'
+import AIAssistant from './components/AIAssistant'
 import { useViz } from './hooks/useViz'
 import { useExplorerRequest } from './hooks/useExplorerRequest'
 import JobsPanel from './components/JobsPanel'
@@ -59,6 +60,7 @@ function App() {
   const [dataOpen, setDataOpen] = useState(false)
   const [plotsOpen, setPlotsOpen] = useState(false)
   const [catalogOpen, setCatalogOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
   const [explorer, setExplorer] = useState<{ target: ExplorerTarget; title: string } | null>(null)
   const [explorerPicker, setExplorerPicker] = useState(false)
   const [railMenu, setRailMenu] = useState<null | 'settings' | 'accounts'>(null)
@@ -80,7 +82,7 @@ function App() {
     dbType: string
   } | null>(null)
   const [relationshipMapOpen, setRelationshipMapOpen] = useState(false)
-  const { currentNotebookId, notebooks, currentNotebook, createNotebook, addCell, executeCell } = useNotebookStore()
+  const { currentNotebookId, notebooks, currentNotebook, createNotebook, addCell, executeCell, updateCell } = useNotebookStore()
   const openFolder = useWorkspace((s) => s.openFolder)
 
   useEffect(() => {
@@ -146,6 +148,10 @@ function App() {
       if (mod && e.shiftKey && e.key.toLowerCase() === 'p') {
         e.preventDefault()
         setOverlay('command')
+      } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'i') {
+        // ⌘I toggles AI Assistant
+        e.preventDefault()
+        setAiOpen(prev => !prev)
       } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'k') {
         // ⌘K opens global search (Monaco intercepts it for in-cell AI when an
         // editor is focused, so this fires only outside a cell).
@@ -378,6 +384,7 @@ function App() {
           {/* Data surfaces — the product's focus */}
           {railBtn(!!explorer || explorerPicker, openExplorer, 'Data Explorer  ⌘E', Table2)}
           {railBtn(dataOpen, () => toggleCenter(dataOpen, () => setDataOpen(true)), 'Data Querying', Database)}
+          {railBtn(aiOpen, () => setAiOpen(!aiOpen), 'AI Assistant', Sparkles)}
           {railBtn(plotsOpen, () => setPlotsOpen(!plotsOpen), 'Plots & Dashboards', BarChart3)}
           {railBtn(relationshipMapOpen, () => setRelationshipMapOpen(!relationshipMapOpen), 'Relationship Map', GitGraph)}
           <div className="w-7 my-1 border-t pn-bd" />
@@ -595,6 +602,36 @@ function App() {
             />
           )}
         </div>
+
+        {/* Right: AI Assistant */}
+        {aiOpen && (
+          <div className="w-96 border-l pn-bd bg-slate-950/95 flex flex-col">
+            <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles size={18} className="text-blue-400" />
+                <h2 className="font-semibold text-slate-100">AI Assistant</h2>
+              </div>
+              <button
+                onClick={() => setAiOpen(false)}
+                className="p-1 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-slate-200"
+              >
+                ×
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <AIAssistant
+                selectedCode={currentNotebook?.cells?.[0]?.source?.join?.('') || ''}
+                selectedLanguage="python"
+                hasError={false}
+                onCodeGenerated={(code) => {
+                  if (currentNotebook?.cells?.length) {
+                    updateCell(0, { source: code.split('\n').map(l => l + '\n') })
+                  }
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Right: Plots & Dashboards */}
         {plotsOpen && <PlotsPanel onClose={() => setPlotsOpen(false)} />}

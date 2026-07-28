@@ -3,6 +3,7 @@ import MDPreview from '@uiw/react-markdown-preview'
 import { useEffect, useRef, useState, useCallback, memo } from 'react'
 import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown, GripVertical, Database, Code2 } from 'lucide-react'
 import Output from './Output'
+import LanguageSelector from './LanguageSelector'
 import { useNotebookStore } from '../hooks/useNotebookRedux'
 import { aiEdit, aiFix, aiExplain } from '../api/ai'
 import { interruptKernel } from '../api/kernel'
@@ -298,39 +299,17 @@ function CellInner({ cell, cellIndex }: CellProps) {
             )}
           </div>
 
-          {/* Language selector for code cells */}
+          {/* Enhanced language selector for code cells */}
           {cell.cell_type === 'code' && (
-            <div className="relative">
-              <button
-                onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-                className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded ${LANGUAGES[language].color} hover:opacity-80 transition`}
-                title="Select language"
-              >
-                <span>{LANGUAGES[language].name}</span>
-                <ChevronDown size={12} />
-              </button>
-
-              {/* Language dropdown menu */}
-              {showLanguageMenu && (
-                <div className="absolute top-6 left-0 z-20 min-w-[180px] pn-surface border pn-bd rounded-lg shadow-lg py-1">
-                  {Object.entries(LANGUAGES).map(([langId, langConfig]) => (
-                    <button
-                      key={langId}
-                      onClick={() => {
-                        setLanguage(langId as CellLanguage)
-                        updateCell(cellIndex, { language: langId as CellLanguage })
-                        setShowLanguageMenu(false)
-                      }}
-                      className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                        language === langId ? 'bg-blue-500/20 pn-text' : 'pn-faint hover:pn-text'
-                      }`}
-                    >
-                      {langConfig.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <LanguageSelector
+              value={language}
+              onChange={(newLang) => {
+                setLanguage(newLang)
+                updateCell(cellIndex, { language: newLang })
+              }}
+              onlyExecutable={false}
+              showDetails={true}
+            />
           )}
 
           {cell.cell_type === 'markdown' && <span className="text-xs pn-faint">Markdown</span>}
