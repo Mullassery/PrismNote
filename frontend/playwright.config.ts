@@ -11,6 +11,8 @@ export default defineConfig({
     ['json', { outputFile: 'test-results/results.json' }],
     ['list'],
   ],
+  timeout: 60000,
+  expect: { timeout: 10000 },
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
@@ -27,7 +29,15 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], launchArgs: ['--disable-blink-features=AutomationControlled'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
     },
   ],
 })
