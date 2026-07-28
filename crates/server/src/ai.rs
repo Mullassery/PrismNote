@@ -57,7 +57,10 @@ impl AIEngine {
             "claude" => self.claude_fix(code, error).await,
             "openai" => self.openai_fix(code, error).await,
             _ => Err(anyhow!("Unknown AI provider")),
-        }
+        }.map_err(|e| {
+            eprintln!("AI fix error: {}", e);
+            e
+        })
     }
 
     pub async fn complete_code(&self, code: &str, context: Option<&str>) -> Result<String> {
@@ -66,7 +69,10 @@ impl AIEngine {
             "claude" => self.claude_complete(code, context).await,
             "openai" => self.openai_complete(code, context).await,
             _ => Err(anyhow!("Unknown AI provider")),
-        }
+        }.map_err(|e| {
+            eprintln!("AI complete error: {}", e);
+            e
+        })
     }
 
     pub async fn call_api(&self, prompt: &str) -> Result<String> {
@@ -262,11 +268,14 @@ impl AIEngine {
             .ok_or(anyhow!("Claude API key not configured"))?;
 
         let message = format!(
-            "You are Prism, a friendly Python data-science teacher. Explain this code clearly in 2-3 sentences (the what AND the why), then add one line starting with '💡 Tip:' giving a relevant, specific tip or gotcha for this code:\n\n```python\n{}\n```",
+            "Explain the following Python code clearly and concisely. Describe both WHAT it does and WHY it's written that way. Be educational.\n\nCode:\n```python\n{}\n```\n\nProvide a 2-3 sentence explanation, then add a practical tip prefixed with '💡 Tip:'",
             code
         );
 
-        self.claude_request(api_key, &message).await
+        self.claude_request(api_key, &message).await.map_err(|e| {
+            eprintln!("Claude explain failed: {}", e);
+            anyhow!("Failed to explain code: {}", e)
+        })
     }
 
     async fn claude_fix(&self, code: &str, error: &str) -> Result<String> {
@@ -277,11 +286,14 @@ impl AIEngine {
             .ok_or(anyhow!("Claude API key not configured"))?;
 
         let message = format!(
-            "Fix this Python code that has an error:\n\nError: {}\n\nCode:\n```python\n{}\n```\n\nProvide corrected code only, no explanation.",
+            "Fix this Python code that produces an error.\n\nError message:\n{}\n\nProblematic code:\n```python\n{}\n```\n\nReturn ONLY the corrected code without any explanation or markdown formatting.",
             error, code
         );
 
-        self.claude_request(api_key, &message).await
+        self.claude_request(api_key, &message).await.map_err(|e| {
+            eprintln!("Claude fix failed: {} (error was: {})", e, error);
+            anyhow!("Failed to fix code: {}", e)
+        })
     }
 
     async fn claude_complete(&self, code: &str, context: Option<&str>) -> Result<String> {
@@ -291,13 +303,20 @@ impl AIEngine {
             .as_ref()
             .ok_or(anyhow!("Claude API key not configured"))?;
 
-        let ctx = context.unwrap_or("");
+        let ctx = context
+            .filter(|c| !c.is_empty())
+            .map(|c| format!("Context from other cells:\n```python\n{}\n```\n\n", c))
+            .unwrap_or_default();
+
         let message = format!(
-            "Complete this Python code snippet. Only provide the completion, no explanation.\n\nContext: {}\n\n```python\n{}\n```\n\nCompletion:",
+            "Complete the following Python code. {}Return ONLY the completed code without explanations.\n\n```python\n{}\n```",
             ctx, code
         );
 
-        self.claude_request(api_key, &message).await
+        self.claude_request(api_key, &message).await.map_err(|e| {
+            eprintln!("Claude complete failed: {}", e);
+            anyhow!("Failed to complete code: {}", e)
+        })
     }
 
     async fn claude_request(&self, api_key: &str, message: &str) -> Result<String> {
@@ -307,9 +326,14 @@ impl AIEngine {
             .claude_model
             .as_deref()
             .unwrap_or("claude-sonnet-4-6");
+
+        // Dynamic max_tokens based on message length and complexity
+        let max_tokens = if message.len() > 5000 { 4096 } else { 2048 };
+
         let body = json!({
             "model": model,
-            "max_tokens": 1024,
+            "max_tokens": max_tokens,
+            "system": "You are an expert Python developer and data scientist assistant. Provide clear, concise, and accurate responses. For code explanations, explain both what the code does and why it's written that way.",
             "messages": [
                 {
                     "role": "user",
@@ -321,20 +345,26 @@ impl AIEngine {
         let response = client
             .post("https://api.anthropic.com/v1/messages")
             .header("x-api-key", api_key)
-            .header("anthropic-version", "2023-06-01")
+            .header("anthropic-version", "2024-06-01")
+            .header("content-type", "application/json")
             .json(&body)
             .timeout(std::time::Duration::from_secs(30))
             .send()
             .await?;
 
         if !response.status().is_success() {
-            return Err(anyhow!("Claude API error: {}", response.status()));
+            let error_detail = response.text().await.unwrap_or_else(|_| response.status().to_string());
+            return Err(anyhow!("Claude API error ({}): {}", response.status(), error_detail));
         }
 
         let result: Value = response.json().await?;
-        let response_text = result["content"][0]["text"]
-            .as_str()
-            .ok_or(anyhow!("No response from Claude"))?
+
+        // Validate response structure
+        let response_text = result["content"]
+            .get(0)
+            .and_then(|c| c.get("text"))
+            .and_then(|t| t.as_str())
+            .ok_or(anyhow!("Invalid Claude API response format"))?
             .to_string();
 
         Ok(response_text)
