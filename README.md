@@ -1,6 +1,13 @@
 # PrismNote
 
+[![Python: 3.8-3.13](https://img.shields.io/badge/Python-3.8%E2%80%933.13-blue)](#)
+![v1.8.1 Production Ready](https://img.shields.io/badge/v1.8.1-Production%20Ready-brightgreen)
+
 **Data science notebook with support for 15+ programming languages, SQL execution across 9+ databases, and intelligent code assistance.**
+
+### v1.8.1 Updates
+- 🐍 Relaxed Python version constraint (>=3.8) for broader compatibility
+- ✨ Full Python 3.8-3.13 support including latest Python 3.13
 
 A local-first notebook for data exploration, analysis, and systems programming. Works offline, requires no cloud account, and integrates seamlessly with your existing infrastructure.
 
