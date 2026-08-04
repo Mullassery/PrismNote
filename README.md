@@ -8,6 +8,7 @@ PyPI: `pip install prismnote`
 
 ## Overview
 
+
 PrismNote is part of the unified **MCP 2.0 Mega-Platform** (207 tools across 18 projects). This project provides AI-native tools via Model Context Protocol (MCP 2.0).
 
 ## Features
