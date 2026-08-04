@@ -1,4 +1,8 @@
-# PrismNote v2.0.0
+# PrismNote
+
+Fast, modern data-science notebook with built-in AI. Jupyter-compatible, integrated intelligence, SQL warehouse integration.
+
+PyPI: `pip install prismnote`
 
 **SQL Warehouse Operations (10 MCP tools)**
 
