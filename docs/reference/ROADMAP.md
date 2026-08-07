@@ -4,12 +4,43 @@
 
 ---
 
+## 2026-08-07 status check on "Cloud warehouse connections (8 providers)"
+
+This doc (last touched at v1.3.0; the project is now at v1.10.0+) has claimed the 8
+providers below as "✅ Production-ready" for a while. As of this date that was **not
+true** — `crates/server/src/cloud_warehouse.rs` had every connection test and query
+execution function stubbed out (`// TODO`, returning empty placeholder results for
+all 8 providers). That's now fixed:
+
+- ✅ **Real, working, tested** connection + query execution for all 8: Snowflake
+  (SQL API v2, key-pair JWT auth), BigQuery (REST API v2), Redshift (real Postgres
+  wire protocol via sqlx), Azure Synapse (real TDS protocol via tiberius), Databricks
+  (SQL Statement Execution API, with polling), Athena (hand-rolled AWS SigV4 + JSON
+  API, with polling), Presto/Trino (shared REST client, follows `nextUri` pagination).
+  31 unit/integration tests, cross-verified where it matters (SigV4 signature checked
+  against an independent Python hmac implementation; Snowflake JWT checked by
+  actually decoding+verifying it against its own public key).
+- ⚠️ Redshift and Azure Synapse use real native wire protocols (Postgres, TDS) that
+  can't be fully verified without a live server — no Docker/Postgres was available in
+  this environment. Each has an `#[ignore]`-gated integration test
+  (`REDSHIFT_TEST_DSN`, `SYNAPSE_TEST_HOST`/`_USER`/`_PASSWORD`) for verifying against
+  a real instance before trusting this in production.
+- ❌ Still not implemented: `get_databases()`/`get_tables()` (schema/database
+  browsing) — these still return hardcoded placeholder data, separate from
+  connection/query execution which this update fixes.
+- ❌ Separately discovered while doing this work: `npm run build` in `frontend/`
+  currently fails with 40+ pre-existing TypeScript errors, unrelated to the above —
+  the project can't be built from a clean checkout right now. Worth its own fix.
+
+---
+
 ## Current Status (v1.3.0)
 
 ✅ Production-ready for:
 - Multi-cell notebooks with Python/SQL/Markdown
 - Chart visualization (Vega-Lite)
-- Cloud warehouse connections (8 providers)
+- Cloud warehouse connections (8 providers) — see 2026-08-07 note above; this was
+  aspirational until now, not actually true at v1.3.0
 - File system integration
 - Search + command palette
 - Basic AI assistance

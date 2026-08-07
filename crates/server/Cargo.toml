@@ -36,7 +36,15 @@ rust-embed = { version = "8", features = ["mime-guess"] }
 jsonwebtoken.workspace = true
 bcrypt.workspace = true
 rand.workspace = true
-sqlx.workspace = true
+sqlx = { workspace = true, features = ["postgres", "bigdecimal"] }
+urlencoding = "2"
 hex.workspace = true
 hmac.workspace = true
 sha2.workspace = true
+tiberius = { version = "0.12", default-features = false, features = ["tds73", "rustls", "chrono"] }
+tokio-util = { version = "0.7", features = ["compat"] }
+rsa = "0.9"
+pem = "3"
+
+[dev-dependencies]
+mockito = "1.4"

@@ -2,6 +2,15 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+mod athena;
+mod azure_synapse;
+mod bigquery;
+mod databricks;
+mod presto_trino;
+mod redshift;
+mod sigv4;
+mod snowflake;
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum CloudWarehouseType {
     Snowflake,
@@ -141,52 +150,36 @@ impl CloudWarehouseManager {
         }
     }
 
-    async fn test_snowflake(&self, _conn: &CloudWarehouseConnection) -> Result<String> {
-        // TODO: Implement Snowflake connection test
-        // Use snowflake-connector-python via Python subprocess
-        Ok("Snowflake connection test placeholder".to_string())
+    async fn test_snowflake(&self, conn: &CloudWarehouseConnection) -> Result<String> {
+        snowflake::test_connection(conn).await
     }
 
-    async fn test_bigquery(&self, _conn: &CloudWarehouseConnection) -> Result<String> {
-        // TODO: Implement BigQuery connection test
-        // Use google-cloud-bigquery SDK
-        Ok("BigQuery connection test placeholder".to_string())
+    async fn test_bigquery(&self, conn: &CloudWarehouseConnection) -> Result<String> {
+        bigquery::test_connection(conn).await
     }
 
-    async fn test_redshift(&self, _conn: &CloudWarehouseConnection) -> Result<String> {
-        // TODO: Implement Redshift connection test
-        // Use psycopg2 (PostgreSQL compatible)
-        Ok("Redshift connection test placeholder".to_string())
+    async fn test_redshift(&self, conn: &CloudWarehouseConnection) -> Result<String> {
+        redshift::test_connection(conn).await
     }
 
-    async fn test_azure_synapse(&self, _conn: &CloudWarehouseConnection) -> Result<String> {
-        // TODO: Implement Azure Synapse connection test
-        // Use pyodbc with ODBC driver
-        Ok("Azure Synapse connection test placeholder".to_string())
+    async fn test_azure_synapse(&self, conn: &CloudWarehouseConnection) -> Result<String> {
+        azure_synapse::test_connection(conn).await
     }
 
-    async fn test_databricks(&self, _conn: &CloudWarehouseConnection) -> Result<String> {
-        // TODO: Implement Databricks connection test
-        // Use databricks-sql-connector
-        Ok("Databricks connection test placeholder".to_string())
+    async fn test_databricks(&self, conn: &CloudWarehouseConnection) -> Result<String> {
+        databricks::test_connection(conn).await
     }
 
-    async fn test_athena(&self, _conn: &CloudWarehouseConnection) -> Result<String> {
-        // TODO: Implement Athena connection test
-        // Use boto3 (AWS SDK)
-        Ok("Athena connection test placeholder".to_string())
+    async fn test_athena(&self, conn: &CloudWarehouseConnection) -> Result<String> {
+        athena::test_connection(conn).await
     }
 
-    async fn test_presto(&self, _conn: &CloudWarehouseConnection) -> Result<String> {
-        // TODO: Implement Presto connection test
-        // Use prestodb-python
-        Ok("Presto connection test placeholder".to_string())
+    async fn test_presto(&self, conn: &CloudWarehouseConnection) -> Result<String> {
+        presto_trino::test_connection(conn, presto_trino::Dialect::Presto).await
     }
 
-    async fn test_trino(&self, _conn: &CloudWarehouseConnection) -> Result<String> {
-        // TODO: Implement Trino connection test
-        // Use trino-python-client
-        Ok("Trino connection test placeholder".to_string())
+    async fn test_trino(&self, conn: &CloudWarehouseConnection) -> Result<String> {
+        presto_trino::test_connection(conn, presto_trino::Dialect::Trino).await
     }
 
     pub async fn execute_query(
@@ -214,132 +207,40 @@ impl CloudWarehouseManager {
         }
     }
 
-    async fn execute_snowflake(
-        &self,
-        _conn: &CloudWarehouseConnection,
-        _query: &str,
-    ) -> Result<CloudQueryResult> {
-        // TODO: Execute query via Snowflake connector
-        Ok(CloudQueryResult {
-            columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![],
-            row_count: 0,
-            execution_time_ms: 0,
-            estimated_bytes_scanned: 0,
-            estimated_cost_usd: 0.0,
-        })
+    async fn execute_snowflake(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+        snowflake::execute_query(conn, query).await
     }
 
-    async fn execute_bigquery(
-        &self,
-        _conn: &CloudWarehouseConnection,
-        _query: &str,
-    ) -> Result<CloudQueryResult> {
-        // TODO: Execute query via BigQuery API
-        Ok(CloudQueryResult {
-            columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![],
-            row_count: 0,
-            execution_time_ms: 0,
-            estimated_bytes_scanned: 0,
-            estimated_cost_usd: 0.0,
-        })
+    async fn execute_bigquery(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+        bigquery::execute_query(conn, query).await
     }
 
-    async fn execute_redshift(
-        &self,
-        _conn: &CloudWarehouseConnection,
-        _query: &str,
-    ) -> Result<CloudQueryResult> {
-        // TODO: Execute query via Redshift (PostgreSQL protocol)
-        Ok(CloudQueryResult {
-            columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![],
-            row_count: 0,
-            execution_time_ms: 0,
-            estimated_bytes_scanned: 0,
-            estimated_cost_usd: 0.0,
-        })
+    async fn execute_redshift(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+        redshift::execute_query(conn, query).await
     }
 
     async fn execute_azure_synapse(
         &self,
-        _conn: &CloudWarehouseConnection,
-        _query: &str,
+        conn: &CloudWarehouseConnection,
+        query: &str,
     ) -> Result<CloudQueryResult> {
-        // TODO: Execute query via Azure Synapse (T-SQL)
-        Ok(CloudQueryResult {
-            columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![],
-            row_count: 0,
-            execution_time_ms: 0,
-            estimated_bytes_scanned: 0,
-            estimated_cost_usd: 0.0,
-        })
+        azure_synapse::execute_query(conn, query).await
     }
 
-    async fn execute_databricks(
-        &self,
-        _conn: &CloudWarehouseConnection,
-        _query: &str,
-    ) -> Result<CloudQueryResult> {
-        // TODO: Execute query via Databricks SQL API
-        Ok(CloudQueryResult {
-            columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![],
-            row_count: 0,
-            execution_time_ms: 0,
-            estimated_bytes_scanned: 0,
-            estimated_cost_usd: 0.0,
-        })
+    async fn execute_databricks(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+        databricks::execute_query(conn, query).await
     }
 
-    async fn execute_athena(
-        &self,
-        _conn: &CloudWarehouseConnection,
-        _query: &str,
-    ) -> Result<CloudQueryResult> {
-        // TODO: Execute query via Athena API (boto3)
-        Ok(CloudQueryResult {
-            columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![],
-            row_count: 0,
-            execution_time_ms: 0,
-            estimated_bytes_scanned: 0,
-            estimated_cost_usd: 0.0,
-        })
+    async fn execute_athena(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+        athena::execute_query(conn, query).await
     }
 
-    async fn execute_presto(
-        &self,
-        _conn: &CloudWarehouseConnection,
-        _query: &str,
-    ) -> Result<CloudQueryResult> {
-        // TODO: Execute query via Presto client
-        Ok(CloudQueryResult {
-            columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![],
-            row_count: 0,
-            execution_time_ms: 0,
-            estimated_bytes_scanned: 0,
-            estimated_cost_usd: 0.0,
-        })
+    async fn execute_presto(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+        presto_trino::execute_query(conn, query, presto_trino::Dialect::Presto).await
     }
 
-    async fn execute_trino(
-        &self,
-        _conn: &CloudWarehouseConnection,
-        _query: &str,
-    ) -> Result<CloudQueryResult> {
-        // TODO: Execute query via Trino client
-        Ok(CloudQueryResult {
-            columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![],
-            row_count: 0,
-            execution_time_ms: 0,
-            estimated_bytes_scanned: 0,
-            estimated_cost_usd: 0.0,
-        })
+    async fn execute_trino(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+        presto_trino::execute_query(conn, query, presto_trino::Dialect::Trino).await
     }
 
     pub async fn get_databases(&self, connection_id: &str) -> Result<Vec<DatasetInfo>> {
