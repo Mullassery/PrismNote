@@ -4,6 +4,8 @@ Fast, modern data-science notebook with built-in AI. Jupyter-compatible, integra
 
 PyPI: `pip install prismnote`
 
+[![CI](https://github.com/Mullassery/PrismNote/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PrismNote/actions/workflows/ci.yml)
+
 **SQL Warehouse Operations (10 MCP tools)**
 
 ## Overview
