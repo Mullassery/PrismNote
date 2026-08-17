@@ -1,79 +1,106 @@
 # PrismNote
 
-Fast, modern data-science notebook with built-in AI. Jupyter-compatible, integrated intelligence, SQL warehouse integration.
-
-PyPI: `pip install prismnote`
+A Jupyter-compatible data-science notebook with a Rust backend and a React
+frontend: real local SQL execution, a real sandboxed code-execution engine,
+and connectors for cloud data warehouses.
 
 [![CI](https://github.com/Mullassery/PrismNote/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PrismNote/actions/workflows/ci.yml)
 
-**SQL Warehouse Operations (10 MCP tools)**
+## What this is
 
-## Overview
-See [INSTALL.md](.github/INSTALL.md) for platform-specific installation guidance.
+- **Backend:** Rust (Axum). Serves the API, runs SQL against local and
+  remote databases, and launches Docker containers for sandboxed code
+  execution.
+- **Frontend:** React + TypeScript (Vite). Notebook UI, SQL cells, schema
+  explorer, results grid.
+- The release binary embeds the built frontend, so `prismnote` is a single
+  executable that serves the whole app.
 
+## SQL execution
 
-PrismNote is part of the unified **MCP 2.0 Mega-Platform** (207 tools across 18 projects). This project provides AI-native tools via Model Context Protocol (MCP 2.0).
+SQL cells run against real databases — there is no mocked or placeholder
+query path:
 
-## Features
-See [INSTALL.md](.github/INSTALL.md) for platform-specific installation guidance.
+| Backend | Status |
+|---|---|
+| SQLite | Real, embedded (via `sqlx`), no server required |
+| DuckDB | Real, embedded (bundled DuckDB, compiled from source), no server required |
+| PostgreSQL | Real, via `sqlx`; requires a reachable Postgres server |
+| MySQL | Real, via `sqlx`; requires a reachable MySQL server |
 
-- **MCP 2.0 Support**: Discoverable via MCP protocol protocol on port 8767
-- **Async Handlers**: All tools are async-first for high-performance execution
-- **Type-Safe**: 100% Python type hints throughout
-- **Zero External Dependencies**: Fallback implementations included
-- **Production-Ready**: Mock implementations ready for real data integration
+All four are covered by integration tests that run genuine
+`CREATE TABLE` / `INSERT` / `SELECT` round trips
+(`crates/server/src/db/executor.rs`). SQLite and DuckDB tests always run.
+The Postgres/MySQL tests connect to a real server and skip (rather than
+fail) when one isn't reachable — point them at a running server with
+`PRISMNOTE_TEST_PG_PORT` / `PRISMNOTE_TEST_MYSQL_PORT`.
 
-## Installation
-See [INSTALL.md](.github/INSTALL.md) for platform-specific installation guidance.
+MongoDB is not implemented; connecting to it returns an explicit error
+rather than a fake success.
+
+## Sandboxed code execution
+
+`docker_executor.rs` runs untrusted code in a brand-new, disposable Docker
+container per execution (`docker run --rm`):
+
+- No network access by default (`--network=none`)
+- Memory, CPU, and process-count limits enforced per run
+- A wall-clock timeout that force-kills and cleans up the container
+- Real stdout/stderr/exit-code capture
+
+Requires a working Docker installation. Supported languages: Python,
+Bash/shell, JavaScript (Node), Ruby.
+
+## Cloud warehouse connectors
+
+Real connection + query execution for Snowflake, BigQuery, Redshift, Azure
+Synapse, Databricks, Athena, Presto, and Trino (`crates/server/src/cloud_warehouse/`).
+AWS-signed requests (Athena, Redshift) use a real SigV4 implementation.
+
+## Building
 
 ```bash
-pip install PrismNote
+git clone https://github.com/Mullassery/PrismNote.git
+cd PrismNote
+make build
 ```
 
-Wheels-only distribution (recommended for production):
+`make build` builds the frontend first and embeds it into the release
+binary — this is the only build path that produces a binary that actually
+serves the UI. Running `cargo build --release` directly will build a
+backend with no frontend assets. The binary is written to
+`target/release/prismnote`.
+
+Requirements: Rust (stable), Node 18+, and Docker if you want sandboxed
+code execution or want to test the container-management endpoints.
+
+### Development
 
 ```bash
-pip install --only-binary=:all: PrismNote
+# Terminal 1: backend on http://localhost:8000
+cargo run
+
+# Terminal 2: frontend dev server on http://localhost:5173
+cd frontend && npm install && npm run dev
 ```
 
-## MCP 2.0 Integration
-See [INSTALL.md](.github/INSTALL.md) for platform-specific installation guidance.
+### Tests
 
-Enable MCP tools on port **8767** (see MCP_QUICKSTART.md for details).
+```bash
+cargo test --workspace --release   # backend
+cd frontend && npm test            # frontend (vitest)
+```
 
-AI systems discover all 207 tools across 18 projects, enabling:
-- Multi-project workflows
-- Intelligent query optimization (60-75% reduction in context usage)
-- Cross-database joins
-- Cost-optimized inference routing
+## Project layout
 
-## Quick Start
-See [INSTALL.md](.github/INSTALL.md) for platform-specific installation guidance.
-
-See [MCP_QUICKSTART.md](PrismNote/MCP_QUICKSTART.md) for detailed tool documentation.
-
-## Part of Unified Platform
-See [INSTALL.md](.github/INSTALL.md) for platform-specific installation guidance.
-
-18 projects, 207 tools, 18 simultaneous MCP endpoints (8765-8782).
-
-**All tools discoverable via MCP protocol in a single connection.**
-
-## Version History
-See [INSTALL.md](.github/INSTALL.md) for platform-specific installation guidance.
-
-### v2.0.0 (Current)
-- ✅ MCP 2.0 Support
-- ✅ Integrated with 17 other projects
-- ✅ 207 unified MCP tools
-- ✅ Intelligent orchestration
-- ✅ Production-ready (wheels only)
+```
+crates/server/   Rust backend: API, SQL executors, Docker sandbox, cloud warehouse connectors
+frontend/        React app (components, hooks, API clients)
+python/          PyPI launcher package
+docs/            architecture notes and screenshots
+```
 
 ## License
-See [INSTALL.md](.github/INSTALL.md) for platform-specific installation guidance.
 
-MIT
-
----
-
-**MCP 2.0 Mega-Platform | v2.0.0 | Wheels-Only Distribution**
+Proprietary — free to use with explicit attribution. See [LICENSE](LICENSE)
+for the full terms.
