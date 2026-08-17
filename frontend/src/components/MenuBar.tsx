@@ -252,7 +252,7 @@ const [open, setOpen] = useState<string | null>(null)
       </button>
 
       {findOpen && <FindReplace onClose={() => setFindOpen(false)} />}
-      {shortcutsOpen && <KeyboardShortcutsModal onClose={() => setShortcutsOpen(false)} />}
+      {shortcutsOpen && <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />}
     </div>
   )
 }

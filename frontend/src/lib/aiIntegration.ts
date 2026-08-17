@@ -11,7 +11,13 @@
  * - Caching and rate limiting
  */
 
-import { CellLanguage } from './languages'
+import { LANGUAGES } from './languages'
+import type { CellLanguage } from './languages'
+
+// Re-exported so consumers (e.g. `AIAssistant.tsx`) can import the language
+// type alongside the AI types from this module instead of reaching into
+// `./languages` separately.
+export type { CellLanguage }
 
 export type AIProvider = 'claude' | 'openai' | 'ollama' | 'custom'
 export type AIAction =
@@ -334,6 +340,18 @@ function buildPrompt(template: string, request: AIRequest): string {
 }
 
 /**
+ * Minimal ambient declaration for `process.env` reads below. The app bundle
+ * (tsconfig.app.json) deliberately doesn't pull in full `@types/node` since
+ * this is browser code, but these provider functions are written to also
+ * work when hosted in a Node-capable shell that injects `process.env`
+ * (e.g. local dev via a proxy, or an Electron-style wrapper) — so we declare
+ * just enough of the shape to type-check without changing runtime behavior:
+ * if `process` genuinely doesn't exist at runtime, these reads still throw
+ * exactly as they did before this file type-checked.
+ */
+declare const process: { env: Record<string, string | undefined> }
+
+/**
  * Call Claude API
  */
 async function callClaudeAPI(prompt: string, request: AIRequest): Promise<AIResponse> {
@@ -386,8 +404,8 @@ async function callClaudeAPI(prompt: string, request: AIRequest): Promise<AIResp
     const suggestionsText = suggestionsMatch ? suggestionsMatch[1] : ''
     const suggestions = suggestionsText
       .split('\n')
-      .filter(line => line.trim().match(/^[-•*\d.]/))
-      .map(line => line.replace(/^[-•*\d.]\s*/, '').trim())
+      .filter((line: string) => line.trim().match(/^[-•*\d.]/))
+      .map((line: string) => line.replace(/^[-•*\d.]\s*/, '').trim())
       .filter(Boolean)
 
     return {
@@ -487,8 +505,8 @@ async function callOpenAIAPI(prompt: string, request: AIRequest): Promise<AIResp
     const suggestionsText = suggestionsMatch ? suggestionsMatch[1] : ''
     const suggestions = suggestionsText
       .split('\n')
-      .filter(line => line.trim().match(/^[-•*\d.]/))
-      .map(line => line.replace(/^[-•*\d.]\s*/, '').trim())
+      .filter((line: string) => line.trim().match(/^[-•*\d.]/))
+      .map((line: string) => line.replace(/^[-•*\d.]\s*/, '').trim())
       .filter(Boolean)
 
     return {
@@ -553,8 +571,8 @@ async function callOllamaAPI(prompt: string, request: AIRequest): Promise<AIResp
     const suggestionsText = suggestionsMatch ? suggestionsMatch[1] : ''
     const suggestions = suggestionsText
       .split('\n')
-      .filter(line => line.trim().match(/^[-•*\d.]/))
-      .map(line => line.replace(/^[-•*\d.]\s*/, '').trim())
+      .filter((line: string) => line.trim().match(/^[-•*\d.]/))
+      .map((line: string) => line.replace(/^[-•*\d.]\s*/, '').trim())
       .filter(Boolean)
 
     return {
@@ -582,7 +600,12 @@ export async function discoverMCPTools(): Promise<MCPTool[]> {
  * Get suggested actions for current code
  */
 export function getSuggestedActions(language: CellLanguage, hasError: boolean): AIAction[] {
-  const base: AIAction[] = ['explain', 'optimize', 'document', 'refactor']
+  // 'optimize' only makes sense for languages that actually execute
+  // (e.g. not markdown/raw cells).
+  const executable = LANGUAGES[language]?.features.execution ?? true
+  const base: AIAction[] = executable
+    ? ['explain', 'optimize', 'document', 'refactor']
+    : ['explain', 'document', 'refactor']
 
   if (hasError) {
     return ['fix', 'debug', ...base]
@@ -594,7 +617,7 @@ export function getSuggestedActions(language: CellLanguage, hasError: boolean): 
 /**
  * Check AI provider health
  */
-export async function checkProviderHealth(provider: AIProvider): Promise<boolean> {
+export async function checkProviderHealth(_provider: AIProvider): Promise<boolean> {
   try {
     // Would make test request to provider
     return true

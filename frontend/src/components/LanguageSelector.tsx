@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { ChevronDown, Search, Zap, Eye, Share2, Info } from 'lucide-react'
-import { CellLanguage, LANGUAGES, getLanguagesSorted, getInteropLanguages } from '../lib/languages'
+import { LANGUAGES, getLanguagesSorted, getInteropLanguages } from '../lib/languages'
+import type { CellLanguage } from '../lib/languages'
 
 interface LanguageSelectorProps {
   value: CellLanguage
@@ -103,35 +104,33 @@ export default function LanguageSelector({
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="font-medium">{config.name}</div>
-                          <div className="text-xs text-slate-400 mt-0.5">
-                            {config.description}
-                          </div>
+                          {showDetails && (
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              {config.description}
+                            </div>
+                          )}
                         </div>
                         <div className="flex gap-1 ml-2 flex-shrink-0">
+                          {/* lucide-react icons in this version don't accept a `title`
+                              prop directly — wrap in a span so the tooltip still works. */}
                           {config.features.execution && (
-                            <Zap
-                              size={12}
-                              className="text-green-400"
-                              title="Executable"
-                            />
+                            <span title="Executable">
+                              <Zap size={12} className="text-green-400" />
+                            </span>
                           )}
                           {config.features.visualization && (
-                            <Eye
-                              size={12}
-                              className="text-amber-400"
-                              title="Visualizable"
-                            />
+                            <span title="Visualizable">
+                              <Eye size={12} className="text-amber-400" />
+                            </span>
                           )}
                           {config.features.interop.length > 0 && (
-                            <Share2
-                              size={12}
-                              className="text-blue-400"
-                              title="Has interop"
-                            />
+                            <span title="Has interop">
+                              <Share2 size={12} className="text-blue-400" />
+                            </span>
                           )}
                         </div>
                       </div>
-                      {config.runtimes.length > 0 && (
+                      {showDetails && config.runtimes.length > 0 && (
                         <div className="text-xs text-slate-500 mt-1.5">
                           {config.runtimes.slice(0, 2).join(', ')}
                           {config.runtimes.length > 2 ? `... +${config.runtimes.length - 2} more` : ''}

@@ -2,9 +2,9 @@ import { useState, useMemo } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { useSchemaCache } from '../hooks/useSchemaCache'
 import { queryDatabase } from '../api/data'
+import type { DbType } from '../lib/schemaParser'
 
 type Tab = 'columns' | 'preview' | 'stats'
-type DbType = 'postgresql' | 'mysql' | 'sqlite' | 'duckdb' | 'snowflake' | 'bigquery'
 
 interface TableMetadataPanelProps {
   connId: string

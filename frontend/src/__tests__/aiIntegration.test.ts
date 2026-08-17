@@ -4,19 +4,14 @@
  * Coverage: providers, actions, context management, error handling
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
-  AIRequest,
-  AIResponse,
-  AIProvider,
-  AIAction,
-  processAIRequest,
   getSuggestedActions,
   checkProviderHealth,
   getAIUsageStats,
-  executeMCPTool,
 } from '../lib/aiIntegration'
-import { CellLanguage } from '../lib/languages'
+import type { AIRequest, AIResponse, AIProvider, AIAction } from '../lib/aiIntegration'
+import type { CellLanguage } from '../lib/languages'
 
 describe('AI Integration System', () => {
   describe('Provider Configuration', () => {
@@ -34,7 +29,7 @@ describe('AI Integration System', () => {
         ollama: 'neural-chat',
       }
 
-      Object.entries(expectedDefaults).forEach(([provider, model]) => {
+      Object.entries(expectedDefaults).forEach(([, model]) => {
         // Verify in provider config
         expect(model).toBeTruthy()
       })

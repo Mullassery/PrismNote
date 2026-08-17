@@ -53,6 +53,7 @@ export default function SqlResultsView({ result, onExport }: SqlResultsViewProps
     a.download = `query-results-${Date.now()}.csv`
     a.click()
     URL.revokeObjectURL(url)
+    onExport?.('csv')
   }
 
   const handleExportJson = () => {
@@ -72,6 +73,7 @@ export default function SqlResultsView({ result, onExport }: SqlResultsViewProps
     a.download = `query-results-${Date.now()}.json`
     a.click()
     URL.revokeObjectURL(url)
+    onExport?.('json')
   }
 
   return (

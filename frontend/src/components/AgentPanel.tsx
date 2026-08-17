@@ -21,6 +21,7 @@ import {
   FileText,
   Database,
   Eye,
+  Search,
 } from 'lucide-react'
 import MDPreview from '@uiw/react-markdown-preview'
 import { useNotebookStore } from '../hooks/useNotebookRedux'

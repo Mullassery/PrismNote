@@ -91,8 +91,13 @@ describe('Language Interoperability', () => {
     })
 
     it('Rust should interop with WebAssembly', () => {
-      const rustInterop = getInteropLanguages('rust')
-      expect(rustInterop).toContain('wasm')
+      // 'wasm' is a compile target, not a full notebook CellLanguage, so it's
+      // tracked in the language config directly rather than surfaced by
+      // getInteropLanguages() (which only returns other *executable*
+      // notebook languages — filtering out targets that aren't valid
+      // CellLanguage keys, since the UI renders `LANGUAGES[lang].name` for
+      // each entry it returns).
+      expect(LANGUAGES.rust.features.interop).toContain('wasm')
     })
 
     it('Go should interop with C++', () => {
@@ -101,8 +106,11 @@ describe('Language Interoperability', () => {
     })
 
     it('Scala should interop with Java', () => {
-      const scalaInterop = getInteropLanguages('scala')
-      expect(scalaInterop).toContain('java')
+      // Same reasoning as the Rust/WebAssembly case above: 'java' isn't a
+      // standalone notebook CellLanguage (Scala cells already run on the
+      // JVM), so it's only tracked in the language config, not returned by
+      // the filtered getInteropLanguages() helper.
+      expect(LANGUAGES.scala.features.interop).toContain('java')
     })
 
     it('Zig should interop with C/C++', () => {

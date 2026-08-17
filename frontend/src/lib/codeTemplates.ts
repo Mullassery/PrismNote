@@ -8,7 +8,7 @@
  * - Auto-completion setup
  */
 
-import { CellLanguage } from './languages'
+import type { CellLanguage } from './languages'
 
 export interface CodeTemplate {
   name: string

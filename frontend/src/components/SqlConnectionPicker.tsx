@@ -28,8 +28,7 @@ export default function SqlConnectionPicker({
   useEffect(() => {
     const loadConnections = async () => {
       try {
-        const response = await listDatabases()
-        const conns = (response.data || response) as DbConnection[]
+        const conns = await listDatabases()
         setConnections(conns)
 
         // Auto-select first connection if none selected
@@ -81,6 +80,9 @@ export default function SqlConnectionPicker({
         <Database size={14} />
         <span className="flex-1 text-left">
           {selectedConn?.name || 'Select connection'}
+          {selectedConn && selectedDialect && (
+            <span className="ml-1.5 opacity-70">({getSqlDialect(selectedDialect).name})</span>
+          )}
         </span>
         <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>

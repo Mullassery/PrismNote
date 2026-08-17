@@ -94,7 +94,14 @@ export default function BottomPanel({
     }
   }, []) // Only run on mount
 
-
+  // Propagate the root pane's history back up to the parent (legacy
+  // single-history persistence — e.g. App.tsx keeps terminal output alive
+  // across BottomPanel remounts via `terminalHistory`/`onTerminalHistoryChange`).
+  useEffect(() => {
+    if (terminalConfig.type === 'pane' && onTerminalHistoryChange) {
+      onTerminalHistoryChange(terminalConfig.history ?? [])
+    }
+  }, [terminalConfig, onTerminalHistoryChange])
 
   // ---- variable explorer (introspects the live kernel namespace) ----
   const [variables, setVariables] = useState<any[]>([])
@@ -130,7 +137,7 @@ export default function BottomPanel({
     ({ o }) => o.output_type === 'stream' || o.output_type === 'execute_result' || o.output_type === 'error'
   )
 
-  const tabs: { id: Tab; label: string; icon: any; badge?: number }[] = [
+  const tabs: { id: BottomPanelTab; label: string; icon: any; badge?: number }[] = [
     { id: 'output', label: 'Output', icon: ListChecks, badge: textOutputs.length || undefined },
     { id: 'variables', label: 'Variables', icon: Variable, badge: variables.length || undefined },
     { id: 'lineage', label: 'Lineage', icon: GitBranch },

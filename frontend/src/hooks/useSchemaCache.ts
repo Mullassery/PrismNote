@@ -8,7 +8,7 @@
  */
 
 import { create } from 'zustand'
-import type { SchemaTable, ColumnInfo, ConstraintInfo } from '../lib/schemaParser'
+import type { SchemaTable, ColumnInfo, ConstraintInfo, DbType } from '../lib/schemaParser'
 import {
   buildSchemaQuery,
   buildColumnsQuery,
@@ -20,8 +20,6 @@ import {
 import type { InferredRelationship, TableClassification } from '../lib/relationshipInference'
 import { inferRelationships } from '../lib/relationshipInference'
 import { queryDatabase } from '../api/data'
-
-type DbType = 'postgresql' | 'mysql' | 'sqlite' | 'duckdb' | 'snowflake' | 'bigquery'
 
 interface ConnectionSchema {
   tables: SchemaTable[]

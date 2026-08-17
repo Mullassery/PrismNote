@@ -327,7 +327,7 @@ class MCPClient {
    *
    * See: DEVELOPMENT_ROADMAP.md Phase 3.2.1
    */
-  private async _queryStdio(method: string, params: any): Promise<any> {
+  private async _queryStdio(_method: string, _params: any): Promise<any> {
     throw new Error(
       'Stdio transport is not yet implemented.\n' +
       'Please use HTTP transport instead (http://localhost:3001).\n' +

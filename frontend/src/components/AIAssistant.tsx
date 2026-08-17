@@ -8,15 +8,14 @@
 import { useState, useCallback } from 'react'
 import { Sparkles, Send, Copy, Check, Settings, RefreshCw } from 'lucide-react'
 import {
-  AIAction,
-  AIProvider,
-  AIRequest,
-  AIResponse,
+  type AIAction,
+  type AIProvider,
+  type AIRequest,
   processAIRequest,
   AI_ACTIONS,
   AI_PROVIDERS,
   getSuggestedActions,
-  CellLanguage,
+  type CellLanguage,
 } from '../lib/aiIntegration'
 
 interface AIAssistantProps {

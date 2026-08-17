@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { AlertCircle, ChevronDown, X } from 'lucide-react'
 
 interface ErrorCardProps {

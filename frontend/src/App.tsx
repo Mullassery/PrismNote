@@ -19,12 +19,14 @@ import {
   PanelRight,
   PanelBottom,
   Command as CommandIcon,
+  Rocket,
 } from 'lucide-react'
 import { Briefcase, GitBranch, Database, Table2, Library, BarChart3, Network, GitGraph, Sparkles } from 'lucide-react'
 import Notebook from './components/Notebook'
 import SchemaExplorer from './components/SchemaExplorer'
 import TableMetadataPanel from './components/TableMetadataPanel'
 import RelationshipMap from './components/RelationshipMap'
+import { toDbType, type DbType } from './lib/schemaParser'
 import DataExplorer, { ExplorerPicker, type ExplorerTarget } from './components/DataExplorer'
 import DataCatalogPanel from './components/DataCatalogPanel'
 import AIAssistant from './components/AIAssistant'
@@ -79,7 +81,7 @@ function App() {
     connId: string
     tableName: string
     schemaName: string
-    dbType: string
+    dbType: DbType
   } | null>(null)
   const [relationshipMapOpen, setRelationshipMapOpen] = useState(false)
   const { currentNotebookId, notebooks, currentNotebook, createNotebook, addCell, executeCell, updateCell } = useNotebookStore()
@@ -207,7 +209,7 @@ function App() {
   const togglePanel = (p: 'files' | 'terminal' | 'notebook') => setPanels((s) => ({ ...s, [p]: !s[p] }))
 
   const openTableMeta = (connId: string, tableName: string, schemaName: string, dbType: string) => {
-    setSelectedTableMeta({ connId, tableName, schemaName, dbType })
+    setSelectedTableMeta({ connId, tableName, schemaName, dbType: toDbType(dbType) })
     setTableMetaOpen(true)
   }
 

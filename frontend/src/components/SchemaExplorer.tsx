@@ -29,8 +29,7 @@ export default function SchemaExplorer({ onSelectTable }: SchemaExplorerProps) {
   useEffect(() => {
     const loadConnections = async () => {
       try {
-        const response = await listDatabases()
-        const conns = (response.data || response) as DbConnection[]
+        const conns = await listDatabases()
         setConnections(conns)
         // Auto-expand first connection
         if (conns.length > 0) {

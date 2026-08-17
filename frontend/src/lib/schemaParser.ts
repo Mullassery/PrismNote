@@ -29,7 +29,19 @@ export interface ConstraintInfo {
   name?: string
 }
 
-type DbType = 'postgresql' | 'mysql' | 'sqlite' | 'duckdb' | 'snowflake' | 'bigquery'
+export type DbType = 'postgresql' | 'mysql' | 'sqlite' | 'duckdb' | 'snowflake' | 'bigquery'
+
+const DB_TYPES: DbType[] = ['postgresql', 'mysql', 'sqlite', 'duckdb', 'snowflake', 'bigquery']
+
+/** Narrow an arbitrary string (e.g. a connection's `db_type` field) to `DbType`. */
+export function isDbType(value: string): value is DbType {
+  return (DB_TYPES as string[]).includes(value)
+}
+
+/** Validate/cast a free-form string to `DbType`, falling back when it doesn't match. */
+export function toDbType(value: string, fallback: DbType = 'postgresql'): DbType {
+  return isDbType(value) ? value : fallback
+}
 
 /**
  * Build a SQL query to list all tables and views in a database
@@ -290,10 +302,10 @@ export function buildConstraintsQuery(
 /**
  * Build a SQL query to get row count and approximate table size
  */
-export function buildStatsQuery(_dbType: DbType, tableName: string, schemaName?: string): string {
+export function buildStatsQuery(dbType: DbType, tableName: string, schemaName?: string): string {
   const table = schemaName ? `${escapeSql(schemaName)}.${escapeSql(tableName)}` : escapeSql(tableName)
 
-  switch (_dbType) {
+  switch (dbType) {
     case 'postgresql':
       return `
         SELECT

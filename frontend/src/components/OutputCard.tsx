@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { FileText, Table2, BarChart3, AlertCircle, Code, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 

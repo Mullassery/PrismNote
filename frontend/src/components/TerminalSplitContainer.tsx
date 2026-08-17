@@ -5,6 +5,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import type { JSX } from 'react'
 import { Plus, Trash2, Code2, Split } from 'lucide-react'
 import TerminalPane from './TerminalPane'
 

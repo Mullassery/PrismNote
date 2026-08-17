@@ -52,7 +52,10 @@ export const LANGUAGES: Record<CellLanguage, LanguageConfig> = {
       syntax_highlighting: true,
       execution: true,
       visualization: true,
-      interop: ['sql', 'javascript', 'r', 'julia'],
+      // Reciprocal of cpp/rust/cuda's declared interop with python below —
+      // interop is a mutual relationship (e.g. C++ interops with Python via
+      // pybind11, so Python interops with C++ too).
+      interop: ['sql', 'javascript', 'r', 'julia', 'cpp', 'rust', 'cuda'],
     },
     description: 'General-purpose scripting language. Best for data science and ML.',
   },
@@ -336,6 +339,61 @@ export function getVisualizableLanguages(): CellLanguage[] {
   return Object.entries(LANGUAGES)
     .filter(([_, config]) => config.features.visualization)
     .map(([key]) => key as CellLanguage)
+}
+
+/**
+ * SQL dialect identifiers — deliberately broader than `schemaParser.ts`'s
+ * `DbType` (which only covers backends we can introspect via
+ * INFORMATION_SCHEMA/PRAGMA queries). This set matches the SQL language's
+ * `runtimes` list above and is used purely for connection-picker display.
+ */
+export type SqlDialectId =
+  | 'postgresql'
+  | 'mysql'
+  | 'sqlite'
+  | 'duckdb'
+  | 'snowflake'
+  | 'bigquery'
+  | 'redshift'
+  | 'tsql'
+  | 'oracle'
+
+export interface SqlDialectConfig {
+  id: SqlDialectId
+  name: string
+  aliases: string[]
+}
+
+export const SQL_DIALECTS: Record<SqlDialectId, SqlDialectConfig> = {
+  postgresql: { id: 'postgresql', name: 'PostgreSQL', aliases: ['postgresql', 'postgres', 'pg'] },
+  mysql: { id: 'mysql', name: 'MySQL', aliases: ['mysql', 'mariadb'] },
+  sqlite: { id: 'sqlite', name: 'SQLite', aliases: ['sqlite', 'sqlite3'] },
+  duckdb: { id: 'duckdb', name: 'DuckDB', aliases: ['duckdb'] },
+  snowflake: { id: 'snowflake', name: 'Snowflake', aliases: ['snowflake'] },
+  bigquery: { id: 'bigquery', name: 'BigQuery', aliases: ['bigquery', 'bq'] },
+  redshift: { id: 'redshift', name: 'Redshift', aliases: ['redshift'] },
+  tsql: { id: 'tsql', name: 'T-SQL', aliases: ['tsql', 'mssql', 'sqlserver', 'sql-server', 't-sql'] },
+  oracle: { id: 'oracle', name: 'Oracle', aliases: ['oracle', 'oracledb'] },
+}
+
+/**
+ * Detect the canonical SQL dialect id from a free-form database type string
+ * (e.g. a connection's `db_type` field, which may be 'postgres', 'pg', etc.)
+ * Falls back to PostgreSQL — the most common default — when unrecognized.
+ */
+export function detectSqlDialect(dbType: string | null | undefined): SqlDialectId {
+  const normalized = (dbType || '').toLowerCase().trim()
+  for (const dialect of Object.values(SQL_DIALECTS)) {
+    if (dialect.aliases.includes(normalized)) return dialect.id
+  }
+  return 'postgresql'
+}
+
+/**
+ * Get the display config (name, aliases) for a SQL dialect id.
+ */
+export function getSqlDialect(dialect: SqlDialectId): SqlDialectConfig {
+  return SQL_DIALECTS[dialect]
 }
 
 /**

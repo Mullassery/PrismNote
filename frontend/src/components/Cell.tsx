@@ -62,16 +62,9 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const promptRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<any>(null)
   const monacoRef = useRef<any>(null)
-  const handleRunRef = useRef(handleRun)
-  const openAiRef = useRef(openAi)
 
   const sourceText = Array.isArray(cell.source) ? cell.source.join('') : cell.source
   const cellError = cell.cell_type === 'code' ? errorFromOutputs(cell.outputs) : null
-
-  // Keep refs in sync with current functions on every render, so Monaco's
-  // registered commands (via addCommand) always call the latest version.
-  handleRunRef.current = handleRun
-  openAiRef.current = openAi
 
   // Live code-font updates broadcast from the notebook header.
   useEffect(() => {
@@ -176,6 +169,20 @@ function CellInner({ cell, cellIndex }: CellProps) {
     setAiError(null)
     setTimeout(() => promptRef.current?.focus(), 0)
   }
+
+  // `handleRun`/`openAi` are re-created every render (they're plain closures,
+  // not useCallback), but Monaco's addCommand only captures whatever function
+  // reference was passed in at mount time. These refs — kept in sync after
+  // every render via the effect below (writing to a ref during render itself
+  // is impure and unsafe under concurrent rendering) — let the Monaco commands
+  // registered in handleEditorMount always invoke the *current* version
+  // instead of a stale first-render one.
+  const handleRunRef = useRef(handleRun)
+  const openAiRef = useRef(openAi)
+  useEffect(() => {
+    handleRunRef.current = handleRun
+    openAiRef.current = openAi
+  })
 
   const runAiEdit = async () => {
     const instruction = aiPrompt.trim()
@@ -318,7 +325,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
           {cell.cell_type === 'code' && language === 'sql' && (
             <SqlConnectionPicker
               selectedConnId={selectedSqlConnection}
-              onSelect={(connId, dbType) => {
+              onSelect={(connId, _dbType) => {
                 setSelectedSqlConnection(connId)
                 updateCell(cellIndex, { sqlConnection: connId })
               }}

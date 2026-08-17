@@ -15,7 +15,15 @@
  * - Markup: Markdown, Raw Text
  */
 
-import { CellLanguage } from './languages'
+import type { CellLanguage } from './languages'
+
+/**
+ * Minimal ambient declaration for `process.env` reads below (database
+ * connection env vars). The app bundle deliberately doesn't pull in full
+ * `@types/node` (browser code), so this declares just enough shape to
+ * type-check without changing runtime behavior.
+ */
+declare const process: { env: Record<string, string | undefined> }
 
 export interface ExecutionRequest {
   code: string
@@ -308,7 +316,7 @@ const sessionKernels = new Map<string, any>()
 /**
  * Python executor - IPython kernel via REST API
  */
-async function executePython(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
+async function executePython(code: string, sessionId: string, _timeout: number): Promise<ExecutionResult> {
   const startTime = Date.now()
 
   try {
@@ -398,7 +406,7 @@ async function executePython(code: string, sessionId: string, timeout: number): 
 /**
  * R executor - via Jupyter R kernel (IRkernel)
  */
-async function executeR(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
+async function executeR(code: string, sessionId: string, _timeout: number): Promise<ExecutionResult> {
   const startTime = Date.now()
 
   try {
@@ -491,7 +499,7 @@ async function executeR(code: string, sessionId: string, timeout: number): Promi
 async function executeJulia(
   code: string,
   sessionId: string,
-  timeout: number
+  _timeout: number
 ): Promise<ExecutionResult> {
   const startTime = Date.now()
 
@@ -664,7 +672,7 @@ interface ConnectionInfo {
 /**
  * Get connection info for database
  */
-function getConnectionInfo(sessionId: string): ConnectionInfo | null {
+function getConnectionInfo(_sessionId: string): ConnectionInfo | null {
   // Try to get from environment variables
   const connStr = process.env.DB_CONNECTION_STRING
   const dbType = process.env.DB_TYPE || 'postgresql'
@@ -711,7 +719,7 @@ function getConnectionInfo(sessionId: string): ConnectionInfo | null {
 async function executeQuery(
   query: string,
   connInfo: ConnectionInfo,
-  timeout: number
+  _timeout: number
 ): Promise<{
   rows: Record<string, any>[]
   rowCount: number
@@ -752,7 +760,7 @@ async function executeQuery(
 /**
  * C++ executor - xeus-cling interactive C++ kernel
  */
-async function executeCpp(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
+async function executeCpp(code: string, sessionId: string, _timeout: number): Promise<ExecutionResult> {
   const startTime = Date.now()
 
   try {
@@ -875,7 +883,7 @@ async function executeGo(code: string, sessionId: string, timeout: number): Prom
 /**
  * Scala executor - via scala REPL
  */
-async function executeScala(code: string, sessionId: string, timeout: number): Promise<ExecutionResult> {
+async function executeScala(code: string, sessionId: string, _timeout: number): Promise<ExecutionResult> {
   const startTime = Date.now()
 
   try {
