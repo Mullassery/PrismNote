@@ -207,15 +207,27 @@ impl CloudWarehouseManager {
         }
     }
 
-    async fn execute_snowflake(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+    async fn execute_snowflake(
+        &self,
+        conn: &CloudWarehouseConnection,
+        query: &str,
+    ) -> Result<CloudQueryResult> {
         snowflake::execute_query(conn, query).await
     }
 
-    async fn execute_bigquery(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+    async fn execute_bigquery(
+        &self,
+        conn: &CloudWarehouseConnection,
+        query: &str,
+    ) -> Result<CloudQueryResult> {
         bigquery::execute_query(conn, query).await
     }
 
-    async fn execute_redshift(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+    async fn execute_redshift(
+        &self,
+        conn: &CloudWarehouseConnection,
+        query: &str,
+    ) -> Result<CloudQueryResult> {
         redshift::execute_query(conn, query).await
     }
 
@@ -227,19 +239,35 @@ impl CloudWarehouseManager {
         azure_synapse::execute_query(conn, query).await
     }
 
-    async fn execute_databricks(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+    async fn execute_databricks(
+        &self,
+        conn: &CloudWarehouseConnection,
+        query: &str,
+    ) -> Result<CloudQueryResult> {
         databricks::execute_query(conn, query).await
     }
 
-    async fn execute_athena(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+    async fn execute_athena(
+        &self,
+        conn: &CloudWarehouseConnection,
+        query: &str,
+    ) -> Result<CloudQueryResult> {
         athena::execute_query(conn, query).await
     }
 
-    async fn execute_presto(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+    async fn execute_presto(
+        &self,
+        conn: &CloudWarehouseConnection,
+        query: &str,
+    ) -> Result<CloudQueryResult> {
         presto_trino::execute_query(conn, query, presto_trino::Dialect::Presto).await
     }
 
-    async fn execute_trino(&self, conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+    async fn execute_trino(
+        &self,
+        conn: &CloudWarehouseConnection,
+        query: &str,
+    ) -> Result<CloudQueryResult> {
         presto_trino::execute_query(conn, query, presto_trino::Dialect::Trino).await
     }
 

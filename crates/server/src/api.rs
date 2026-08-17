@@ -9,9 +9,9 @@ use axum::{
 use chrono;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use sqlx;
 use std::sync::Arc;
 use uuid::Uuid;
-use sqlx;
 
 #[derive(Serialize)]
 pub struct NotebookList {
@@ -2134,6 +2134,10 @@ pub struct ExecuteSQLRequest {
     pub connection_id: String,
 }
 
+// Documents the response shape of `execute_sql` below, which actually
+// returns a superset (adds `html`/`optimizations`) as an ad-hoc `json!()`
+// rather than this typed struct, so it isn't directly constructed.
+#[allow(dead_code)]
 #[derive(Serialize)]
 pub struct ExecuteSQLResponse {
     pub columns: Vec<String>,
@@ -2147,27 +2151,51 @@ pub async fn execute_sql(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let optimizations = crate::sql_executor::SQLExecutor::analyze_query(&req.query);
 
-    // Format result as HTML table
-    let query_result =
-        crate::sql_executor::SQLExecutor::execute_query(&req.query, &req.connection_id)
-            .await
-            .unwrap_or_else(|_| crate::sql_executor::QueryResult {
-                columns: vec![],
-                rows: vec![],
-                row_count: 0,
-                execution_time_ms: 0,
-                estimated_memory_bytes: 0,
-            });
+    // Look up the real, previously-registered connection (SQLite/DuckDB/
+    // PostgreSQL/MySQL) and run the query against the actual database via
+    // `DatabaseManager`. This used to return hardcoded placeholder rows
+    // regardless of the query or connection; it now executes for real.
+    let conn = match load_databases()
+        .into_iter()
+        .find(|d| d.id == req.connection_id)
+    {
+        Some(c) => c,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": format!("connection '{}' not found", req.connection_id) })),
+            )
+        }
+    };
 
-    let result_html = crate::sql_executor::SQLExecutor::format_result_as_html(&query_result);
+    let query_result = match crate::db::DatabaseManager::execute_query(&conn, &req.query).await {
+        Ok(r) => r,
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": e.to_string(), "optimizations": optimizations })),
+            )
+        }
+    };
+
+    let sql_exec_result = crate::sql_executor::QueryResult {
+        columns: query_result.columns,
+        rows: query_result.rows,
+        row_count: query_result.row_count,
+        execution_time_ms: query_result.execution_time_ms,
+        estimated_memory_bytes: 0,
+    };
+    let result_html = crate::sql_executor::SQLExecutor::format_result_as_html(&sql_exec_result);
 
     (
         StatusCode::OK,
         Json(json!({
             "html": result_html,
+            "columns": sql_exec_result.columns,
+            "rows": sql_exec_result.rows,
             "optimizations": serde_json::to_value(&optimizations).unwrap_or(json!([])),
-            "row_count": query_result.row_count,
-            "execution_time_ms": query_result.execution_time_ms,
+            "row_count": sql_exec_result.row_count,
+            "execution_time_ms": sql_exec_result.execution_time_ms,
         })),
     )
 }
@@ -3691,6 +3719,96 @@ pub async fn pull_docker_image(
     }
 }
 
+// Sandboxed one-shot code execution: the core code-execution-safety
+// feature. Every call gets a brand-new, disposable, resource-limited,
+// network-isolated container (see docker_executor::DockerExecutor::execute_sandboxed).
+#[derive(Deserialize)]
+pub struct ExecuteSandboxRequest {
+    pub code: String,
+    #[serde(default = "default_sandbox_language")]
+    pub language: String,
+    #[serde(default)]
+    pub image: Option<String>,
+    #[serde(default)]
+    pub memory_mb: Option<u32>,
+    #[serde(default)]
+    pub cpus: Option<f32>,
+    #[serde(default)]
+    pub timeout_seconds: Option<u32>,
+    #[serde(default)]
+    pub allow_network: Option<bool>,
+}
+
+fn default_sandbox_language() -> String {
+    "python".to_string()
+}
+
+pub async fn execute_sandboxed_code(
+    Json(req): Json<ExecuteSandboxRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let executor = crate::docker_executor::DockerExecutor::new(None);
+
+    if !executor.docker_available().await {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({
+                "error": "Docker is not available. Install and start Docker to run sandboxed code execution.",
+                "status": "docker_not_available"
+            })),
+        );
+    }
+
+    let mut opts = crate::docker_executor::SandboxOptions::default();
+    if let Some(image) = req.image {
+        opts.image = image;
+    }
+    if let Some(m) = req.memory_mb {
+        opts.memory_mb = m;
+    }
+    if let Some(c) = req.cpus {
+        opts.cpus = c;
+    }
+    if let Some(t) = req.timeout_seconds {
+        opts.timeout_seconds = t;
+    }
+    if let Some(n) = req.allow_network {
+        opts.allow_network = n;
+    }
+
+    match executor
+        .execute_sandboxed(&req.code, &req.language, &opts)
+        .await
+    {
+        Ok(result) => (
+            StatusCode::OK,
+            Json(json!({
+                "exit_code": result.exit_code,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "execution_time_ms": result.execution_time_ms,
+                "timed_out": result.timed_out,
+                "status": "success"
+            })),
+        ),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": e, "status": "execution_failed" })),
+        ),
+    }
+}
+
+pub async fn sandbox_availability() -> (StatusCode, Json<serde_json::Value>) {
+    let executor = crate::docker_executor::DockerExecutor::new(None);
+    let available = executor.docker_available().await;
+    (
+        StatusCode::OK,
+        Json(json!({
+            "docker_available": available,
+            "default_options": crate::docker_executor::SandboxOptions::default(),
+        })),
+    )
+}
+
 // Global Search endpoints
 #[derive(Deserialize)]
 pub struct SearchRequest {
@@ -3836,8 +3954,8 @@ pub async fn search_notebooks(
 // Authentication Endpoints (v1.2.0)
 // ════════════════════════════════════════════════════════════════════════════
 
+use crate::enterprise_auth::{EnterpriseAuthManager, UserRole};
 use std::collections::HashMap;
-use crate::enterprise_auth::{UserRole, EnterpriseAuthManager};
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
@@ -3900,9 +4018,9 @@ pub async fn auth_register(
 
     // Create user
     let user_id = format!("user-{}", Uuid::new_v4());
-    let display_name = req.display_name.unwrap_or_else(|| {
-        req.email.split('@').next().unwrap_or("User").to_string()
-    });
+    let display_name = req
+        .display_name
+        .unwrap_or_else(|| req.email.split('@').next().unwrap_or("User").to_string());
 
     // Generate JWT using a default secret for now (will be injected from AppState later)
     let auth_manager = EnterpriseAuthManager::new("default-secret".to_string());
@@ -3930,15 +4048,21 @@ pub async fn auth_login(
 ) -> Result<Json<AuthResponse>, (StatusCode, String)> {
     // For now, just validate that we have email and password
     if !req.email.contains('@') {
-        let event = crate::audit::AuditEvent::new("unknown".to_string(), crate::audit::ACTION_FAILED_LOGIN.to_string())
-            .with_error("Invalid email format");
+        let event = crate::audit::AuditEvent::new(
+            "unknown".to_string(),
+            crate::audit::ACTION_FAILED_LOGIN.to_string(),
+        )
+        .with_error("Invalid email format");
         let _ = crate::audit::log_event(&state.db_pool, event).await;
         return Err((StatusCode::BAD_REQUEST, "Invalid email format".to_string()));
     }
 
     if req.password.len() < 8 {
-        let event = crate::audit::AuditEvent::new(req.email.clone(), crate::audit::ACTION_FAILED_LOGIN.to_string())
-            .with_error("Invalid credentials");
+        let event = crate::audit::AuditEvent::new(
+            req.email.clone(),
+            crate::audit::ACTION_FAILED_LOGIN.to_string(),
+        )
+        .with_error("Invalid credentials");
         let _ = crate::audit::log_event(&state.db_pool, event).await;
         return Err((
             StatusCode::UNAUTHORIZED,
@@ -3954,8 +4078,9 @@ pub async fn auth_login(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     // Log successful login
-    let event = crate::audit::AuditEvent::new(user_id.clone(), crate::audit::ACTION_LOGIN.to_string())
-        .with_details(json!({ "email": req.email }));
+    let event =
+        crate::audit::AuditEvent::new(user_id.clone(), crate::audit::ACTION_LOGIN.to_string())
+            .with_details(json!({ "email": req.email }));
     let _ = crate::audit::log_event(&state.db_pool, event).await;
 
     Ok(Json(AuthResponse {
@@ -4006,7 +4131,7 @@ pub async fn auth_google(
     // For production, use Google's official verification: https://github.com/googleapis/google-api-rust-client
     // For now, we'll do basic validation
 
-    use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+    use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 
     // Get Google's public keys
     let client = reqwest::Client::new();
@@ -4027,13 +4152,20 @@ pub async fn auth_google(
     let header = jsonwebtoken::decode_header(&req.credential)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid token format".to_string()))?;
 
-    let kid = header.kid
-        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing key ID in token".to_string()))?;
+    let kid = header.kid.ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            "Missing key ID in token".to_string(),
+        )
+    })?;
 
     // Find the matching public key
-    let keys = jwks.get("keys")
-        .and_then(|k| k.as_array())
-        .ok_or_else(|| (StatusCode::INTERNAL_SERVER_ERROR, "Invalid JWKS response".to_string()))?;
+    let keys = jwks.get("keys").and_then(|k| k.as_array()).ok_or_else(|| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Invalid JWKS response".to_string(),
+        )
+    })?;
 
     let key_data = keys
         .iter()
@@ -4041,15 +4173,20 @@ pub async fn auth_google(
         .ok_or_else(|| (StatusCode::BAD_REQUEST, "Key not found".to_string()))?;
 
     // Build PEM key from JWK
-    let n = key_data.get("n")
+    let n = key_data
+        .get("n")
         .and_then(|v| v.as_str())
         .ok_or_else(|| (StatusCode::BAD_REQUEST, "Invalid key format".to_string()))?;
-    let e = key_data.get("e")
+    let e = key_data
+        .get("e")
         .and_then(|v| v.as_str())
         .ok_or_else(|| (StatusCode::BAD_REQUEST, "Invalid key format".to_string()))?;
 
     // Create RSA key from n and e
-    let key_str = format!("-----BEGIN RSA PUBLIC KEY-----\n{}\n{}-----END RSA PUBLIC KEY-----", n, e);
+    let key_str = format!(
+        "-----BEGIN RSA PUBLIC KEY-----\n{}\n{}-----END RSA PUBLIC KEY-----",
+        n, e
+    );
     let decoding_key = DecodingKey::from_rsa_components(n, e)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid RSA key".to_string()))?;
 
@@ -4058,7 +4195,8 @@ pub async fn auth_google(
         &req.credential,
         &decoding_key,
         &Validation::new(Algorithm::RS256),
-    ).map_err(|e| {
+    )
+    .map_err(|e| {
         tracing::error!("Token verification failed: {}", e);
         (StatusCode::UNAUTHORIZED, "Invalid token".to_string())
     })?;
@@ -4072,9 +4210,18 @@ pub async fn auth_google(
 
     // Create or get user
     let user_id = format!("google-{}", payload.sub);
-    let display_name = payload.name.clone()
+    let display_name = payload
+        .name
+        .clone()
         .or(payload.given_name.clone())
-        .unwrap_or_else(|| payload.email.split('@').next().unwrap_or("User").to_string());
+        .unwrap_or_else(|| {
+            payload
+                .email
+                .split('@')
+                .next()
+                .unwrap_or("User")
+                .to_string()
+        });
 
     // Generate JWT
     let auth_manager = EnterpriseAuthManager::new("default-secret".to_string());
@@ -4083,8 +4230,9 @@ pub async fn auth_google(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     // Log successful login
-    let event = crate::audit::AuditEvent::new(user_id.clone(), crate::audit::ACTION_LOGIN.to_string())
-        .with_details(json!({ "email": &payload.email, "provider": "google" }));
+    let event =
+        crate::audit::AuditEvent::new(user_id.clone(), crate::audit::ACTION_LOGIN.to_string())
+            .with_details(json!({ "email": &payload.email, "provider": "google" }));
     let _ = crate::audit::log_event(&state.db_pool, event).await;
 
     Ok(Json(AuthResponse {
@@ -4118,7 +4266,9 @@ pub async fn get_csrf_token() -> Json<CsrfTokenResponse> {
 // Authenticated Endpoint Examples (v1.2.0)
 // ════════════════════════════════════════════════════════════════════════════
 
-use crate::middleware::{CurrentUser, check_notebook_owner, check_notebook_permission, NotebookPermission};
+use crate::middleware::{
+    check_notebook_owner, check_notebook_permission, CurrentUser, NotebookPermission,
+};
 
 #[derive(Serialize)]
 pub struct AuthenticatedResponse {
@@ -4129,9 +4279,7 @@ pub struct AuthenticatedResponse {
 }
 
 /// Example: Get current user info (requires authentication)
-pub async fn get_me(
-    user: CurrentUser,
-) -> Json<AuthenticatedResponse> {
+pub async fn get_me(user: CurrentUser) -> Json<AuthenticatedResponse> {
     Json(AuthenticatedResponse {
         message: "Successfully authenticated".to_string(),
         user_id: user.user_id,
@@ -4176,7 +4324,8 @@ pub async fn logout(
     let user_id = user.user_id.clone();
 
     // Log logout event
-    let event = crate::audit::AuditEvent::new(user_id.clone(), crate::audit::ACTION_LOGOUT.to_string());
+    let event =
+        crate::audit::AuditEvent::new(user_id.clone(), crate::audit::ACTION_LOGOUT.to_string());
     let _ = crate::audit::log_event(&state.db_pool, event).await;
 
     tracing::info!("User {} logged out", user_id);
@@ -4201,9 +4350,7 @@ pub struct SessionInfo {
 }
 
 /// List user's active sessions
-pub async fn list_sessions(
-    user: CurrentUser,
-) -> (StatusCode, Json<Vec<SessionInfo>>) {
+pub async fn list_sessions(user: CurrentUser) -> (StatusCode, Json<Vec<SessionInfo>>) {
     // Future: Query sessions from database
     // For now, return a mock response showing current session
     let session = SessionInfo {
@@ -4246,7 +4393,7 @@ pub async fn get_notebook_secure(
     State(state): State<Arc<AppState>>,
 ) -> Result<(StatusCode, Json<Option<Notebook>>), (StatusCode, String)> {
     // Check permission
-    match check_notebook_permission(&user.user_id, &id).await {
+    match check_notebook_permission(&state.db_pool, &user.user_id, &id).await {
         Ok(perm) if perm.can_read() => {
             tracing::info!("User {} reading notebook {}", user.user_id, id);
 
@@ -4278,20 +4425,27 @@ pub async fn update_notebook_secure(
     Json(notebook): Json<Notebook>,
 ) -> Result<(StatusCode, Json<Notebook>), (StatusCode, String)> {
     // Check permission
-    match check_notebook_permission(&user.user_id, &id).await {
+    match check_notebook_permission(&state.db_pool, &user.user_id, &id).await {
         Ok(perm) if perm.can_write() => {
             tracing::info!("User {} updating notebook {}", user.user_id, id);
 
             // Save notebook (same logic as before)
             let path = format!("{}/{}.ipynb", state.notebooks_dir, id);
             let ipynb = crate::files::to_ipynb(&notebook);
-            std::fs::write(&path, serde_json::to_string_pretty(&ipynb).unwrap_or_default())
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+            std::fs::write(
+                &path,
+                serde_json::to_string_pretty(&ipynb).unwrap_or_default(),
+            )
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
             Ok((StatusCode::OK, Json(notebook)))
         }
         _ => {
-            tracing::warn!("User {} denied write access to notebook {}", user.user_id, id);
+            tracing::warn!(
+                "User {} denied write access to notebook {}",
+                user.user_id,
+                id
+            );
             Err((StatusCode::FORBIDDEN, "Access denied".to_string()))
         }
     }
@@ -4304,7 +4458,7 @@ pub async fn delete_notebook_secure(
     State(state): State<Arc<AppState>>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     // Check permission (only owner can delete)
-    match check_notebook_owner(&user.user_id, &id).await {
+    match check_notebook_owner(&state.db_pool, &user.user_id, &id).await {
         Ok(true) => {
             tracing::info!("User {} deleting notebook {}", user.user_id, id);
 
@@ -4315,8 +4469,15 @@ pub async fn delete_notebook_secure(
             Ok(StatusCode::NO_CONTENT)
         }
         _ => {
-            tracing::warn!("User {} denied delete access to notebook {}", user.user_id, id);
-            Err((StatusCode::FORBIDDEN, "Only owner can delete notebooks".to_string()))
+            tracing::warn!(
+                "User {} denied delete access to notebook {}",
+                user.user_id,
+                id
+            );
+            Err((
+                StatusCode::FORBIDDEN,
+                "Only owner can delete notebooks".to_string(),
+            ))
         }
     }
 }
@@ -4325,13 +4486,17 @@ pub async fn delete_notebook_secure(
 pub async fn execute_cell_secure(
     user: CurrentUser,
     Path(notebook_id): Path<String>,
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
     Json(_req): Json<ExecuteCellRequest>,
 ) -> Result<Json<ExecuteCellResponse>, (StatusCode, String)> {
     // Check permission
-    match check_notebook_permission(&user.user_id, &notebook_id).await {
+    match check_notebook_permission(&state.db_pool, &user.user_id, &notebook_id).await {
         Ok(perm) if perm.can_write() => {
-            tracing::info!("User {} executing cell in notebook {}", user.user_id, notebook_id);
+            tracing::info!(
+                "User {} executing cell in notebook {}",
+                user.user_id,
+                notebook_id
+            );
 
             // Execute cell (placeholder)
             Ok(Json(ExecuteCellResponse {
@@ -4340,7 +4505,11 @@ pub async fn execute_cell_secure(
             }))
         }
         _ => {
-            tracing::warn!("User {} denied execution in notebook {}", user.user_id, notebook_id);
+            tracing::warn!(
+                "User {} denied execution in notebook {}",
+                user.user_id,
+                notebook_id
+            );
             Err((StatusCode::FORBIDDEN, "Access denied".to_string()))
         }
     }
@@ -4367,7 +4536,8 @@ pub async fn list_accessible_notebooks(
         .await
     {
         Ok(rows) => {
-            let notebooks = rows.into_iter()
+            let notebooks = rows
+                .into_iter()
                 .map(|(notebook_id, permission, granted_at)| NotebookAccessInfo {
                     notebook_id,
                     permission,
@@ -4391,7 +4561,7 @@ pub async fn share_notebook(
     Json(req): Json<ShareNotebookRequest>,
 ) -> Result<(StatusCode, Json<NotebookAccessInfo>), (StatusCode, String)> {
     // Check ownership
-    match check_notebook_owner(&user.user_id, &notebook_id).await {
+    match check_notebook_owner(&state.db_pool, &user.user_id, &notebook_id).await {
         Ok(true) => {
             // Look up user by email
             let target_user_query = "SELECT user_id FROM users WHERE email = ?";
@@ -4402,11 +4572,17 @@ pub async fn share_notebook(
             {
                 Ok(Some(row)) => Some(row),
                 Ok(None) => {
-                    return Err((StatusCode::NOT_FOUND, format!("User with email {} not found", req.email)))
+                    return Err((
+                        StatusCode::NOT_FOUND,
+                        format!("User with email {} not found", req.email),
+                    ))
                 }
                 Err(e) => {
                     tracing::error!("Database error looking up user: {}", e);
-                    return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))
+                    return Err((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Database error".to_string(),
+                    ));
                 }
             };
 
@@ -4414,7 +4590,10 @@ pub async fn share_notebook(
 
             // Validate permission value
             if !["viewer", "editor"].contains(&req.permission.as_str()) {
-                return Err((StatusCode::BAD_REQUEST, "Permission must be 'viewer' or 'editor'".to_string()));
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    "Permission must be 'viewer' or 'editor'".to_string(),
+                ));
             }
 
             // Create or update access entry
@@ -4453,7 +4632,10 @@ pub async fn share_notebook(
                 }
                 Err(e) => {
                     tracing::error!("Failed to share notebook: {}", e);
-                    Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to share notebook".to_string()))
+                    Err((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Failed to share notebook".to_string(),
+                    ))
                 }
             }
         }
@@ -4463,7 +4645,10 @@ pub async fn share_notebook(
                 user.user_id,
                 notebook_id
             );
-            Err((StatusCode::FORBIDDEN, "Only owner can share notebooks".to_string()))
+            Err((
+                StatusCode::FORBIDDEN,
+                "Only owner can share notebooks".to_string(),
+            ))
         }
     }
 }
@@ -4481,7 +4666,7 @@ pub async fn revoke_notebook_access(
     Path((notebook_id, user_email)): Path<(String, String)>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     // Check ownership
-    match check_notebook_owner(&user.user_id, &notebook_id).await {
+    match check_notebook_owner(&state.db_pool, &user.user_id, &notebook_id).await {
         Ok(true) => {
             // Look up user by email
             let target_user_query = "SELECT user_id FROM users WHERE email = ?";
@@ -4492,11 +4677,17 @@ pub async fn revoke_notebook_access(
             {
                 Ok(Some(row)) => Some(row),
                 Ok(None) => {
-                    return Err((StatusCode::NOT_FOUND, format!("User with email {} not found", user_email)))
+                    return Err((
+                        StatusCode::NOT_FOUND,
+                        format!("User with email {} not found", user_email),
+                    ))
                 }
                 Err(e) => {
                     tracing::error!("Database error looking up user: {}", e);
-                    return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))
+                    return Err((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Database error".to_string(),
+                    ));
                 }
             };
 
@@ -4530,11 +4721,17 @@ pub async fn revoke_notebook_access(
                 }
                 Err(e) => {
                     tracing::error!("Failed to revoke notebook access: {}", e);
-                    Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to revoke access".to_string()))
+                    Err((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Failed to revoke access".to_string(),
+                    ))
                 }
             }
         }
-        _ => Err((StatusCode::FORBIDDEN, "Only owner can revoke access".to_string())),
+        _ => Err((
+            StatusCode::FORBIDDEN,
+            "Only owner can revoke access".to_string(),
+        )),
     }
 }
 
@@ -4572,13 +4769,17 @@ pub async fn create_group(
 ) -> Result<(StatusCode, Json<GroupInfo>), (StatusCode, String)> {
     // Check if user is admin
     if !user.roles.contains(&"Admin".to_string()) {
-        return Err((StatusCode::FORBIDDEN, "Only admins can create groups".to_string()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Only admins can create groups".to_string(),
+        ));
     }
 
     let group_id = Uuid::new_v4().to_string();
     let now = chrono::Local::now().to_rfc3339();
 
-    let insert_query = "INSERT INTO groups (group_id, group_name, description, role, created_at, created_by)
+    let insert_query =
+        "INSERT INTO groups (group_id, group_name, description, role, created_at, created_by)
                        VALUES (?, ?, ?, ?, ?, ?)";
 
     match sqlx::query(insert_query)
@@ -4607,7 +4808,10 @@ pub async fn create_group(
         }
         Err(e) => {
             tracing::error!("Failed to create group: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to create group".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to create group".to_string(),
+            ))
         }
     }
 }
@@ -4629,15 +4833,20 @@ pub async fn list_groups(
         .await
     {
         Ok(rows) => {
-            let groups = rows.into_iter()
-                .map(|(group_id, group_name, description, role, created_at, member_count)| GroupInfo {
-                    group_id,
-                    group_name,
-                    description,
-                    role,
-                    created_at,
-                    member_count: member_count.unwrap_or(0),
-                })
+            let groups = rows
+                .into_iter()
+                .map(
+                    |(group_id, group_name, description, role, created_at, member_count)| {
+                        GroupInfo {
+                            group_id,
+                            group_name,
+                            description,
+                            role,
+                            created_at,
+                            member_count: member_count.unwrap_or(0),
+                        }
+                    },
+                )
                 .collect();
             Json(groups)
         }
@@ -4657,7 +4866,10 @@ pub async fn add_group_member(
 ) -> Result<StatusCode, (StatusCode, String)> {
     // Check if user is admin
     if !user.roles.contains(&"Admin".to_string()) {
-        return Err((StatusCode::FORBIDDEN, "Only admins can manage groups".to_string()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Only admins can manage groups".to_string(),
+        ));
     }
 
     // Look up user by email
@@ -4669,11 +4881,17 @@ pub async fn add_group_member(
     {
         Ok(Some(row)) => Some(row),
         Ok(None) => {
-            return Err((StatusCode::NOT_FOUND, format!("User with email {} not found", req.email)))
+            return Err((
+                StatusCode::NOT_FOUND,
+                format!("User with email {} not found", req.email),
+            ))
         }
         Err(e) => {
             tracing::error!("Database error looking up user: {}", e);
-            return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database error".to_string(),
+            ));
         }
     };
 
@@ -4690,7 +4908,10 @@ pub async fn add_group_member(
         Ok(None) => return Err((StatusCode::NOT_FOUND, "Group not found".to_string())),
         Err(e) => {
             tracing::error!("Database error checking group: {}", e);
-            return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()));
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database error".to_string(),
+            ));
         }
     }
 
@@ -4712,7 +4933,10 @@ pub async fn add_group_member(
         }
         Err(e) => {
             tracing::error!("Failed to add group member: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to add member".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to add member".to_string(),
+            ))
         }
     }
 }
@@ -4725,7 +4949,10 @@ pub async fn remove_group_member(
 ) -> Result<StatusCode, (StatusCode, String)> {
     // Check if user is admin
     if !user.roles.contains(&"Admin".to_string()) {
-        return Err((StatusCode::FORBIDDEN, "Only admins can manage groups".to_string()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Only admins can manage groups".to_string(),
+        ));
     }
 
     // Look up user by email
@@ -4737,11 +4964,17 @@ pub async fn remove_group_member(
     {
         Ok(Some(row)) => Some(row),
         Ok(None) => {
-            return Err((StatusCode::NOT_FOUND, format!("User with email {} not found", user_email)))
+            return Err((
+                StatusCode::NOT_FOUND,
+                format!("User with email {} not found", user_email),
+            ))
         }
         Err(e) => {
             tracing::error!("Database error looking up user: {}", e);
-            return Err((StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database error".to_string(),
+            ));
         }
     };
 
@@ -4764,7 +4997,10 @@ pub async fn remove_group_member(
         }
         Err(e) => {
             tracing::error!("Failed to remove group member: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to remove member".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to remove member".to_string(),
+            ))
         }
     }
 }
@@ -4787,7 +5023,8 @@ pub async fn get_group_members(
         .await
     {
         Ok(rows) => {
-            let members: Vec<serde_json::Value> = rows.into_iter()
+            let members: Vec<serde_json::Value> = rows
+                .into_iter()
                 .map(|(user_id, email, display_name, joined_at)| {
                     json!({
                         "user_id": user_id,
@@ -4835,7 +5072,10 @@ pub async fn query_audit_logs(
 ) -> Result<Json<AuditLogsResponse>, (StatusCode, String)> {
     // Check if user is admin
     if !user.roles.contains(&"Admin".to_string()) {
-        return Err((StatusCode::FORBIDDEN, "Only admins can query audit logs".to_string()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Only admins can query audit logs".to_string(),
+        ));
     }
 
     let limit = req.limit.unwrap_or(100).min(1000); // Max 1000 logs per query
@@ -4851,17 +5091,18 @@ pub async fn query_audit_logs(
     )
     .await
     {
-        Ok((logs, total)) => {
-            Ok(Json(AuditLogsResponse {
-                logs,
-                total,
-                limit,
-                offset,
-            }))
-        }
+        Ok((logs, total)) => Ok(Json(AuditLogsResponse {
+            logs,
+            total,
+            limit,
+            offset,
+        })),
         Err(e) => {
             tracing::error!("Failed to query audit logs: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to query logs".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to query logs".to_string(),
+            ))
         }
     }
 }
@@ -4873,7 +5114,10 @@ pub async fn get_audit_stats(
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     // Check if user is admin
     if !user.roles.contains(&"Admin".to_string()) {
-        return Err((StatusCode::FORBIDDEN, "Only admins can view audit stats".to_string()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Only admins can view audit stats".to_string(),
+        ));
     }
 
     // Get stats by action
@@ -4885,12 +5129,15 @@ pub async fn get_audit_stats(
         .fetch_all(&state.db_pool)
         .await
     {
-        Ok(rows) => rows.into_iter()
-            .map(|(action, count, failures)| json!({
-                "action": action,
-                "count": count,
-                "failures": failures.unwrap_or(0)
-            }))
+        Ok(rows) => rows
+            .into_iter()
+            .map(|(action, count, failures)| {
+                json!({
+                    "action": action,
+                    "count": count,
+                    "failures": failures.unwrap_or(0)
+                })
+            })
             .collect::<Vec<_>>(),
         Err(e) => {
             tracing::error!("Failed to get action stats: {}", e);
@@ -4907,11 +5154,14 @@ pub async fn get_audit_stats(
         .fetch_all(&state.db_pool)
         .await
     {
-        Ok(rows) => rows.into_iter()
-            .map(|(user_id, count)| json!({
-                "user_id": user_id,
-                "count": count
-            }))
+        Ok(rows) => rows
+            .into_iter()
+            .map(|(user_id, count)| {
+                json!({
+                    "user_id": user_id,
+                    "count": count
+                })
+            })
             .collect::<Vec<_>>(),
         Err(e) => {
             tracing::error!("Failed to get user stats: {}", e);
@@ -4925,16 +5175,17 @@ pub async fn get_audit_stats(
                              MAX(timestamp) as latest
                       FROM audit_logs";
 
-    let (total, earliest, latest) = match sqlx::query_as::<_, (i64, Option<String>, Option<String>)>(total_query)
-        .fetch_one(&state.db_pool)
-        .await
-    {
-        Ok((t, e, l)) => (t, e, l),
-        Err(e) => {
-            tracing::error!("Failed to get total stats: {}", e);
-            (0, None, None)
-        }
-    };
+    let (total, earliest, latest) =
+        match sqlx::query_as::<_, (i64, Option<String>, Option<String>)>(total_query)
+            .fetch_one(&state.db_pool)
+            .await
+        {
+            Ok((t, e, l)) => (t, e, l),
+            Err(e) => {
+                tracing::error!("Failed to get total stats: {}", e);
+                (0, None, None)
+            }
+        };
 
     Ok(Json(json!({
         "total_logs": total,
@@ -4953,7 +5204,10 @@ pub async fn cleanup_audit_logs(
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     // Check if user is admin
     if !user.roles.contains(&"Admin".to_string()) {
-        return Err((StatusCode::FORBIDDEN, "Only admins can cleanup audit logs".to_string()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Only admins can cleanup audit logs".to_string(),
+        ));
     }
 
     let days = params
@@ -4971,7 +5225,10 @@ pub async fn cleanup_audit_logs(
         }
         Err(e) => {
             tracing::error!("Failed to cleanup audit logs: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to cleanup logs".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to cleanup logs".to_string(),
+            ))
         }
     }
 }
@@ -4981,9 +5238,7 @@ pub async fn cleanup_audit_logs(
 // ════════════════════════════════════════════════════════════════════════════
 
 /// Get cache statistics
-pub async fn get_cache_stats(
-    State(state): State<Arc<AppState>>,
-) -> Json<crate::cache::CacheStats> {
+pub async fn get_cache_stats(State(state): State<Arc<AppState>>) -> Json<crate::cache::CacheStats> {
     Json(state.query_cache.stats())
 }
 
@@ -5050,12 +5305,20 @@ pub async fn get_cell_execution_history(
 
     match crate::execution::get_cell_history(&state.db_pool, &notebook_id, &cell_id, limit).await {
         Ok(records) => {
-            tracing::info!("User {} queried execution history for cell {}/{}", user.user_id, notebook_id, cell_id);
+            tracing::info!(
+                "User {} queried execution history for cell {}/{}",
+                user.user_id,
+                notebook_id,
+                cell_id
+            );
             Ok(Json(records))
         }
         Err(e) => {
             tracing::error!("Failed to query execution history: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to query execution history".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to query execution history".to_string(),
+            ))
         }
     }
 }
@@ -5068,12 +5331,19 @@ pub async fn get_notebook_execution_stats(
 ) -> Result<Json<crate::execution::ExecutionStats>, (StatusCode, String)> {
     match crate::execution::get_notebook_stats(&state.db_pool, &notebook_id).await {
         Ok(stats) => {
-            tracing::info!("User {} queried execution stats for notebook {}", user.user_id, notebook_id);
+            tracing::info!(
+                "User {} queried execution stats for notebook {}",
+                user.user_id,
+                notebook_id
+            );
             Ok(Json(stats))
         }
         Err(e) => {
             tracing::error!("Failed to query execution stats: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to query stats".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to query stats".to_string(),
+            ))
         }
     }
 }
@@ -5118,7 +5388,10 @@ pub async fn save_query(
         }
         Err(e) => {
             tracing::error!("Failed to save query: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to save query".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to save query".to_string(),
+            ))
         }
     }
 }
@@ -5138,18 +5411,20 @@ pub async fn list_saved_queries(
         .and_then(|o| o.parse::<i64>().ok())
         .unwrap_or(0);
 
-    match crate::query_manager::get_user_queries(&state.db_pool, &user.user_id, limit, offset).await {
-        Ok((queries, total)) => {
-            Ok(Json(json!({
-                "queries": queries,
-                "total": total,
-                "limit": limit,
-                "offset": offset,
-            })))
-        }
+    match crate::query_manager::get_user_queries(&state.db_pool, &user.user_id, limit, offset).await
+    {
+        Ok((queries, total)) => Ok(Json(json!({
+            "queries": queries,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }))),
         Err(e) => {
             tracing::error!("Failed to list queries: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to list queries".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to list queries".to_string(),
+            ))
         }
     }
 }
@@ -5163,7 +5438,10 @@ pub async fn get_favorite_queries(
         Ok(queries) => Ok(Json(queries)),
         Err(e) => {
             tracing::error!("Failed to get favorite queries: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to get favorites".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to get favorites".to_string(),
+            ))
         }
     }
 }
@@ -5176,12 +5454,19 @@ pub async fn toggle_query_favorite(
 ) -> Result<StatusCode, (StatusCode, String)> {
     match crate::query_manager::toggle_favorite(&state.db_pool, &query_id).await {
         Ok(_) => {
-            tracing::info!("User {} toggled favorite for query {}", user.user_id, query_id);
+            tracing::info!(
+                "User {} toggled favorite for query {}",
+                user.user_id,
+                query_id
+            );
             Ok(StatusCode::OK)
         }
         Err(e) => {
             tracing::error!("Failed to toggle favorite: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to toggle favorite".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to toggle favorite".to_string(),
+            ))
         }
     }
 }
@@ -5202,14 +5487,23 @@ pub async fn search_saved_queries(
         .and_then(|l| l.parse::<i64>().ok())
         .unwrap_or(20);
 
-    match crate::query_manager::search_queries(&state.db_pool, &user.user_id, &search_term, limit).await {
+    match crate::query_manager::search_queries(&state.db_pool, &user.user_id, &search_term, limit)
+        .await
+    {
         Ok(queries) => {
-            tracing::info!("User {} searched queries with term: {}", user.user_id, search_term);
+            tracing::info!(
+                "User {} searched queries with term: {}",
+                user.user_id,
+                search_term
+            );
             Ok(Json(queries))
         }
         Err(e) => {
             tracing::error!("Failed to search queries: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to search queries".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to search queries".to_string(),
+            ))
         }
     }
 }
@@ -5227,7 +5521,10 @@ pub async fn delete_saved_query(
         }
         Err(e) => {
             tracing::error!("Failed to delete query: {}", e);
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to delete query".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to delete query".to_string(),
+            ))
         }
     }
 }
@@ -5248,7 +5545,11 @@ pub async fn get_data_preview_with_stats(
     State(state): State<Arc<AppState>>,
     Json(req): Json<DataPreviewRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    tracing::info!("User {} requested data preview for: {}", user.user_id, req.data_source);
+    tracing::info!(
+        "User {} requested data preview for: {}",
+        user.user_id,
+        req.data_source
+    );
 
     // For now, return a template showing what enhanced preview would include
     // In production, this would query the actual data and compute statistics
@@ -5278,8 +5579,10 @@ pub async fn get_column_statistics(
     _user: CurrentUser,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let column_name = params.get("column")
-        .ok_or((StatusCode::BAD_REQUEST, "Column parameter required".to_string()))?;
+    let column_name = params.get("column").ok_or((
+        StatusCode::BAD_REQUEST,
+        "Column parameter required".to_string(),
+    ))?;
 
     // Template response showing what column stats would include
     Ok(Json(json!({
@@ -5318,10 +5621,12 @@ pub async fn get_column_statistics(
 // Catalog & Lineage API Endpoints (v1.3.0)
 // ────────────────────────────────────────────────────────────────────────────
 
-use crate::catalog::{ColumnMetadata, TableMetadata, DataCatalog};
-use crate::pii_detector::{PiiDetector, PiiDetectionResult};
-use crate::quality_assertions::{AssertionEngine, QualityAssertion, AssertionType, QualityReport};
-use crate::rill_integration::{RillProject, RillDashboard, RillTile, RillProjectManager, RillConfig};
+use crate::catalog::{ColumnMetadata, DataCatalog, TableMetadata};
+use crate::pii_detector::{PiiDetectionResult, PiiDetector};
+use crate::quality_assertions::{AssertionEngine, AssertionType, QualityAssertion, QualityReport};
+use crate::rill_integration::{
+    RillConfig, RillDashboard, RillProject, RillProjectManager, RillTile,
+};
 
 #[derive(Deserialize)]
 pub struct RegisterTableRequest {
@@ -5526,10 +5831,7 @@ pub async fn detect_batch_pii(
         .collect();
 
     let pii_count = results.iter().filter(|r| r.pii_detected).count();
-    let high_risk = results
-        .iter()
-        .filter(|r| r.risk_score > 0.9)
-        .count();
+    let high_risk = results.iter().filter(|r| r.risk_score > 0.9).count();
 
     (
         StatusCode::OK,

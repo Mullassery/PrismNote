@@ -36,7 +36,7 @@ rust-embed = { version = "8", features = ["mime-guess"] }
 jsonwebtoken.workspace = true
 bcrypt.workspace = true
 rand.workspace = true
-sqlx = { workspace = true, features = ["postgres", "bigdecimal"] }
+sqlx = { workspace = true, features = ["postgres", "mysql", "bigdecimal"] }
 urlencoding = "2"
 hex.workspace = true
 hmac.workspace = true
@@ -45,6 +45,10 @@ tiberius = { version = "0.12", default-features = false, features = ["tds73", "r
 tokio-util = { version = "0.7", features = ["compat"] }
 rsa = "0.9"
 pem = "3"
+# Real embedded DuckDB execution (bundled = compiles DuckDB from source, no
+# system library required). duckdb's C API is synchronous, so query calls
+# are dispatched through `tokio::task::spawn_blocking` at the call site.
+duckdb = { version = "1", features = ["bundled"] }
 
 [dev-dependencies]
 mockito = "1.4"

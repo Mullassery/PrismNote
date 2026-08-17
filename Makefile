@@ -23,8 +23,16 @@ dev:
 	@echo "Start frontend with: cd frontend && npm install && npm run dev"
 	cargo run
 
-build:
+build: frontend-build
 	cargo build --release
+
+# The backend embeds the compiled frontend into the binary (see
+# crates/server/src/main.rs), so the frontend must be built first or the
+# release binary would serve no UI. This is the actual root cause of
+# "make build fails" reports in the wild: running `cargo build --release`
+# directly, without this target, skips the frontend build.
+frontend-build:
+	cd frontend && npm ci && npm run build
 
 test:
 	cargo test --workspace --release

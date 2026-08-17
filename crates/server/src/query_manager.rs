@@ -51,7 +51,9 @@ impl SavedQuery {
 
 /// Save a query
 pub async fn save_query(pool: &SqlitePool, query: &SavedQuery) -> anyhow::Result<()> {
-    let tags_json = query.tags.as_ref()
+    let tags_json = query
+        .tags
+        .as_ref()
         .map(|t| serde_json::to_string(t).unwrap_or_default());
 
     let insert_query = "INSERT INTO saved_queries
@@ -89,33 +91,66 @@ pub async fn get_user_queries(
                  ORDER BY last_used DESC NULLS LAST, created_at DESC
                  LIMIT ? OFFSET ?";
 
-    let rows = sqlx::query_as::<_, (String, String, String, Option<String>, String, String, Option<String>, bool, Option<String>, i32, String, String)>(query)
-        .bind(user_id)
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(pool)
-        .await?;
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            Option<String>,
+            String,
+            String,
+            Option<String>,
+            bool,
+            Option<String>,
+            i32,
+            String,
+            String,
+        ),
+    >(query)
+    .bind(user_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(pool)
+    .await?;
 
-    let queries: Vec<SavedQuery> = rows.into_iter()
-        .map(|(query_id, user_id, title, description, query_text, query_type, tags, is_favorite, last_used, run_count, created_at, updated_at)| {
-            let tags_vec = tags.as_ref()
-                .and_then(|t| serde_json::from_str::<Vec<String>>(t).ok());
-
-            SavedQuery {
+    let queries: Vec<SavedQuery> = rows
+        .into_iter()
+        .map(
+            |(
                 query_id,
                 user_id,
                 title,
                 description,
                 query_text,
                 query_type,
-                tags: tags_vec,
+                tags,
                 is_favorite,
                 last_used,
                 run_count,
                 created_at,
                 updated_at,
-            }
-        })
+            )| {
+                let tags_vec = tags
+                    .as_ref()
+                    .and_then(|t| serde_json::from_str::<Vec<String>>(t).ok());
+
+                SavedQuery {
+                    query_id,
+                    user_id,
+                    title,
+                    description,
+                    query_text,
+                    query_type,
+                    tags: tags_vec,
+                    is_favorite,
+                    last_used,
+                    run_count,
+                    created_at,
+                    updated_at,
+                }
+            },
+        )
         .collect();
 
     // Get total count
@@ -139,31 +174,64 @@ pub async fn get_favorite_queries(
                  ORDER BY last_used DESC NULLS LAST
                  LIMIT 20";
 
-    let rows = sqlx::query_as::<_, (String, String, String, Option<String>, String, String, Option<String>, bool, Option<String>, i32, String, String)>(query)
-        .bind(user_id)
-        .fetch_all(pool)
-        .await?;
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            Option<String>,
+            String,
+            String,
+            Option<String>,
+            bool,
+            Option<String>,
+            i32,
+            String,
+            String,
+        ),
+    >(query)
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
 
-    let queries: Vec<SavedQuery> = rows.into_iter()
-        .map(|(query_id, user_id, title, description, query_text, query_type, tags, is_favorite, last_used, run_count, created_at, updated_at)| {
-            let tags_vec = tags.as_ref()
-                .and_then(|t| serde_json::from_str::<Vec<String>>(t).ok());
-
-            SavedQuery {
+    let queries: Vec<SavedQuery> = rows
+        .into_iter()
+        .map(
+            |(
                 query_id,
                 user_id,
                 title,
                 description,
                 query_text,
                 query_type,
-                tags: tags_vec,
+                tags,
                 is_favorite,
                 last_used,
                 run_count,
                 created_at,
                 updated_at,
-            }
-        })
+            )| {
+                let tags_vec = tags
+                    .as_ref()
+                    .and_then(|t| serde_json::from_str::<Vec<String>>(t).ok());
+
+                SavedQuery {
+                    query_id,
+                    user_id,
+                    title,
+                    description,
+                    query_text,
+                    query_type,
+                    tags: tags_vec,
+                    is_favorite,
+                    last_used,
+                    run_count,
+                    created_at,
+                    updated_at,
+                }
+            },
+        )
         .collect();
 
     Ok(queries)
@@ -184,7 +252,8 @@ pub async fn toggle_favorite(pool: &SqlitePool, query_id: &str) -> anyhow::Resul
 
 /// Update last used and increment run count
 pub async fn record_query_execution(pool: &SqlitePool, query_id: &str) -> anyhow::Result<()> {
-    let update_query = "UPDATE saved_queries SET last_used = ?, run_count = run_count + 1 WHERE query_id = ?";
+    let update_query =
+        "UPDATE saved_queries SET last_used = ?, run_count = run_count + 1 WHERE query_id = ?";
 
     sqlx::query(update_query)
         .bind(Local::now().to_rfc3339())
@@ -210,35 +279,68 @@ pub async fn search_queries(
                  ORDER BY last_used DESC NULLS LAST
                  LIMIT ?";
 
-    let rows = sqlx::query_as::<_, (String, String, String, Option<String>, String, String, Option<String>, bool, Option<String>, i32, String, String)>(query)
-        .bind(user_id)
-        .bind(&search_pattern)
-        .bind(&search_pattern)
-        .bind(&search_pattern)
-        .bind(limit)
-        .fetch_all(pool)
-        .await?;
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            Option<String>,
+            String,
+            String,
+            Option<String>,
+            bool,
+            Option<String>,
+            i32,
+            String,
+            String,
+        ),
+    >(query)
+    .bind(user_id)
+    .bind(&search_pattern)
+    .bind(&search_pattern)
+    .bind(&search_pattern)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
 
-    let queries: Vec<SavedQuery> = rows.into_iter()
-        .map(|(query_id, user_id, title, description, query_text, query_type, tags, is_favorite, last_used, run_count, created_at, updated_at)| {
-            let tags_vec = tags.as_ref()
-                .and_then(|t| serde_json::from_str::<Vec<String>>(t).ok());
-
-            SavedQuery {
+    let queries: Vec<SavedQuery> = rows
+        .into_iter()
+        .map(
+            |(
                 query_id,
                 user_id,
                 title,
                 description,
                 query_text,
                 query_type,
-                tags: tags_vec,
+                tags,
                 is_favorite,
                 last_used,
                 run_count,
                 created_at,
                 updated_at,
-            }
-        })
+            )| {
+                let tags_vec = tags
+                    .as_ref()
+                    .and_then(|t| serde_json::from_str::<Vec<String>>(t).ok());
+
+                SavedQuery {
+                    query_id,
+                    user_id,
+                    title,
+                    description,
+                    query_text,
+                    query_type,
+                    tags: tags_vec,
+                    is_favorite,
+                    last_used,
+                    run_count,
+                    created_at,
+                    updated_at,
+                }
+            },
+        )
         .collect();
 
     Ok(queries)

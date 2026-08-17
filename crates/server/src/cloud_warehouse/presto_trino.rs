@@ -23,7 +23,10 @@ impl Dialect {
 }
 
 fn base_url(conn: &CloudWarehouseConnection) -> Result<String> {
-    let host = conn.host.as_deref().ok_or_else(|| anyhow!("connection is missing a host"))?;
+    let host = conn
+        .host
+        .as_deref()
+        .ok_or_else(|| anyhow!("connection is missing a host"))?;
     if host.starts_with("http://") || host.starts_with("https://") {
         Ok(match conn.port {
             Some(port) if !host.contains(&format!(":{port}")) => format!("{host}:{port}"),
@@ -43,7 +46,11 @@ fn build_request(
     query: &str,
 ) -> reqwest::RequestBuilder {
     let prefix = dialect.header_prefix();
-    let user = if conn.username.is_empty() { "prismnote" } else { conn.username.as_str() };
+    let user = if conn.username.is_empty() {
+        "prismnote"
+    } else {
+        conn.username.as_str()
+    };
     let mut req = client
         .post(format!("{base_url}/v1/statement"))
         .header("Content-Type", "text/plain")
@@ -91,11 +98,15 @@ pub async fn execute_query(
         .await
         .context("query submission failed")?;
     let status = response.status();
-    let text = response.text().await.context("failed to read response body")?;
+    let text = response
+        .text()
+        .await
+        .context("failed to read response body")?;
     if !status.is_success() {
         return Err(anyhow!("query engine returned {status}: {text}"));
     }
-    let mut page: Value = serde_json::from_str(&text).context("failed to parse response as JSON")?;
+    let mut page: Value =
+        serde_json::from_str(&text).context("failed to parse response as JSON")?;
 
     let mut columns: Vec<String> = Vec::new();
     let mut rows: Vec<Vec<Value>> = Vec::new();
@@ -109,11 +120,17 @@ pub async fn execute_query(
 
         if columns.is_empty() {
             if let Some(cols) = page["columns"].as_array() {
-                columns = cols.iter().filter_map(|c| c["name"].as_str().map(String::from)).collect();
+                columns = cols
+                    .iter()
+                    .filter_map(|c| c["name"].as_str().map(String::from))
+                    .collect();
             }
         }
         if let Some(data) = page["data"].as_array() {
-            rows.extend(data.iter().map(|row| row.as_array().cloned().unwrap_or_default()));
+            rows.extend(
+                data.iter()
+                    .map(|row| row.as_array().cloned().unwrap_or_default()),
+            );
         }
 
         let next_uri = match page["nextUri"].as_str() {
@@ -125,9 +142,16 @@ pub async fn execute_query(
         if let Some(token) = &auth_header {
             req = req.bearer_auth(token);
         }
-        let next_resp = req.send().await.context("failed to fetch next result page")?;
-        let next_text = next_resp.text().await.context("failed to read next result page")?;
-        page = serde_json::from_str(&next_text).context("failed to parse next result page as JSON")?;
+        let next_resp = req
+            .send()
+            .await
+            .context("failed to fetch next result page")?;
+        let next_text = next_resp
+            .text()
+            .await
+            .context("failed to read next result page")?;
+        page =
+            serde_json::from_str(&next_text).context("failed to parse next result page as JSON")?;
     }
 
     Ok(CloudQueryResult {
@@ -187,7 +211,9 @@ mod tests {
             .create_async()
             .await;
 
-        let result = execute_query(&conn, "SELECT * FROM t", Dialect::Trino).await.unwrap();
+        let result = execute_query(&conn, "SELECT * FROM t", Dialect::Trino)
+            .await
+            .unwrap();
         mock.assert_async().await;
 
         assert_eq!(result.columns, vec!["id".to_string(), "name".to_string()]);
@@ -216,9 +242,14 @@ mod tests {
             .create_async()
             .await;
 
-        let result = execute_query(&conn, "SELECT n FROM t", Dialect::Trino).await.unwrap();
+        let result = execute_query(&conn, "SELECT n FROM t", Dialect::Trino)
+            .await
+            .unwrap();
         assert_eq!(result.row_count, 2);
-        assert_eq!(result.rows, vec![vec![serde_json::json!(1)], vec![serde_json::json!(2)]]);
+        assert_eq!(
+            result.rows,
+            vec![vec![serde_json::json!(1)], vec![serde_json::json!(2)]]
+        );
     }
 
     #[tokio::test]
@@ -233,7 +264,9 @@ mod tests {
             .create_async()
             .await;
 
-        let err = execute_query(&conn, "SELECT * FROM missing", Dialect::Trino).await.unwrap_err();
+        let err = execute_query(&conn, "SELECT * FROM missing", Dialect::Trino)
+            .await
+            .unwrap_err();
         assert!(err.to_string().contains("does not exist"));
     }
 
@@ -250,7 +283,9 @@ mod tests {
             .create_async()
             .await;
 
-        execute_query(&conn, "SELECT 1", Dialect::Presto).await.unwrap();
+        execute_query(&conn, "SELECT 1", Dialect::Presto)
+            .await
+            .unwrap();
         mock.assert_async().await;
     }
 }

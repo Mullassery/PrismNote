@@ -35,7 +35,7 @@ pub struct RillTile {
     pub tile_id: String,
     pub title: String,
     pub visualization_type: VisualizationType,
-    pub dimensions: Vec<String>,     // Column names for grouping
+    pub dimensions: Vec<String>,      // Column names for grouping
     pub measures: Vec<MeasureConfig>, // Aggregations
     pub filters: Vec<String>,
     pub position: TilePosition,
@@ -111,7 +111,7 @@ pub struct RillDataSource {
     pub source_id: String,
     pub name: String,
     pub source_type: DataSourceType,
-    pub duckdb_query: String, // SQL query for DuckDB
+    pub duckdb_query: String,           // SQL query for DuckDB
     pub notebook_table: Option<String>, // Reference to notebook variable/table
     pub refresh_interval: Option<i32>,
     pub is_cached: bool,
@@ -149,11 +149,7 @@ impl RillProjectManager {
         }
     }
 
-    pub fn create_project(
-        &mut self,
-        notebook_id: &str,
-        name: &str,
-    ) -> RillProject {
+    pub fn create_project(&mut self, notebook_id: &str, name: &str) -> RillProject {
         let project_id = Uuid::new_v4().to_string();
         let project = RillProject {
             project_id: project_id.clone(),
@@ -170,11 +166,7 @@ impl RillProjectManager {
         project
     }
 
-    pub fn add_dashboard(
-        &mut self,
-        project_id: &str,
-        dashboard: RillDashboard,
-    ) -> bool {
+    pub fn add_dashboard(&mut self, project_id: &str, dashboard: RillDashboard) -> bool {
         if let Some(project) = self.projects.get_mut(project_id) {
             project.dashboards.push(dashboard);
             project.updated_at = Utc::now();
@@ -184,12 +176,7 @@ impl RillProjectManager {
         }
     }
 
-    pub fn add_tile(
-        &mut self,
-        project_id: &str,
-        dashboard_id: &str,
-        tile: RillTile,
-    ) -> bool {
+    pub fn add_tile(&mut self, project_id: &str, dashboard_id: &str, tile: RillTile) -> bool {
         if let Some(project) = self.projects.get_mut(project_id) {
             if let Some(dashboard) = project
                 .dashboards
@@ -220,13 +207,19 @@ impl RillProjectManager {
         // Generate YAML config for Rill Data project
         let mut config = String::from("# Rill Data Project Configuration\n");
         config.push_str(&format!("project_name: {}\n", project.name));
-        config.push_str(&format!("# Auto-generated for notebook: {}\n", project.notebook_id));
+        config.push_str(&format!(
+            "# Auto-generated for notebook: {}\n",
+            project.notebook_id
+        ));
         config.push_str("version: 1\n\n");
 
         config.push_str("sources:\n");
         for dashboard in &project.dashboards {
             config.push_str(&format!("  - name: {}\n", dashboard.source_data));
-            config.push_str(&format!("    sql: \"SELECT * FROM {}\"\n", dashboard.source_data));
+            config.push_str(&format!(
+                "    sql: \"SELECT * FROM {}\"\n",
+                dashboard.source_data
+            ));
         }
 
         config.push_str("\ndashboards:\n");

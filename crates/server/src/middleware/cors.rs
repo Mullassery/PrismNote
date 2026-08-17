@@ -1,5 +1,5 @@
 use axum::http::{HeaderValue, Method};
-use tower_http::cors::{CorsLayer, Any};
+use tower_http::cors::{Any, CorsLayer};
 
 /// Configure CORS for PrismNote
 ///
@@ -19,19 +19,19 @@ pub fn cors_layer() -> CorsLayer {
 
 /// Configure secure cookie settings
 pub struct CookieConfig {
-    pub same_site: &'static str,    // "Strict" | "Lax" | "None"
-    pub http_only: bool,             // Should not be accessible via JavaScript
-    pub secure: bool,                // Only send over HTTPS
-    pub max_age: u32,                // Seconds
+    pub same_site: &'static str, // "Strict" | "Lax" | "None"
+    pub http_only: bool,         // Should not be accessible via JavaScript
+    pub secure: bool,            // Only send over HTTPS
+    pub max_age: u32,            // Seconds
 }
 
 impl Default for CookieConfig {
     fn default() -> Self {
         CookieConfig {
-            same_site: "Strict",     // Prevent CSRF
-            http_only: true,         // Prevent XSS access to auth tokens
+            same_site: "Strict",             // Prevent CSRF
+            http_only: true,                 // Prevent XSS access to auth tokens
             secure: !cfg!(debug_assertions), // HTTPS in production
-            max_age: 3600 * 24 * 7,  // 7 days
+            max_age: 3600 * 24 * 7,          // 7 days
         }
     }
 }

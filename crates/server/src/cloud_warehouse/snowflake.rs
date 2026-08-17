@@ -25,24 +25,34 @@ fn private_key_pem(conn: &CloudWarehouseConnection) -> Result<&str> {
     conn.credentials
         .get("private_key_pem")
         .map(String::as_str)
-        .ok_or_else(|| anyhow!("Snowflake connection is missing credentials.private_key_pem (PKCS8 PEM)"))
+        .ok_or_else(|| {
+            anyhow!("Snowflake connection is missing credentials.private_key_pem (PKCS8 PEM)")
+        })
 }
 
 /// Snowflake's documented fingerprint: base64(SHA256(DER-encoded
 /// SubjectPublicKeyInfo of the public key)), prefixed "SHA256:".
 fn public_key_fingerprint(private_key_pem: &str) -> Result<String> {
-    let private_key =
-        RsaPrivateKey::from_pkcs8_pem(private_key_pem).context("failed to parse private_key_pem as PKCS8 PEM")?;
+    let private_key = RsaPrivateKey::from_pkcs8_pem(private_key_pem)
+        .context("failed to parse private_key_pem as PKCS8 PEM")?;
     let public_key = private_key.to_public_key();
-    let der = public_key.to_public_key_der().context("failed to DER-encode public key")?;
+    let der = public_key
+        .to_public_key_der()
+        .context("failed to DER-encode public key")?;
     let mut hasher = Sha256::new();
     hasher.update(der.as_bytes());
     let digest = hasher.finalize();
-    Ok(format!("SHA256:{}", base64::engine::general_purpose::STANDARD.encode(digest)))
+    Ok(format!(
+        "SHA256:{}",
+        base64::engine::general_purpose::STANDARD.encode(digest)
+    ))
 }
 
 fn build_jwt(conn: &CloudWarehouseConnection) -> Result<String> {
-    let account = conn.account_id.as_deref().ok_or_else(|| anyhow!("Snowflake connection is missing account_id"))?;
+    let account = conn
+        .account_id
+        .as_deref()
+        .ok_or_else(|| anyhow!("Snowflake connection is missing account_id"))?;
     let user = if conn.username.is_empty() {
         return Err(anyhow!("Snowflake connection is missing username"));
     } else {
@@ -60,10 +70,14 @@ fn build_jwt(conn: &CloudWarehouseConnection) -> Result<String> {
         exp: now + 3600, // Snowflake JWTs are valid up to 1 hour
     };
 
-    let encoding_key =
-        EncodingKey::from_rsa_pem(pem.as_bytes()).context("failed to load private key for JWT signing")?;
-    encode(&Header::new(jsonwebtoken::Algorithm::RS256), &claims, &encoding_key)
-        .context("failed to sign Snowflake JWT")
+    let encoding_key = EncodingKey::from_rsa_pem(pem.as_bytes())
+        .context("failed to load private key for JWT signing")?;
+    encode(
+        &Header::new(jsonwebtoken::Algorithm::RS256),
+        &claims,
+        &encoding_key,
+    )
+    .context("failed to sign Snowflake JWT")
 }
 
 fn base_url(conn: &CloudWarehouseConnection) -> Result<String> {
@@ -72,15 +86,23 @@ fn base_url(conn: &CloudWarehouseConnection) -> Result<String> {
             return Ok(host.clone());
         }
     }
-    let account = conn.account_id.as_deref().ok_or_else(|| anyhow!("Snowflake connection is missing account_id"))?;
+    let account = conn
+        .account_id
+        .as_deref()
+        .ok_or_else(|| anyhow!("Snowflake connection is missing account_id"))?;
     Ok(format!("https://{account}.snowflakecomputing.com"))
 }
 
 pub async fn test_connection(conn: &CloudWarehouseConnection) -> Result<String> {
-    execute_query(conn, "SELECT 1").await.map(|_| "Snowflake connection OK".to_string())
+    execute_query(conn, "SELECT 1")
+        .await
+        .map(|_| "Snowflake connection OK".to_string())
 }
 
-pub async fn execute_query(conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+pub async fn execute_query(
+    conn: &CloudWarehouseConnection,
+    query: &str,
+) -> Result<CloudQueryResult> {
     let client = reqwest::Client::new();
     let jwt = build_jwt(conn)?;
     let started = std::time::Instant::now();
@@ -105,11 +127,15 @@ pub async fn execute_query(conn: &CloudWarehouseConnection, query: &str) -> Resu
         .context("Snowflake query request failed")?;
 
     let status = response.status();
-    let text = response.text().await.context("failed to read Snowflake response body")?;
+    let text = response
+        .text()
+        .await
+        .context("failed to read Snowflake response body")?;
     if !status.is_success() {
         return Err(anyhow!("Snowflake API returned {status}: {text}"));
     }
-    let parsed: Value = serde_json::from_str(&text).context("failed to parse Snowflake response as JSON")?;
+    let parsed: Value =
+        serde_json::from_str(&text).context("failed to parse Snowflake response as JSON")?;
 
     if let Some(message) = parsed.get("message").and_then(|m| m.as_str()) {
         if parsed.get("code").is_some() && parsed.get("data").is_none() {
@@ -119,11 +145,21 @@ pub async fn execute_query(conn: &CloudWarehouseConnection, query: &str) -> Resu
 
     let columns: Vec<String> = parsed["resultSetMetaData"]["rowType"]
         .as_array()
-        .map(|cols| cols.iter().filter_map(|c| c["name"].as_str().map(String::from)).collect())
+        .map(|cols| {
+            cols.iter()
+                .filter_map(|c| c["name"].as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
 
-    let rows: Vec<Vec<Value>> =
-        parsed["data"].as_array().map(|rows| rows.iter().map(|r| r.as_array().cloned().unwrap_or_default()).collect()).unwrap_or_default();
+    let rows: Vec<Vec<Value>> = parsed["data"]
+        .as_array()
+        .map(|rows| {
+            rows.iter()
+                .map(|r| r.as_array().cloned().unwrap_or_default())
+                .collect()
+        })
+        .unwrap_or_default();
 
     Ok(CloudQueryResult {
         row_count: rows.len(),
@@ -182,7 +218,10 @@ K+8nfOZgYtilRoVQaaK5boUP\n\
 
     fn test_conn() -> CloudWarehouseConnection {
         let mut credentials = HashMap::new();
-        credentials.insert("private_key_pem".to_string(), TEST_PRIVATE_KEY_PEM.to_string());
+        credentials.insert(
+            "private_key_pem".to_string(),
+            TEST_PRIVATE_KEY_PEM.to_string(),
+        );
         CloudWarehouseConnection {
             id: "test".to_string(),
             warehouse_type: super::super::CloudWarehouseType::Snowflake,
@@ -218,10 +257,15 @@ K+8nfOZgYtilRoVQaaK5boUP\n\
         assert_eq!(parts.len(), 3, "JWT should have header.payload.signature");
 
         use base64::Engine;
-        let payload_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(parts[1]).unwrap();
+        let payload_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(parts[1])
+            .unwrap();
         let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
 
-        assert_eq!(payload["iss"], format!("MYACCOUNT.MYUSER.{EXPECTED_FINGERPRINT}"));
+        assert_eq!(
+            payload["iss"],
+            format!("MYACCOUNT.MYUSER.{EXPECTED_FINGERPRINT}")
+        );
         assert_eq!(payload["sub"], "MYACCOUNT.MYUSER");
         assert!(payload["exp"].as_i64().unwrap() > payload["iat"].as_i64().unwrap());
 
@@ -232,20 +276,27 @@ K+8nfOZgYtilRoVQaaK5boUP\n\
         let private_key = RsaPrivateKey::from_pkcs8_pem(TEST_PRIVATE_KEY_PEM).unwrap();
         let public_key = private_key.to_public_key();
         let public_pem =
-            rsa::pkcs8::EncodePublicKey::to_public_key_pem(&public_key, rsa::pkcs8::LineEnding::LF).unwrap();
+            rsa::pkcs8::EncodePublicKey::to_public_key_pem(&public_key, rsa::pkcs8::LineEnding::LF)
+                .unwrap();
 
         let decoding_key = jsonwebtoken::DecodingKey::from_rsa_pem(public_pem.as_bytes()).unwrap();
         let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
         validation.validate_exp = false; // token's exp is real, but we don't need the clock check for this test
         let decoded = jsonwebtoken::decode::<Claims>(&jwt, &decoding_key, &validation);
-        assert!(decoded.is_ok(), "JWT signature failed to verify against its own public key: {decoded:?}");
+        assert!(
+            decoded.is_ok(),
+            "JWT signature failed to verify against its own public key: {decoded:?}"
+        );
     }
 
     #[test]
     fn missing_private_key_is_a_clear_error() {
         let mut conn = test_conn();
         conn.credentials.remove("private_key_pem");
-        assert!(build_jwt(&conn).unwrap_err().to_string().contains("private_key_pem"));
+        assert!(build_jwt(&conn)
+            .unwrap_err()
+            .to_string()
+            .contains("private_key_pem"));
     }
 
     #[tokio::test]

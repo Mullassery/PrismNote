@@ -1,6 +1,6 @@
-use chrono::{DateTime, Local, Duration};
+use chrono::{DateTime, Duration, Local};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -49,9 +49,7 @@ impl QueryCache {
     /// Store result in cache
     pub fn put(&self, query: &str, result: serde_json::Value, ttl_seconds: i64) {
         let query_hash = Self::hash_query(query);
-        let size_bytes = serde_json::to_string(&result)
-            .map(|s| s.len())
-            .unwrap_or(0);
+        let size_bytes = serde_json::to_string(&result).map(|s| s.len()).unwrap_or(0);
 
         let cached = CachedResult {
             query_hash: query_hash.clone(),
@@ -130,17 +128,21 @@ impl QueryCache {
         let max_bytes = self.max_size_mb * 1024 * 1024;
 
         if total_size > max_bytes {
-            tracing::info!("Cache size limit exceeded ({} > {}), cleaning up", total_size, max_bytes);
+            tracing::info!(
+                "Cache size limit exceeded ({} > {}), cleaning up",
+                total_size,
+                max_bytes
+            );
 
             // Remove expired entries first
             cache.retain(|_, cached| !cached.is_expired());
 
             // If still too large, remove oldest entries
             let mut expired_count = cache.len();
-            while cache.values().map(|c| c.size_bytes).sum::<usize>() > max_bytes && !cache.is_empty() {
-                if let Some(oldest_key) = cache.keys()
-                    .min_by_key(|k| &cache[*k].cached_at)
-                    .cloned()
+            while cache.values().map(|c| c.size_bytes).sum::<usize>() > max_bytes
+                && !cache.is_empty()
+            {
+                if let Some(oldest_key) = cache.keys().min_by_key(|k| &cache[*k].cached_at).cloned()
                 {
                     cache.remove(&oldest_key);
                 }

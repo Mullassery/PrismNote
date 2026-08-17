@@ -37,9 +37,7 @@ pub async fn get_database_schema() -> anyhow::Result<SchemaInfo> {
 
     // For now, return an empty schema that can be populated by real DuckDB queries
     // This will be integrated with actual DuckDB connection later
-    Ok(SchemaInfo {
-        tables: vec![],
-    })
+    Ok(SchemaInfo { tables: vec![] })
 }
 
 /// Generate autocomplete suggestions from schema
@@ -101,12 +99,24 @@ pub fn generate_suggestions(schema: &SchemaInfo, prefix: &str) -> Vec<Completion
         ("AVG", "Aggregate function", "AVG(column)"),
         ("MIN", "Aggregate function", "MIN(column)"),
         ("MAX", "Aggregate function", "MAX(column)"),
-        ("COUNT DISTINCT", "Aggregate function", "COUNT(DISTINCT column)"),
-        ("COALESCE", "Scalar function", "COALESCE(value1, value2, ...)"),
+        (
+            "COUNT DISTINCT",
+            "Aggregate function",
+            "COUNT(DISTINCT column)",
+        ),
+        (
+            "COALESCE",
+            "Scalar function",
+            "COALESCE(value1, value2, ...)",
+        ),
         ("UPPER", "String function", "UPPER(string)"),
         ("LOWER", "String function", "LOWER(string)"),
         ("LENGTH", "String function", "LENGTH(string)"),
-        ("SUBSTRING", "String function", "SUBSTRING(string, start, length)"),
+        (
+            "SUBSTRING",
+            "String function",
+            "SUBSTRING(string, start, length)",
+        ),
         ("TRIM", "String function", "TRIM(string)"),
         ("REPLACE", "String function", "REPLACE(string, from, to)"),
         ("ROUND", "Math function", "ROUND(number, decimals)"),
@@ -132,7 +142,11 @@ pub fn generate_suggestions(schema: &SchemaInfo, prefix: &str) -> Vec<Completion
 
     // Add tables from schema
     for table in &schema.tables {
-        if table.name.to_lowercase().starts_with(&prefix.to_lowercase()) {
+        if table
+            .name
+            .to_lowercase()
+            .starts_with(&prefix.to_lowercase())
+        {
             suggestions.push(CompletionSuggestion {
                 label: table.name.clone(),
                 kind: "table".to_string(),
@@ -150,7 +164,11 @@ pub fn generate_suggestions(schema: &SchemaInfo, prefix: &str) -> Vec<Completion
             let table_name = parts[0];
             let col_prefix = parts[1].to_lowercase();
 
-            if let Some(table) = schema.tables.iter().find(|t| t.name.eq_ignore_ascii_case(table_name)) {
+            if let Some(table) = schema
+                .tables
+                .iter()
+                .find(|t| t.name.eq_ignore_ascii_case(table_name))
+            {
                 for col in &table.columns {
                     if col.name.to_lowercase().starts_with(&col_prefix) {
                         suggestions.push(CompletionSuggestion {

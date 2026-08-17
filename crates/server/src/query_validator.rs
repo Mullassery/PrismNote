@@ -8,86 +8,28 @@ use regex::Regex;
 const MAX_QUERY_LENGTH: usize = 100 * 1024; // 100KB limit
 const MAX_QUERY_NESTING: usize = 10; // Prevent deeply nested queries
 
-/// SQL keywords allowed in user queries (read-only operations)
-const ALLOWED_KEYWORDS: &[&str] = &[
-    "SELECT",
-    "FROM",
-    "WHERE",
-    "JOIN",
-    "LEFT",
-    "INNER",
-    "OUTER",
-    "RIGHT",
-    "CROSS",
-    "ON",
-    "AND",
-    "OR",
-    "NOT",
-    "IN",
-    "LIKE",
-    "BETWEEN",
-    "IS",
-    "NULL",
-    "TRUE",
-    "FALSE",
-    "ORDER",
-    "BY",
-    "GROUP",
-    "HAVING",
-    "LIMIT",
-    "OFFSET",
-    "DISTINCT",
-    "AS",
-    "WITH",
-    "UNION",
-    "ALL",
-    "CASE",
-    "WHEN",
-    "THEN",
-    "ELSE",
-    "END",
-    "CAST",
-    "INTERVAL",
-    "EXTRACT",
-    "DATE",
-    "TIME",
-    "TIMESTAMP",
-    "CURRENT",
-    "LOCAL",
-    "ZONE",
-    "COLLATE",
-    "ILIKE",
-    "GLOB",
-    "REGEXP",
-    "SIMILAR",
-    "CONTAINS",
-    "JSONB",
-];
-
-/// SQL keywords NEVER allowed (dangerous operations)
+/// SQL keywords that have no legitimate use in a notebook SQL cell
+/// regardless of where they appear in the query — privilege escalation and
+/// server-admin operations. Ordinary DDL/DML (CREATE/DROP/ALTER/
+/// INSERT/UPDATE/DELETE/TRUNCATE) is deliberately NOT in this list: these
+/// connections are the user's own credentialed database/warehouse, and
+/// running a `CREATE TABLE` or `INSERT` they typed themselves is core,
+/// expected SQL-notebook functionality — not injection. The actual
+/// injection threat this module defends against (a *second*, smuggled
+/// statement appended to an otherwise-innocuous query, e.g.
+/// `SELECT 1; DROP TABLE users`) is caught by `check_injection_patterns`
+/// (multi-statement/semicolon detection) and `check_comment_injection`
+/// below, which look at statement *position*, not just keyword presence.
 const BLOCKED_KEYWORDS: &[&str] = &[
-    "CREATE",
-    "DROP",
-    "ALTER",
-    "DELETE",
-    "INSERT",
-    "UPDATE",
-    "TRUNCATE",
-    "EXEC",
-    "EXECUTE",
-    "CALL",
-    "DECLARE",
-    "SET",
-    "GO",
     "GRANT",
     "REVOKE",
     "DENY",
+    "EXEC",
+    "EXECUTE",
     // SQL Server stored procedure prefixes
     "xp_",
     "sp_",
-    // Dangerous functions
-    "COPY",
-    "INTO",
+    // Dangerous functions for exfiltration / arbitrary file access
     "OUTFILE",
     "LOAD_FILE",
     "INTO_OUTFILE",
@@ -161,7 +103,7 @@ impl QueryValidator {
             if ch == '-' && chars.peek() == Some(&'-') {
                 chars.next(); // consume second -
                               // Skip until end of line
-                while let Some(c) = chars.next() {
+                for c in chars.by_ref() {
                     if c == '\n' {
                         result.push('\n');
                         break;
@@ -174,7 +116,7 @@ impl QueryValidator {
             if ch == '/' && chars.peek() == Some(&'*') {
                 chars.next(); // consume *
                 let mut prev = ' ';
-                while let Some(c) = chars.next() {
+                for c in chars.by_ref() {
                     if prev == '*' && c == '/' {
                         break;
                     }
@@ -290,6 +232,8 @@ impl QueryValidator {
             r";\s*UPDATE\s",
             r";\s*INSERT\s+INTO\s",
             r";\s*TRUNCATE\s",
+            r";\s*ALTER\s",
+            r";\s*CREATE\s",
             r"--\s*DROP",
             r"--\s*DELETE",
         ];
@@ -325,8 +269,29 @@ mod tests {
     }
 
     #[test]
-    fn test_blocked_keyword_drop() {
-        assert!(QueryValidator::validate("DROP TABLE users").is_err());
+    fn test_standalone_ddl_dml_is_allowed() {
+        // A single statement the user directly typed against their own
+        // connected database — CREATE/INSERT/UPDATE/DELETE/DROP — is
+        // legitimate SQL-notebook usage and must not be blocked.
+        assert!(QueryValidator::validate("DROP TABLE users").is_ok());
+        assert!(QueryValidator::validate("CREATE TABLE t (id INT)").is_ok());
+        assert!(QueryValidator::validate("INSERT INTO t VALUES (1)").is_ok());
+        assert!(QueryValidator::validate("UPDATE t SET id = 2 WHERE id = 1").is_ok());
+        assert!(QueryValidator::validate("DELETE FROM t WHERE id = 1").is_ok());
+    }
+
+    #[test]
+    fn test_smuggled_stacked_statement_still_blocked() {
+        // A dangerous statement smuggled in after the user's intended
+        // query via a semicolon is still rejected.
+        assert!(QueryValidator::validate("SELECT 1; DROP TABLE users").is_err());
+        assert!(QueryValidator::validate("SELECT 1; DELETE FROM users").is_err());
+    }
+
+    #[test]
+    fn test_privilege_escalation_always_blocked() {
+        assert!(QueryValidator::validate("GRANT ALL ON users TO PUBLIC").is_err());
+        assert!(QueryValidator::validate("EXEC xp_cmdshell 'dir'").is_err());
     }
 
     #[test]

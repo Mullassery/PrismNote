@@ -39,7 +39,7 @@ pub struct QualityAssertion {
     pub assertion_id: String,
     pub name: String,
     pub description: Option<String>,
-    pub rule: String, // SQL or expression to validate
+    pub rule: String,     // SQL or expression to validate
     pub severity: String, // 'warning', 'error', 'critical'
     pub enabled: bool,
     pub last_checked: Option<DateTime<Utc>>,
@@ -122,11 +122,7 @@ impl GovernanceManager {
         }
     }
 
-    pub fn add_quality_assertion(
-        &mut self,
-        column_id: &str,
-        assertion: QualityAssertion,
-    ) -> bool {
+    pub fn add_quality_assertion(&mut self, column_id: &str, assertion: QualityAssertion) -> bool {
         if let Some(gov) = self.column_policies.get_mut(column_id) {
             gov.quality_assertions.push(assertion);
             gov.updated_at = Utc::now();
@@ -163,8 +159,7 @@ impl GovernanceManager {
     }
 
     pub fn add_policy(&mut self, policy: GovernancePolicy) {
-        self.policies
-            .insert(policy.policy_id.clone(), policy);
+        self.policies.insert(policy.policy_id.clone(), policy);
     }
 
     pub fn get_policy(&self, policy_id: &str) -> Option<GovernancePolicy> {
@@ -182,7 +177,10 @@ impl GovernanceManager {
                         violation_id: uuid::Uuid::new_v4().to_string(),
                         policy_id: "retention".to_string(),
                         severity: "warning".to_string(),
-                        message: format!("Data retention policy: {} days may be too short", retention),
+                        message: format!(
+                            "Data retention policy: {} days may be too short",
+                            retention
+                        ),
                     });
                 }
             }

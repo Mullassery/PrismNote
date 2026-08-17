@@ -1,13 +1,5 @@
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SQLQuery {
-    pub query: String,
-    pub connection_id: String,
-    pub timeout_seconds: u32,
-}
+use serde_json::Value;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryResult {
@@ -29,6 +21,11 @@ pub struct QueryOptimization {
 pub struct SQLExecutor;
 
 impl SQLExecutor {
+    // Not wired into the cell-execution dispatcher yet (cells are currently
+    // routed by an explicit `language` field, not by sniffing a `--sql`/`%sql`
+    // magic prefix) — kept and tested as the building block for that, rather
+    // than deleted, since the detection logic itself is real and correct.
+    #[allow(dead_code)]
     pub fn parse_sql_cell(code: &str) -> Option<String> {
         let trimmed = code.trim();
 
@@ -57,20 +54,9 @@ impl SQLExecutor {
         None
     }
 
+    #[allow(dead_code)]
     pub fn is_sql_cell(code: &str) -> bool {
         Self::parse_sql_cell(code).is_some()
-    }
-
-    pub async fn execute_query(_query: &str, _connection_id: &str) -> Result<QueryResult> {
-        // TODO: Integrate with database manager
-        // For now, return placeholder result
-        Ok(QueryResult {
-            columns: vec!["id".to_string(), "value".to_string()],
-            rows: vec![vec![json!(1), json!("test")], vec![json!(2), json!("data")]],
-            row_count: 2,
-            execution_time_ms: 150,
-            estimated_memory_bytes: 2048,
-        })
     }
 
     pub fn format_result_as_html(result: &QueryResult) -> String {

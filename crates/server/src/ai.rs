@@ -57,7 +57,8 @@ impl AIEngine {
             "claude" => self.claude_fix(code, error).await,
             "openai" => self.openai_fix(code, error).await,
             _ => Err(anyhow!("Unknown AI provider")),
-        }.map_err(|e| {
+        }
+        .map_err(|e| {
             eprintln!("AI fix error: {}", e);
             e
         })
@@ -69,7 +70,8 @@ impl AIEngine {
             "claude" => self.claude_complete(code, context).await,
             "openai" => self.openai_complete(code, context).await,
             _ => Err(anyhow!("Unknown AI provider")),
-        }.map_err(|e| {
+        }
+        .map_err(|e| {
             eprintln!("AI complete error: {}", e);
             e
         })
@@ -538,7 +540,7 @@ impl AIEngine {
                     },
                     "required": ["description", "language"]
                 }
-            })
+            }),
         ]
     }
 
@@ -560,12 +562,15 @@ impl AIEngine {
         body_obj.insert("system".to_string(), json!(
             "You are an expert Python developer and data scientist assistant. Provide clear, concise, and accurate responses. For code explanations, explain both what the code does and why it's written that way. You have access to tools to format code, generate tests, analyze performance, generate documentation, scan for security issues, and generate code. Use these tools when appropriate to provide complete solutions."
         ));
-        body_obj.insert("messages".to_string(), json!([
-            {
-                "role": "user",
-                "content": message
-            }
-        ]));
+        body_obj.insert(
+            "messages".to_string(),
+            json!([
+                {
+                    "role": "user",
+                    "content": message
+                }
+            ]),
+        );
 
         // Include tool definitions (Phase 2: Claude Tool Use support)
         body_obj.insert("tools".to_string(), json!(Self::get_mcp_tools()));
@@ -584,7 +589,10 @@ impl AIEngine {
 
         let status = response.status();
         if !status.is_success() {
-            let error_detail = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_detail = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             return Err(anyhow!("Claude API error ({}): {}", status, error_detail));
         }
 
@@ -606,7 +614,9 @@ impl AIEngine {
                         }
                         "tool_use" => {
                             // Phase 2: Log tool use (execution loop will be implemented in Phase 2.1.3)
-                            if let Some(tool_name) = content_block.get("name").and_then(|n| n.as_str()) {
+                            if let Some(tool_name) =
+                                content_block.get("name").and_then(|n| n.as_str())
+                            {
                                 eprintln!("DEBUG: Claude wants to use tool: {}", tool_name);
                                 tool_uses.push(content_block.clone());
                             }
@@ -620,13 +630,21 @@ impl AIEngine {
             if !response_parts.is_empty() {
                 response_parts.join("\n")
             } else if !tool_uses.is_empty() {
-                eprintln!("DEBUG: Detected {} tool use calls (execution not yet implemented)", tool_uses.len());
-                "Claude wants to use tools for this request. Tool execution loop coming in Phase 2.".to_string()
+                eprintln!(
+                    "DEBUG: Detected {} tool use calls (execution not yet implemented)",
+                    tool_uses.len()
+                );
+                "Claude wants to use tools for this request. Tool execution loop coming in Phase 2."
+                    .to_string()
             } else {
-                return Err(anyhow!("Invalid Claude API response format (no text or tool_use)"));
+                return Err(anyhow!(
+                    "Invalid Claude API response format (no text or tool_use)"
+                ));
             }
         } else {
-            return Err(anyhow!("Invalid Claude API response format (no content array)"));
+            return Err(anyhow!(
+                "Invalid Claude API response format (no content array)"
+            ));
         };
 
         Ok(response_text)

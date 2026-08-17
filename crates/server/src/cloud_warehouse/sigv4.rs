@@ -55,8 +55,10 @@ pub fn sign(
     let date_stamp = now.format("%Y%m%d").to_string();
     let payload_hash = sha256_hex(body);
 
-    let mut all_headers: Vec<(String, String)> =
-        vec![("host".to_string(), host.to_string()), ("x-amz-date".to_string(), amz_date.clone())];
+    let mut all_headers: Vec<(String, String)> = vec![
+        ("host".to_string(), host.to_string()),
+        ("x-amz-date".to_string(), amz_date.clone()),
+    ];
     all_headers.push(("x-amz-content-sha256".to_string(), payload_hash.clone()));
     if let Some(token) = creds.session_token {
         all_headers.push(("x-amz-security-token".to_string(), token.to_string()));
@@ -66,20 +68,34 @@ pub fn sign(
     }
     all_headers.sort_by(|a, b| a.0.cmp(&b.0));
 
-    let canonical_headers: String =
-        all_headers.iter().map(|(k, v)| format!("{k}:{v}\n")).collect::<Vec<_>>().concat();
-    let signed_headers: String = all_headers.iter().map(|(k, _)| k.as_str()).collect::<Vec<_>>().join(";");
+    let canonical_headers: String = all_headers
+        .iter()
+        .map(|(k, v)| format!("{k}:{v}\n"))
+        .collect::<Vec<_>>()
+        .concat();
+    let signed_headers: String = all_headers
+        .iter()
+        .map(|(k, _)| k.as_str())
+        .collect::<Vec<_>>()
+        .join(";");
 
-    let canonical_request =
-        format!("{method}\n{path}\n{query_string}\n{canonical_headers}\n{signed_headers}\n{payload_hash}");
+    let canonical_request = format!(
+        "{method}\n{path}\n{query_string}\n{canonical_headers}\n{signed_headers}\n{payload_hash}"
+    );
 
-    let credential_scope = format!("{date_stamp}/{}/{}/aws4_request", creds.region, creds.service);
+    let credential_scope = format!(
+        "{date_stamp}/{}/{}/aws4_request",
+        creds.region, creds.service
+    );
     let string_to_sign = format!(
         "AWS4-HMAC-SHA256\n{amz_date}\n{credential_scope}\n{}",
         sha256_hex(canonical_request.as_bytes())
     );
 
-    let k_date = hmac_sha256(format!("AWS4{}", creds.secret_access_key).as_bytes(), date_stamp.as_bytes());
+    let k_date = hmac_sha256(
+        format!("AWS4{}", creds.secret_access_key).as_bytes(),
+        date_stamp.as_bytes(),
+    );
     let k_region = hmac_sha256(&k_date, creds.region.as_bytes());
     let k_service = hmac_sha256(&k_region, creds.service.as_bytes());
     let k_signing = hmac_sha256(&k_service, b"aws4_request");
@@ -126,9 +142,22 @@ mod tests {
         };
         let now = Utc.with_ymd_and_hms(2015, 8, 30, 12, 36, 0).unwrap();
 
-        let signed = sign("GET", "example.amazonaws.com", "/", "", &[], b"", &creds, now);
+        let signed = sign(
+            "GET",
+            "example.amazonaws.com",
+            "/",
+            "",
+            &[],
+            b"",
+            &creds,
+            now,
+        );
 
-        let auth = signed.headers.iter().find(|(k, _)| k == "Authorization").unwrap();
+        let auth = signed
+            .headers
+            .iter()
+            .find(|(k, _)| k == "Authorization")
+            .unwrap();
         assert_eq!(
             auth.1,
             "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, \
@@ -147,11 +176,27 @@ mod tests {
             service: "athena",
         };
         let now = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
-        let signed = sign("POST", "athena.us-east-1.amazonaws.com", "/", "", &[], b"{}", &creds, now);
+        let signed = sign(
+            "POST",
+            "athena.us-east-1.amazonaws.com",
+            "/",
+            "",
+            &[],
+            b"{}",
+            &creds,
+            now,
+        );
 
-        assert!(signed.headers.iter().any(|(k, v)| k == "X-Amz-Security-Token" && v == "TOKEN123"));
+        assert!(signed
+            .headers
+            .iter()
+            .any(|(k, v)| k == "X-Amz-Security-Token" && v == "TOKEN123"));
         // The token must also be part of what's signed (signed_headers list), not just attached.
-        let auth = signed.headers.iter().find(|(k, _)| k == "Authorization").unwrap();
+        let auth = signed
+            .headers
+            .iter()
+            .find(|(k, _)| k == "Authorization")
+            .unwrap();
         assert!(auth.1.contains("x-amz-security-token"));
     }
 
@@ -165,8 +210,26 @@ mod tests {
             service: "athena",
         };
         let now = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
-        let a = sign("POST", "athena.us-east-1.amazonaws.com", "/", "", &[], b"{\"a\":1}", &creds, now);
-        let b = sign("POST", "athena.us-east-1.amazonaws.com", "/", "", &[], b"{\"a\":2}", &creds, now);
+        let a = sign(
+            "POST",
+            "athena.us-east-1.amazonaws.com",
+            "/",
+            "",
+            &[],
+            b"{\"a\":1}",
+            &creds,
+            now,
+        );
+        let b = sign(
+            "POST",
+            "athena.us-east-1.amazonaws.com",
+            "/",
+            "",
+            &[],
+            b"{\"a\":2}",
+            &creds,
+            now,
+        );
         assert_ne!(a.headers, b.headers);
     }
 }

@@ -19,18 +19,30 @@ fn token(conn: &CloudWarehouseConnection) -> Result<&str> {
 }
 
 fn warehouse_id(conn: &CloudWarehouseConnection) -> Result<&str> {
-    conn.warehouse_id.as_deref().ok_or_else(|| anyhow!("Databricks connection is missing warehouse_id"))
+    conn.warehouse_id
+        .as_deref()
+        .ok_or_else(|| anyhow!("Databricks connection is missing warehouse_id"))
 }
 
 fn base_url(conn: &CloudWarehouseConnection) -> Result<String> {
-    conn.host.clone().ok_or_else(|| anyhow!("Databricks connection is missing host (the workspace URL)"))
+    conn.host
+        .clone()
+        .ok_or_else(|| anyhow!("Databricks connection is missing host (the workspace URL)"))
 }
 
 pub async fn test_connection(conn: &CloudWarehouseConnection) -> Result<String> {
     let client = reqwest::Client::new();
-    let url = format!("{}/api/2.0/sql/warehouses/{}", base_url(conn)?, warehouse_id(conn)?);
-    let response =
-        client.get(&url).bearer_auth(token(conn)?).send().await.context("Databricks connectivity check failed")?;
+    let url = format!(
+        "{}/api/2.0/sql/warehouses/{}",
+        base_url(conn)?,
+        warehouse_id(conn)?
+    );
+    let response = client
+        .get(&url)
+        .bearer_auth(token(conn)?)
+        .send()
+        .await
+        .context("Databricks connectivity check failed")?;
     let status = response.status();
     if !status.is_success() {
         let text = response.text().await.unwrap_or_default();
@@ -39,7 +51,10 @@ pub async fn test_connection(conn: &CloudWarehouseConnection) -> Result<String> 
     Ok("Databricks connection OK".to_string())
 }
 
-pub async fn execute_query(conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+pub async fn execute_query(
+    conn: &CloudWarehouseConnection,
+    query: &str,
+) -> Result<CloudQueryResult> {
     execute_query_against(conn, query, &base_url(conn)?).await
 }
 
@@ -67,32 +82,52 @@ async fn execute_query_against(
         .await
         .context("Databricks statement submission failed")?;
     let status = response.status();
-    let text = response.text().await.context("failed to read Databricks response body")?;
+    let text = response
+        .text()
+        .await
+        .context("failed to read Databricks response body")?;
     if !status.is_success() {
         return Err(anyhow!("Databricks API returned {status}: {text}"));
     }
-    let mut parsed: Value = serde_json::from_str(&text).context("failed to parse Databricks response as JSON")?;
+    let mut parsed: Value =
+        serde_json::from_str(&text).context("failed to parse Databricks response as JSON")?;
 
     let statement_id = parsed["statement_id"]
         .as_str()
         .ok_or_else(|| anyhow!("Databricks response missing statement_id"))?
         .to_string();
 
-    let mut state = parsed["status"]["state"].as_str().unwrap_or("PENDING").to_string();
+    let mut state = parsed["status"]["state"]
+        .as_str()
+        .unwrap_or("PENDING")
+        .to_string();
     let mut attempts = 0;
     while matches!(state.as_str(), "PENDING" | "RUNNING") && attempts < MAX_POLL_ATTEMPTS {
         tokio::time::sleep(POLL_INTERVAL).await;
         let poll_url = format!("{base_url}/api/2.0/sql/statements/{statement_id}");
-        let poll_resp =
-            client.get(&poll_url).bearer_auth(token(conn)?).send().await.context("Databricks poll failed")?;
-        let poll_text = poll_resp.text().await.context("failed to read Databricks poll response")?;
-        parsed = serde_json::from_str(&poll_text).context("failed to parse Databricks poll response")?;
-        state = parsed["status"]["state"].as_str().unwrap_or("UNKNOWN").to_string();
+        let poll_resp = client
+            .get(&poll_url)
+            .bearer_auth(token(conn)?)
+            .send()
+            .await
+            .context("Databricks poll failed")?;
+        let poll_text = poll_resp
+            .text()
+            .await
+            .context("failed to read Databricks poll response")?;
+        parsed =
+            serde_json::from_str(&poll_text).context("failed to parse Databricks poll response")?;
+        state = parsed["status"]["state"]
+            .as_str()
+            .unwrap_or("UNKNOWN")
+            .to_string();
         attempts += 1;
     }
 
     if state == "FAILED" {
-        let message = parsed["status"]["error"]["message"].as_str().unwrap_or("no error message given");
+        let message = parsed["status"]["error"]["message"]
+            .as_str()
+            .unwrap_or("no error message given");
         return Err(anyhow!("Databricks query failed: {message}"));
     }
     if state != "SUCCEEDED" {
@@ -103,7 +138,11 @@ async fn execute_query_against(
 
     let columns: Vec<String> = parsed["manifest"]["schema"]["columns"]
         .as_array()
-        .map(|cols| cols.iter().filter_map(|c| c["name"].as_str().map(String::from)).collect())
+        .map(|cols| {
+            cols.iter()
+                .filter_map(|c| c["name"].as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
 
     let rows: Vec<Vec<Value>> = parsed["result"]["data_array"]
@@ -158,7 +197,10 @@ mod tests {
     fn missing_token_is_a_clear_error() {
         let mut conn = test_conn("http://unused");
         conn.credentials.remove("access_token");
-        assert!(token(&conn).unwrap_err().to_string().contains("access token"));
+        assert!(token(&conn)
+            .unwrap_err()
+            .to_string()
+            .contains("access token"));
     }
 
     #[test]
@@ -189,7 +231,9 @@ mod tests {
             .create_async()
             .await;
 
-        let result = execute_query_against(&conn, "SELECT * FROM t", &server.url()).await.unwrap();
+        let result = execute_query_against(&conn, "SELECT * FROM t", &server.url())
+            .await
+            .unwrap();
         mock.assert_async().await;
 
         assert_eq!(result.columns, vec!["id".to_string(), "name".to_string()]);
@@ -222,7 +266,9 @@ mod tests {
             .create_async()
             .await;
 
-        let result = execute_query_against(&conn, "SELECT COUNT(*) FROM t", &server.url()).await.unwrap();
+        let result = execute_query_against(&conn, "SELECT COUNT(*) FROM t", &server.url())
+            .await
+            .unwrap();
         assert_eq!(result.rows[0][0], serde_json::json!("42"));
     }
 
@@ -240,7 +286,9 @@ mod tests {
             .create_async()
             .await;
 
-        let err = execute_query_against(&conn, "SELECT * FROM missing", &server.url()).await.unwrap_err();
+        let err = execute_query_against(&conn, "SELECT * FROM missing", &server.url())
+            .await
+            .unwrap_err();
         assert!(err.to_string().contains("TABLE_OR_VIEW_NOT_FOUND"));
     }
 }

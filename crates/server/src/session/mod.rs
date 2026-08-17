@@ -1,8 +1,8 @@
-use sqlx::SqlitePool;
-use uuid::Uuid;
+use anyhow::Result;
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
-use anyhow::Result;
+use sqlx::SqlitePool;
+use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SessionData {
@@ -39,7 +39,11 @@ impl SessionManager {
         let expires_at = now + Duration::hours(8); // 8 hour idle timeout
         let max_duration = now + Duration::days(30); // 30 day absolute max
 
-        let expiry = if expires_at < max_duration { expires_at } else { max_duration };
+        let expiry = if expires_at < max_duration {
+            expires_at
+        } else {
+            max_duration
+        };
 
         sqlx::query(
             "INSERT INTO sessions (session_id, user_id, jwt_token, created_at, expires_at, last_activity, ip_address, user_agent, is_active)
@@ -144,24 +148,28 @@ impl SessionManager {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(rows.into_iter().map(|r| SessionData {
-            session_id: r.0,
-            user_id: r.1,
-            jwt_token: r.2,
-            created_at: r.3,
-            expires_at: r.4,
-            last_activity: r.5,
-            ip_address: r.6,
-            user_agent: r.7,
-            is_active: r.8,
-        }).collect())
+        Ok(rows
+            .into_iter()
+            .map(|r| SessionData {
+                session_id: r.0,
+                user_id: r.1,
+                jwt_token: r.2,
+                created_at: r.3,
+                expires_at: r.4,
+                last_activity: r.5,
+                ip_address: r.6,
+                user_agent: r.7,
+                is_active: r.8,
+            })
+            .collect())
     }
 
     /// Cleanup expired sessions (run periodically)
     pub async fn cleanup_expired(&self) -> Result<u64> {
-        let result = sqlx::query("UPDATE sessions SET is_active = 0 WHERE expires_at <= datetime('now')")
-            .execute(&self.pool)
-            .await?;
+        let result =
+            sqlx::query("UPDATE sessions SET is_active = 0 WHERE expires_at <= datetime('now')")
+                .execute(&self.pool)
+                .await?;
 
         Ok(result.rows_affected())
     }

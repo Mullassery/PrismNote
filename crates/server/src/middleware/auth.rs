@@ -1,3 +1,4 @@
+use crate::enterprise_auth::{AuthenticatedUser, EnterpriseAuthManager, JWTClaims};
 use axum::{
     async_trait,
     extract::FromRequestParts,
@@ -6,7 +7,6 @@ use axum::{
     Json,
 };
 use serde::Serialize;
-use crate::enterprise_auth::{JWTClaims, AuthenticatedUser, EnterpriseAuthManager};
 
 /// JWT Claims extracted from Authorization header
 #[derive(Clone, Debug)]
@@ -26,10 +26,7 @@ pub struct AuthError {
 
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(self),
-        ).into_response()
+        (StatusCode::UNAUTHORIZED, Json(self)).into_response()
     }
 }
 
@@ -53,21 +50,17 @@ where
             })?;
 
         // Extract Bearer token
-        let token = auth_header
-            .strip_prefix("Bearer ")
-            .ok_or(AuthError {
-                error: "invalid_auth_format".to_string(),
-                message: "Invalid Authorization format. Expected 'Bearer <token>'".to_string(),
-            })?;
+        let token = auth_header.strip_prefix("Bearer ").ok_or(AuthError {
+            error: "invalid_auth_format".to_string(),
+            message: "Invalid Authorization format. Expected 'Bearer <token>'".to_string(),
+        })?;
 
         // Validate JWT token
         let auth_manager = EnterpriseAuthManager::new(get_jwt_secret());
-        let (claims, user) = auth_manager
-            .validate_jwt(token)
-            .map_err(|e| AuthError {
-                error: "invalid_token".to_string(),
-                message: format!("Token validation failed: {}", e),
-            })?;
+        let (claims, user) = auth_manager.validate_jwt(token).map_err(|e| AuthError {
+            error: "invalid_token".to_string(),
+            message: format!("Token validation failed: {}", e),
+        })?;
 
         Ok(CurrentUser {
             user_id: claims.sub,

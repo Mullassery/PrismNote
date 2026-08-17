@@ -17,16 +17,24 @@ fn access_token(conn: &CloudWarehouseConnection) -> Result<&str> {
 }
 
 fn project_id(conn: &CloudWarehouseConnection) -> Result<&str> {
-    conn.project_id.as_deref().ok_or_else(|| anyhow!("BigQuery connection is missing project_id"))
+    conn.project_id
+        .as_deref()
+        .ok_or_else(|| anyhow!("BigQuery connection is missing project_id"))
 }
 
 fn base_url(conn: &CloudWarehouseConnection) -> String {
-    conn.host.clone().unwrap_or_else(|| "https://bigquery.googleapis.com".to_string())
+    conn.host
+        .clone()
+        .unwrap_or_else(|| "https://bigquery.googleapis.com".to_string())
 }
 
 pub async fn test_connection(conn: &CloudWarehouseConnection) -> Result<String> {
     let client = reqwest::Client::new();
-    let url = format!("{}/bigquery/v2/projects/{}/datasets?maxResults=1", base_url(conn), project_id(conn)?);
+    let url = format!(
+        "{}/bigquery/v2/projects/{}/datasets?maxResults=1",
+        base_url(conn),
+        project_id(conn)?
+    );
     let response = client
         .get(&url)
         .bearer_auth(access_token(conn)?)
@@ -41,9 +49,16 @@ pub async fn test_connection(conn: &CloudWarehouseConnection) -> Result<String> 
     Ok("BigQuery connection OK".to_string())
 }
 
-pub async fn execute_query(conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+pub async fn execute_query(
+    conn: &CloudWarehouseConnection,
+    query: &str,
+) -> Result<CloudQueryResult> {
     let client = reqwest::Client::new();
-    let url = format!("{}/bigquery/v2/projects/{}/queries", base_url(conn), project_id(conn)?);
+    let url = format!(
+        "{}/bigquery/v2/projects/{}/queries",
+        base_url(conn),
+        project_id(conn)?
+    );
 
     let body = json!({
         "query": query,
@@ -61,16 +76,22 @@ pub async fn execute_query(conn: &CloudWarehouseConnection, query: &str) -> Resu
         .context("BigQuery query request failed")?;
 
     let status = response.status();
-    let text = response.text().await.context("failed to read BigQuery response body")?;
+    let text = response
+        .text()
+        .await
+        .context("failed to read BigQuery response body")?;
     if !status.is_success() {
         return Err(anyhow!("BigQuery API returned {status}: {text}"));
     }
-    let parsed: Value = serde_json::from_str(&text).context("failed to parse BigQuery response as JSON")?;
+    let parsed: Value =
+        serde_json::from_str(&text).context("failed to parse BigQuery response as JSON")?;
 
     if let Some(errors) = parsed.get("errors").and_then(|e| e.as_array()) {
         if !errors.is_empty() {
-            let messages: Vec<String> =
-                errors.iter().filter_map(|e| e["message"].as_str().map(String::from)).collect();
+            let messages: Vec<String> = errors
+                .iter()
+                .filter_map(|e| e["message"].as_str().map(String::from))
+                .collect();
             return Err(anyhow!("BigQuery query error: {}", messages.join("; ")));
         }
     }
@@ -82,7 +103,12 @@ pub async fn execute_query(conn: &CloudWarehouseConnection, query: &str) -> Resu
 
     let columns: Vec<String> = parsed["schema"]["fields"]
         .as_array()
-        .map(|fields| fields.iter().filter_map(|f| f["name"].as_str().map(String::from)).collect())
+        .map(|fields| {
+            fields
+                .iter()
+                .filter_map(|f| f["name"].as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
 
     let rows: Vec<Vec<Value>> = parsed["rows"]
@@ -99,8 +125,10 @@ pub async fn execute_query(conn: &CloudWarehouseConnection, query: &str) -> Resu
         })
         .unwrap_or_default();
 
-    let bytes_processed: u64 =
-        parsed["totalBytesProcessed"].as_str().and_then(|s| s.parse().ok()).unwrap_or(0);
+    let bytes_processed: u64 = parsed["totalBytesProcessed"]
+        .as_str()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
 
     let cost_per_tb = 6.25; // BigQuery on-demand pricing: $6.25/TB as of this writing
     let estimated_cost_usd = (bytes_processed as f64 / 1_099_511_627_776.0) * cost_per_tb;
@@ -146,7 +174,10 @@ mod tests {
     fn missing_access_token_is_a_clear_error() {
         let mut conn = test_conn("http://unused");
         conn.credentials.remove("access_token");
-        assert!(access_token(&conn).unwrap_err().to_string().contains("access_token"));
+        assert!(access_token(&conn)
+            .unwrap_err()
+            .to_string()
+            .contains("access_token"));
     }
 
     #[tokio::test]
@@ -172,7 +203,9 @@ mod tests {
             .create_async()
             .await;
 
-        let result = execute_query(&conn, "SELECT id, email FROM users").await.unwrap();
+        let result = execute_query(&conn, "SELECT id, email FROM users")
+            .await
+            .unwrap();
         mock.assert_async().await;
 
         assert_eq!(result.columns, vec!["id".to_string(), "email".to_string()]);
@@ -194,7 +227,9 @@ mod tests {
             .create_async()
             .await;
 
-        let err = execute_query(&conn, "SELECT * FROM users").await.unwrap_err();
+        let err = execute_query(&conn, "SELECT * FROM users")
+            .await
+            .unwrap_err();
         assert!(err.to_string().contains("Table not found"));
     }
 

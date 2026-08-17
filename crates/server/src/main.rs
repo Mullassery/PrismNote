@@ -27,8 +27,8 @@ mod lineage;
 mod middleware;
 mod models;
 mod output_renderer;
-mod platform;
 mod pii_detector;
+mod platform;
 mod quality_assertions;
 mod query_manager;
 mod query_validator;
@@ -59,8 +59,14 @@ use tower_http::trace::TraceLayer;
 
 // The built frontend is embedded into the binary so a single downloaded
 // executable is fully self-contained (no ./frontend/dist on disk required).
+// `allow_missing` lets a pure-backend `cargo build` succeed even when
+// `frontend/dist` hasn't been produced yet (e.g. backend-only development).
+// The documented `make build` / `make dev` targets always build the
+// frontend first, so production builds still get a fully self-contained
+// binary; this is just a safety net for `cargo build` run directly.
 #[derive(RustEmbed)]
 #[folder = "../../frontend/dist"]
+#[allow_missing = true]
 struct Assets;
 
 async fn static_handler(uri: Uri) -> impl IntoResponse {
@@ -86,8 +92,8 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
         },
     }
 }
-use tracing_subscriber;
 use sqlx::SqlitePool;
+use tracing_subscriber;
 
 pub struct AppState {
     notebooks_dir: String,
@@ -165,7 +171,10 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|| std::sync::Arc::new(std::sync::atomic::AtomicI32::new(0)));
 
     // Initialize database
-    let db_path = format!("{}/.prismnote/prismnote.db", dirs::home_dir().unwrap().display());
+    let db_path = format!(
+        "{}/.prismnote/prismnote.db",
+        dirs::home_dir().unwrap().display()
+    );
     let db_pool = db::init::initialize_database(&db_path).await?;
 
     // Initialize query cache (max 256 MB)
@@ -435,6 +444,10 @@ async fn main() -> anyhow::Result<()> {
             get(api::get_container_files),
         )
         .route("/docker/images/pull", post(api::pull_docker_image))
+        // Sandboxed one-shot code execution: a fresh, resource-limited,
+        // network-isolated container per call (see docker_executor::execute_sandboxed).
+        .route("/docker/sandbox/execute", post(api::execute_sandboxed_code))
+        .route("/docker/sandbox/available", get(api::sandbox_availability))
         // Global search (v0.3)
         .route("/search", post(api::search_notebooks))
         // Authentication endpoints (v1.2.0)
@@ -446,17 +459,40 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/me", get(api::get_me))
         .route("/auth/logout", post(api::logout))
         .route("/auth/sessions", get(api::list_sessions))
-        .route("/auth/sessions/:session_id", delete(api::revoke_session_endpoint))
+        .route(
+            "/auth/sessions/:session_id",
+            delete(api::revoke_session_endpoint),
+        )
         // Ownership-protected notebook endpoints
-        .route("/notebooks/secure/:id", get(api::get_notebook_secure).put(api::update_notebook_secure).delete(api::delete_notebook_secure))
-        .route("/notebooks/secure/:id/execute", post(api::execute_cell_secure))
+        .route(
+            "/notebooks/secure/:id",
+            get(api::get_notebook_secure)
+                .put(api::update_notebook_secure)
+                .delete(api::delete_notebook_secure),
+        )
+        .route(
+            "/notebooks/secure/:id/execute",
+            post(api::execute_cell_secure),
+        )
         .route("/notebooks/accessible", get(api::list_accessible_notebooks))
         .route("/notebooks/:id/share", post(api::share_notebook))
-        .route("/notebooks/:id/access/:user_email", delete(api::revoke_notebook_access))
+        .route(
+            "/notebooks/:id/access/:user_email",
+            delete(api::revoke_notebook_access),
+        )
         // RBAC (Role-Based Access Control) endpoints
-        .route("/admin/groups", post(api::create_group).get(api::list_groups))
-        .route("/admin/groups/:group_id/members", post(api::add_group_member).get(api::get_group_members))
-        .route("/admin/groups/:group_id/members/:user_email", delete(api::remove_group_member))
+        .route(
+            "/admin/groups",
+            post(api::create_group).get(api::list_groups),
+        )
+        .route(
+            "/admin/groups/:group_id/members",
+            post(api::add_group_member).get(api::get_group_members),
+        )
+        .route(
+            "/admin/groups/:group_id/members/:user_email",
+            delete(api::remove_group_member),
+        )
         // Audit Logging endpoints
         .route("/admin/audit/logs", post(api::query_audit_logs))
         .route("/admin/audit/stats", get(api::get_audit_stats))
@@ -467,14 +503,26 @@ async fn main() -> anyhow::Result<()> {
         // SQL Autocomplete (v1.2.1)
         .route("/sql/complete", post(api::sql_complete))
         // Execution History (v1.2.1)
-        .route("/notebooks/:notebook_id/cells/:cell_id/executions", get(api::get_cell_execution_history))
-        .route("/notebooks/:notebook_id/execution-stats", get(api::get_notebook_execution_stats))
+        .route(
+            "/notebooks/:notebook_id/cells/:cell_id/executions",
+            get(api::get_cell_execution_history),
+        )
+        .route(
+            "/notebooks/:notebook_id/execution-stats",
+            get(api::get_notebook_execution_stats),
+        )
         // Query History & Bookmarks (v1.2.1)
-        .route("/queries", post(api::save_query).get(api::list_saved_queries))
+        .route(
+            "/queries",
+            post(api::save_query).get(api::list_saved_queries),
+        )
         .route("/queries/favorites", get(api::get_favorite_queries))
         .route("/queries/search", get(api::search_saved_queries))
         .route("/queries/:query_id", delete(api::delete_saved_query))
-        .route("/queries/:query_id/favorite", post(api::toggle_query_favorite))
+        .route(
+            "/queries/:query_id/favorite",
+            post(api::toggle_query_favorite),
+        )
         // Data Preview & Profiling (v1.2.1)
         .route("/data/preview", post(api::get_data_preview_with_stats))
         .route("/data/column-stats", get(api::get_column_statistics))
@@ -493,11 +541,20 @@ async fn main() -> anyhow::Result<()> {
         .route("/quality/score", get(api::get_quality_score))
         .route("/quality/run-checks", get(api::run_quality_checks))
         // Rill Data OSS Integration
-        .route("/rill/projects", post(api::create_rill_project).get(api::list_rill_projects))
+        .route(
+            "/rill/projects",
+            post(api::create_rill_project).get(api::list_rill_projects),
+        )
         .route("/rill/projects/:project_id", get(api::get_rill_project))
-        .route("/rill/projects/:project_id/export", get(api::export_rill_project))
+        .route(
+            "/rill/projects/:project_id/export",
+            get(api::export_rill_project),
+        )
         .route("/rill/dashboards", post(api::create_rill_dashboard))
-        .route("/rill/dashboards/:project_id/:dashboard_id/embed", get(api::embed_rill_dashboard))
+        .route(
+            "/rill/dashboards/:project_id/:dashboard_id/embed",
+            get(api::embed_rill_dashboard),
+        )
         .route("/rill/tiles", post(api::add_rill_tile))
         .with_state(state.clone());
 

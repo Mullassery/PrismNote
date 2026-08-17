@@ -87,7 +87,12 @@ pub async fn log_event(pool: &SqlitePool, event: AuditEvent) -> anyhow::Result<(
         .execute(pool)
         .await?;
 
-    tracing::debug!("Audit log created: action={}, user={}, result={}", event.action, event.user_id, event.result);
+    tracing::debug!(
+        "Audit log created: action={}, user={}, result={}",
+        event.action,
+        event.user_id,
+        event.result
+    );
     Ok(())
 }
 
@@ -116,12 +121,30 @@ pub async fn query_logs(
         count_query.push_str(&format!(" AND resource_type = '{}'", rt));
     }
 
-    query.push_str(&format!(" ORDER BY timestamp DESC LIMIT {} OFFSET {}", limit, offset));
+    query.push_str(&format!(
+        " ORDER BY timestamp DESC LIMIT {} OFFSET {}",
+        limit, offset
+    ));
 
     // Fetch logs
-    let rows = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, String, Option<String>, String, Option<String>, Option<String>, Option<String>)>(&query)
-        .fetch_all(pool)
-        .await?;
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            Option<String>,
+            Option<String>,
+            String,
+            Option<String>,
+            String,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        ),
+    >(&query)
+    .fetch_all(pool)
+    .await?;
 
     let logs: Vec<serde_json::Value> = rows.into_iter()
         .map(|(log_id, user_id, action, resource_type, resource_id, result, error_message, timestamp, ip_address, user_agent, details)| {
@@ -154,9 +177,7 @@ pub async fn cleanup_old_logs(pool: &SqlitePool, days: i64) -> anyhow::Result<u6
     let cutoff = format!("datetime('now', '-{} days')", days);
     let query = format!("DELETE FROM audit_logs WHERE timestamp < {}", cutoff);
 
-    let result = sqlx::query(&query)
-        .execute(pool)
-        .await?;
+    let result = sqlx::query(&query).execute(pool).await?;
 
     tracing::info!("Cleaned up {} old audit logs", result.rows_affected());
     Ok(result.rows_affected())

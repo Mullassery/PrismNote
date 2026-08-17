@@ -31,11 +31,17 @@ fn extract_creds(conn: &CloudWarehouseConnection) -> Result<AthenaCreds> {
         .cloned()
         .ok_or_else(|| anyhow!("Athena connection is missing credentials.aws_secret_access_key"))?;
     let session_token = conn.credentials.get("aws_session_token").cloned();
-    Ok(AthenaCreds { access_key_id, secret_access_key, session_token })
+    Ok(AthenaCreds {
+        access_key_id,
+        secret_access_key,
+        session_token,
+    })
 }
 
 fn region(conn: &CloudWarehouseConnection) -> Result<&str> {
-    conn.region.as_deref().ok_or_else(|| anyhow!("Athena connection is missing a region"))
+    conn.region
+        .as_deref()
+        .ok_or_else(|| anyhow!("Athena connection is missing a region"))
 }
 
 fn output_location(conn: &CloudWarehouseConnection) -> Result<&str> {
@@ -58,7 +64,10 @@ async fn call(
 ) -> Result<serde_json::Value> {
     let creds = extract_creds(conn)?;
     let reg = region(conn)?;
-    let host = base_url.trim_start_matches("https://").trim_start_matches("http://").trim_end_matches('/');
+    let host = base_url
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .trim_end_matches('/');
     let url = format!("{base_url}/");
     let body_bytes = serde_json::to_vec(&body)?;
 
@@ -75,7 +84,10 @@ async fn call(
         host,
         "/",
         "",
-        &[("content-type", "application/x-amz-json-1.1"), ("x-amz-target", target)],
+        &[
+            ("content-type", "application/x-amz-json-1.1"),
+            ("x-amz-target", target),
+        ],
         &body_bytes,
         &sigv4_creds,
         Utc::now(),
@@ -92,7 +104,10 @@ async fn call(
 
     let response = request.send().await.context("Athena request failed")?;
     let status = response.status();
-    let text = response.text().await.context("failed to read Athena response body")?;
+    let text = response
+        .text()
+        .await
+        .context("failed to read Athena response body")?;
     if !status.is_success() {
         return Err(anyhow!("Athena API returned {status}: {text}"));
     }
@@ -107,11 +122,21 @@ pub async fn test_connection(conn: &CloudWarehouseConnection) -> Result<String> 
     let client = reqwest::Client::new();
     let base_url = production_base_url(conn)?;
     // ListDataCatalogs is a cheap, read-only call suitable for a connectivity check.
-    call(&client, conn, "AmazonAthena.ListDataCatalogs", json!({"MaxResults": 1}), &base_url).await?;
+    call(
+        &client,
+        conn,
+        "AmazonAthena.ListDataCatalogs",
+        json!({"MaxResults": 1}),
+        &base_url,
+    )
+    .await?;
     Ok("Athena connection OK".to_string())
 }
 
-pub async fn execute_query(conn: &CloudWarehouseConnection, query: &str) -> Result<CloudQueryResult> {
+pub async fn execute_query(
+    conn: &CloudWarehouseConnection,
+    query: &str,
+) -> Result<CloudQueryResult> {
     execute_query_against(conn, query, &production_base_url(conn)?).await
 }
 
@@ -128,7 +153,14 @@ async fn execute_query_against(
         "QueryExecutionContext": { "Database": conn.database },
         "ResultConfiguration": { "OutputLocation": output_location(conn)? },
     });
-    let start_resp = call(&client, conn, "AmazonAthena.StartQueryExecution", start_body, base_url).await?;
+    let start_resp = call(
+        &client,
+        conn,
+        "AmazonAthena.StartQueryExecution",
+        start_body,
+        base_url,
+    )
+    .await?;
     let query_execution_id = start_resp
         .get("QueryExecutionId")
         .and_then(|v| v.as_str())
@@ -147,25 +179,34 @@ async fn execute_query_against(
             base_url,
         )
         .await?;
-        let state = exec["QueryExecution"]["Status"]["State"].as_str().unwrap_or("UNKNOWN").to_string();
+        let state = exec["QueryExecution"]["Status"]["State"]
+            .as_str()
+            .unwrap_or("UNKNOWN")
+            .to_string();
         match state.as_str() {
             "SUCCEEDED" => {
-                bytes_scanned = exec["QueryExecution"]["Statistics"]["DataScannedInBytes"].as_u64().unwrap_or(0);
-                engine_ms =
-                    exec["QueryExecution"]["Statistics"]["EngineExecutionTimeInMillis"].as_u64().unwrap_or(0);
+                bytes_scanned = exec["QueryExecution"]["Statistics"]["DataScannedInBytes"]
+                    .as_u64()
+                    .unwrap_or(0);
+                engine_ms = exec["QueryExecution"]["Statistics"]["EngineExecutionTimeInMillis"]
+                    .as_u64()
+                    .unwrap_or(0);
                 completed = true;
                 break;
             }
             "FAILED" | "CANCELLED" => {
-                let reason =
-                    exec["QueryExecution"]["Status"]["StateChangeReason"].as_str().unwrap_or("no reason given");
+                let reason = exec["QueryExecution"]["Status"]["StateChangeReason"]
+                    .as_str()
+                    .unwrap_or("no reason given");
                 return Err(anyhow!("Athena query {state}: {reason}"));
             }
             _ => tokio::time::sleep(POLL_INTERVAL).await,
         }
     }
     if !completed {
-        return Err(anyhow!("Athena query {query_execution_id} did not complete within the poll window"));
+        return Err(anyhow!(
+            "Athena query {query_execution_id} did not complete within the poll window"
+        ));
     }
 
     let results = call(
@@ -177,14 +218,24 @@ async fn execute_query_against(
     )
     .await?;
 
-    let rows_json = results["ResultSet"]["Rows"].as_array().cloned().unwrap_or_default();
+    let rows_json = results["ResultSet"]["Rows"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
     let mut all_rows: Vec<Vec<serde_json::Value>> = rows_json
         .iter()
         .map(|row| {
             row["Data"]
                 .as_array()
                 .map(|cells| {
-                    cells.iter().map(|cell| cell.get("VarCharValue").cloned().unwrap_or(serde_json::Value::Null)).collect()
+                    cells
+                        .iter()
+                        .map(|cell| {
+                            cell.get("VarCharValue")
+                                .cloned()
+                                .unwrap_or(serde_json::Value::Null)
+                        })
+                        .collect()
                 })
                 .unwrap_or_default()
         })
@@ -192,14 +243,20 @@ async fn execute_query_against(
 
     let columns: Vec<String> = results["ResultSet"]["ResultSetMetadata"]["ColumnInfo"]
         .as_array()
-        .map(|cols| cols.iter().filter_map(|c| c["Name"].as_str().map(String::from)).collect())
+        .map(|cols| {
+            cols.iter()
+                .filter_map(|c| c["Name"].as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
 
     // Athena's first result row is the header row (repeats the column names as
     // string values), not data — drop it if present.
     if !all_rows.is_empty() {
-        let header_matches =
-            all_rows[0].iter().zip(columns.iter()).all(|(cell, name)| cell.as_str() == Some(name.as_str()));
+        let header_matches = all_rows[0]
+            .iter()
+            .zip(columns.iter())
+            .all(|(cell, name)| cell.as_str() == Some(name.as_str()));
         if header_matches {
             all_rows.remove(0);
         }
@@ -212,7 +269,11 @@ async fn execute_query_against(
         row_count: all_rows.len(),
         columns,
         rows: all_rows,
-        execution_time_ms: if engine_ms > 0 { engine_ms } else { started.elapsed().as_millis() as u64 },
+        execution_time_ms: if engine_ms > 0 {
+            engine_ms
+        } else {
+            started.elapsed().as_millis() as u64
+        },
         estimated_bytes_scanned: bytes_scanned,
         estimated_cost_usd,
     })
@@ -227,7 +288,10 @@ mod tests {
         let mut credentials = HashMap::new();
         credentials.insert("aws_access_key_id".to_string(), "AKIDEXAMPLE".to_string());
         credentials.insert("aws_secret_access_key".to_string(), "secret".to_string());
-        credentials.insert("s3_output_location".to_string(), "s3://test-bucket/results/".to_string());
+        credentials.insert(
+            "s3_output_location".to_string(),
+            "s3://test-bucket/results/".to_string(),
+        );
         CloudWarehouseConnection {
             id: "test".to_string(),
             warehouse_type: super::super::CloudWarehouseType::Athena,
@@ -305,7 +369,9 @@ mod tests {
             .create_async()
             .await;
 
-        let result = execute_query_against(&conn, "SELECT * FROM t", &server.url()).await.unwrap();
+        let result = execute_query_against(&conn, "SELECT * FROM t", &server.url())
+            .await
+            .unwrap();
 
         start_mock.assert_async().await;
         get_exec_mock.assert_async().await;
@@ -340,7 +406,9 @@ mod tests {
             .create_async()
             .await;
 
-        let err = execute_query_against(&conn, "SELECT bad syntax", &server.url()).await.unwrap_err();
+        let err = execute_query_against(&conn, "SELECT bad syntax", &server.url())
+            .await
+            .unwrap_err();
         assert!(err.to_string().contains("SYNTAX_ERROR"));
     }
 }

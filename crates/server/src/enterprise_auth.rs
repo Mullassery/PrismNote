@@ -1,8 +1,8 @@
 use anyhow::Result;
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use chrono::{Duration, Utc};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum AuthProvider {
@@ -94,12 +94,12 @@ pub struct JWTToken {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JWTClaims {
-    pub sub: String,           // subject (user_id)
+    pub sub: String, // subject (user_id)
     pub email: String,
-    pub roles: Vec<String>,    // role names as strings
-    pub exp: i64,              // expiration time (unix timestamp)
-    pub iat: i64,              // issued at time
-    pub nbf: i64,              // not before time
+    pub roles: Vec<String>, // role names as strings
+    pub exp: i64,           // expiration time (unix timestamp)
+    pub iat: i64,           // issued at time
+    pub nbf: i64,           // not before time
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -459,7 +459,7 @@ impl EnterpriseAuthManager {
     pub fn generate_jwt(&self, user_id: &str, email: &str, roles: &[UserRole]) -> Result<JWTToken> {
         let now = Utc::now();
         let access_expiration = now + Duration::minutes(15); // 15 min access token
-        let refresh_expiration = now + Duration::days(7);     // 7 day refresh token
+        let refresh_expiration = now + Duration::days(7); // 7 day refresh token
 
         // Access token claims
         let access_claims = JWTClaims {
@@ -509,12 +509,14 @@ impl EnterpriseAuthManager {
             token,
             &DecodingKey::from_secret(self.jwt_secret.as_bytes()),
             &Validation::default(),
-        ).map_err(|e| anyhow::anyhow!("JWT validation failed: {}", e))?;
+        )
+        .map_err(|e| anyhow::anyhow!("JWT validation failed: {}", e))?;
 
         let claims = token_data.claims;
 
         // Convert role strings back to UserRole enums
-        let roles: Vec<UserRole> = claims.roles
+        let roles: Vec<UserRole> = claims
+            .roles
             .iter()
             .filter_map(|r| match r.as_str() {
                 "Admin" => Some(UserRole::Admin),

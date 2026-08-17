@@ -119,7 +119,11 @@ pub async fn record_execution(pool: &SqlitePool, record: &ExecutionRecord) -> an
         .execute(pool)
         .await?;
 
-    tracing::debug!("Recorded execution: {} for cell {}", record.execution_id, record.cell_id);
+    tracing::debug!(
+        "Recorded execution: {} for cell {}",
+        record.execution_id,
+        record.cell_id
+    );
     Ok(())
 }
 
@@ -138,16 +142,36 @@ pub async fn get_cell_history(
                  ORDER BY start_time DESC
                  LIMIT ?";
 
-    let rows = sqlx::query_as::<_, (String, String, String, String, String, String, String, i64, Option<i32>, Option<i32>, Option<f64>, Option<f64>, Option<String>, Option<String>, Option<String>)>(query)
-        .bind(notebook_id)
-        .bind(cell_id)
-        .bind(limit)
-        .fetch_all(pool)
-        .await?;
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            i64,
+            Option<i32>,
+            Option<i32>,
+            Option<f64>,
+            Option<f64>,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        ),
+    >(query)
+    .bind(notebook_id)
+    .bind(cell_id)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
 
-    let records = rows.into_iter()
-        .map(|(execution_id, notebook_id, cell_id, user_id, status, start_time, end_time, duration_ms, execution_count, rows_affected, memory_mb, cpu_percent, error_message, output_summary, code_preview)| {
-            ExecutionRecord {
+    let records = rows
+        .into_iter()
+        .map(
+            |(
                 execution_id,
                 notebook_id,
                 cell_id,
@@ -163,8 +187,26 @@ pub async fn get_cell_history(
                 error_message,
                 output_summary,
                 code_preview,
-            }
-        })
+            )| {
+                ExecutionRecord {
+                    execution_id,
+                    notebook_id,
+                    cell_id,
+                    user_id,
+                    status,
+                    start_time,
+                    end_time,
+                    duration_ms,
+                    execution_count,
+                    rows_affected,
+                    memory_mb,
+                    cpu_percent,
+                    error_message,
+                    output_summary,
+                    code_preview,
+                }
+            },
+        )
         .collect();
 
     Ok(records)
@@ -187,10 +229,22 @@ pub async fn get_notebook_stats(
                  FROM execution_history
                  WHERE notebook_id = ?";
 
-    let row = sqlx::query_as::<_, (i64, Option<i64>, Option<i64>, Option<f64>, Option<i64>, Option<i64>, Option<f64>, Option<f64>)>(query)
-        .bind(notebook_id)
-        .fetch_one(pool)
-        .await?;
+    let row = sqlx::query_as::<
+        _,
+        (
+            i64,
+            Option<i64>,
+            Option<i64>,
+            Option<f64>,
+            Option<i64>,
+            Option<i64>,
+            Option<f64>,
+            Option<f64>,
+        ),
+    >(query)
+    .bind(notebook_id)
+    .fetch_one(pool)
+    .await?;
 
     Ok(ExecutionStats {
         total_executions: row.0,
@@ -222,10 +276,11 @@ mod tests {
 
     #[test]
     fn test_execution_record_builder() {
-        let record = ExecutionRecord::new("nb1".to_string(), "cell1".to_string(), "user1".to_string())
-            .with_duration(1500)
-            .with_rows(42)
-            .with_memory(256.5);
+        let record =
+            ExecutionRecord::new("nb1".to_string(), "cell1".to_string(), "user1".to_string())
+                .with_duration(1500)
+                .with_rows(42)
+                .with_memory(256.5);
 
         assert_eq!(record.duration_ms, 1500);
         assert_eq!(record.rows_affected, Some(42));
@@ -235,8 +290,9 @@ mod tests {
 
     #[test]
     fn test_execution_with_error() {
-        let record = ExecutionRecord::new("nb1".to_string(), "cell1".to_string(), "user1".to_string())
-            .with_error("Division by zero");
+        let record =
+            ExecutionRecord::new("nb1".to_string(), "cell1".to_string(), "user1".to_string())
+                .with_error("Division by zero");
 
         assert_eq!(record.status, "error");
         assert_eq!(record.error_message, Some("Division by zero".to_string()));

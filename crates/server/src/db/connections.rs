@@ -16,6 +16,11 @@ pub struct DatabaseConnection {
     pub created_at: String,
 }
 
+// Deserialize-only request DTO for the `/databases/:id/query` JSON body.
+// `connection_id`/`sql_type` are part of the wire format (some clients send
+// them for context/logging) even though the handler resolves the actual
+// connection from the `:id` path parameter rather than re-reading them.
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct QueryRequest {
     pub connection_id: String,
@@ -91,81 +96,69 @@ impl DatabaseManager {
         })
     }
 
-    // PostgreSQL (OSS - PostgreSQL License)
+    // PostgreSQL - real connection + query execution via sqlx (postgres feature).
+    // Needs a live server; see the `postgres_create_insert_select_roundtrip_if_available`
+    // test in crates/server/src/db/executor.rs, which runs for real against a
+    // live Postgres container (PRISMNOTE_TEST_PG_PORT) and skips otherwise.
     async fn test_postgresql(conn: &DatabaseConnection) -> Result<String> {
-        // Would use: https://github.com/sfackler/rust-postgres (MIT)
-        // or https://github.com/launchbadge/sqlx (MIT/Apache)
-        Ok(format!(
-            "PostgreSQL connection ready to {}:{}",
-            conn.host.as_ref().unwrap_or(&"localhost".to_string()),
-            conn.port.unwrap_or(5432)
-        ))
+        crate::db::executor::postgres_backend::test_connection(&pg_params(conn)).await
     }
 
     async fn query_postgresql(
-        _conn: &DatabaseConnection,
-        _query: &str,
+        conn: &DatabaseConnection,
+        query: &str,
     ) -> Result<(Vec<String>, Vec<Vec<Value>>, usize)> {
-        // Implementation using sqlx or postgres crate
-        Err(anyhow!(
-            "PostgreSQL connector requires: cargo add sqlx --features postgres"
-        ))
+        crate::db::executor::postgres_backend::execute_query(&pg_params(conn), query).await
     }
 
-    // MySQL (OSS - GPL/Custom, but MIT drivers available)
+    // MySQL - real connection + query execution via sqlx (mysql feature).
+    // Needs a live server; see the `mysql_create_insert_select_roundtrip_if_available`
+    // test in crates/server/src/db/executor.rs, which runs for real against a
+    // live MySQL container (PRISMNOTE_TEST_MYSQL_PORT) and skips otherwise.
     async fn test_mysql(conn: &DatabaseConnection) -> Result<String> {
-        // Would use: https://github.com/mysql-rs/mysql_async (MIT)
-        Ok(format!(
-            "MySQL connection ready to {}:{}",
-            conn.host.as_ref().unwrap_or(&"localhost".to_string()),
-            conn.port.unwrap_or(3306)
-        ))
+        crate::db::executor::mysql_backend::test_connection(&mysql_params(conn)).await
     }
 
     async fn query_mysql(
-        _conn: &DatabaseConnection,
-        _query: &str,
+        conn: &DatabaseConnection,
+        query: &str,
     ) -> Result<(Vec<String>, Vec<Vec<Value>>, usize)> {
-        // Implementation using mysql_async crate
-        Err(anyhow!("MySQL connector requires: cargo add mysql_async"))
+        crate::db::executor::mysql_backend::execute_query(&mysql_params(conn), query).await
     }
 
-    // SQLite (OSS - Public Domain)
+    // SQLite - real, embedded, no server required (sqlx sqlite feature).
     async fn test_sqlite(conn: &DatabaseConnection) -> Result<String> {
-        // Would use: https://github.com/rusqlite/rusqlite (MIT)
-        Ok(format!("SQLite database: {}", conn.database))
+        crate::db::executor::sqlite_backend::test_connection(&conn.database).await
     }
 
     async fn query_sqlite(
-        _conn: &DatabaseConnection,
-        _query: &str,
+        conn: &DatabaseConnection,
+        query: &str,
     ) -> Result<(Vec<String>, Vec<Vec<Value>>, usize)> {
-        // Implementation using rusqlite crate
-        Err(anyhow!(
-            "SQLite connector requires: cargo add rusqlite --features bundled"
-        ))
+        crate::db::executor::sqlite_backend::execute_query(&conn.database, query).await
     }
 
-    // DuckDB (OSS - MIT)
+    // DuckDB - real, embedded (bundled DuckDB via the `duckdb` crate), no
+    // server required.
     async fn test_duckdb(conn: &DatabaseConnection) -> Result<String> {
-        // Would use: https://github.com/duckdb/duckdb-rust (MIT)
-        Ok(format!("DuckDB database: {}", conn.database))
+        crate::db::executor::duckdb_backend::test_connection(conn.database.clone()).await
     }
 
     async fn query_duckdb(
-        _conn: &DatabaseConnection,
-        _query: &str,
+        conn: &DatabaseConnection,
+        query: &str,
     ) -> Result<(Vec<String>, Vec<Vec<Value>>, usize)> {
-        // Implementation using duckdb crate
-        Err(anyhow!("DuckDB connector requires: cargo add duckdb"))
+        crate::db::executor::duckdb_backend::execute_query(conn.database.clone(), query.to_string())
+            .await
     }
 
-    // MongoDB (OSS - SSPL/Custom, but Rust driver is MIT)
-    async fn test_mongodb(conn: &DatabaseConnection) -> Result<String> {
-        // Would use: https://github.com/mongodb/mongo-rust-driver (Apache)
-        Ok(format!(
-            "MongoDB connection: {}",
-            conn.url.as_ref().unwrap_or(&"default".to_string())
+    // MongoDB is out of scope for this pass (not a SQL source, and not one
+    // of the four backends prioritized for this remediation: SQLite,
+    // DuckDB, PostgreSQL, MySQL). Deliberately honest stub: it does NOT
+    // pretend to succeed like the previous placeholder did.
+    async fn test_mongodb(_conn: &DatabaseConnection) -> Result<String> {
+        Err(anyhow!(
+            "MongoDB is not implemented yet (out of scope for this pass; SQLite/DuckDB/PostgreSQL/MySQL are the supported SQL backends)"
         ))
     }
 
@@ -173,7 +166,28 @@ impl DatabaseManager {
         _conn: &DatabaseConnection,
         _query: &str,
     ) -> Result<(Vec<String>, Vec<Vec<Value>>, usize)> {
-        // Implementation using mongodb crate
-        Err(anyhow!("MongoDB connector requires: cargo add mongodb"))
+        Err(anyhow!(
+            "MongoDB is not implemented yet (out of scope for this pass; SQLite/DuckDB/PostgreSQL/MySQL are the supported SQL backends)"
+        ))
+    }
+}
+
+fn pg_params(conn: &DatabaseConnection) -> crate::db::executor::postgres_backend::ConnParams<'_> {
+    crate::db::executor::postgres_backend::ConnParams {
+        host: conn.host.as_deref().unwrap_or("localhost"),
+        port: conn.port.unwrap_or(5432),
+        user: conn.username.as_deref().unwrap_or(""),
+        password: conn.password.as_deref().unwrap_or(""),
+        database: &conn.database,
+    }
+}
+
+fn mysql_params(conn: &DatabaseConnection) -> crate::db::executor::mysql_backend::ConnParams<'_> {
+    crate::db::executor::mysql_backend::ConnParams {
+        host: conn.host.as_deref().unwrap_or("localhost"),
+        port: conn.port.unwrap_or(3306),
+        user: conn.username.as_deref().unwrap_or(""),
+        password: conn.password.as_deref().unwrap_or(""),
+        database: &conn.database,
     }
 }

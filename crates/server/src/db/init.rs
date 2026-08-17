@@ -1,6 +1,6 @@
+use anyhow::Result;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
 use std::str::FromStr;
-use anyhow::Result;
 
 pub async fn initialize_database(db_path: &str) -> Result<SqlitePool> {
     // Ensure directory exists
@@ -10,8 +10,8 @@ pub async fn initialize_database(db_path: &str) -> Result<SqlitePool> {
 
     // Create connection options
     let connection_string = format!("sqlite://{}", db_path);
-    let connect_options = SqliteConnectOptions::from_str(&connection_string)?
-        .create_if_missing(true);
+    let connect_options =
+        SqliteConnectOptions::from_str(&connection_string)?.create_if_missing(true);
 
     // Create connection pool
     let pool = SqlitePoolOptions::new()
@@ -33,9 +33,7 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
     for statement in schema.split(';') {
         let trimmed = statement.trim();
         if !trimmed.is_empty() {
-            sqlx::query(trimmed)
-                .execute(pool)
-                .await?;
+            sqlx::query(trimmed).execute(pool).await?;
         }
     }
 
@@ -53,7 +51,9 @@ mod tests {
         // Clean up before test
         let _ = std::fs::remove_file(db_path);
 
-        let pool = initialize_database(db_path).await.expect("Failed to initialize database");
+        let pool = initialize_database(db_path)
+            .await
+            .expect("Failed to initialize database");
 
         // Verify tables were created
         let result: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users")

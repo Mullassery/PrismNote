@@ -68,7 +68,11 @@ impl AssertionEngine {
             "SELECT COUNT(*) as failures FROM {} WHERE {} IS NULL",
             table, column
         );
-        Self::create_assertion(&format!("{} is NOT NULL", column), AssertionType::NotNull, &sql)
+        Self::create_assertion(
+            &format!("{} is NOT NULL", column),
+            AssertionType::NotNull,
+            &sql,
+        )
     }
 
     pub fn create_unique_assertion(column: &str, table: &str) -> QualityAssertion {
@@ -84,7 +88,10 @@ impl AssertionEngine {
     }
 
     pub fn create_positive_assertion(column: &str, table: &str) -> QualityAssertion {
-        let sql = format!("SELECT COUNT(*) as failures FROM {} WHERE {} <= 0", table, column);
+        let sql = format!(
+            "SELECT COUNT(*) as failures FROM {} WHERE {} <= 0",
+            table, column
+        );
         Self::create_assertion(
             &format!("{} values are positive", column),
             AssertionType::Positive,
@@ -109,11 +116,7 @@ impl AssertionEngine {
         )
     }
 
-    pub fn create_pattern_assertion(
-        column: &str,
-        table: &str,
-        pattern: &str,
-    ) -> QualityAssertion {
+    pub fn create_pattern_assertion(column: &str, table: &str, pattern: &str) -> QualityAssertion {
         let sql = format!(
             "SELECT COUNT(*) as failures FROM {} WHERE {} NOT REGEXP '{}'",
             table, column, pattern

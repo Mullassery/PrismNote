@@ -112,7 +112,13 @@ impl LineageGraph {
             }
         }
 
-        dfs(self, column, vec![column.clone()], &mut visited, &mut chains);
+        dfs(
+            self,
+            column,
+            vec![column.clone()],
+            &mut visited,
+            &mut chains,
+        );
         chains
     }
 
