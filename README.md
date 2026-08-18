@@ -71,8 +71,9 @@ serves the UI. Running `cargo build --release` directly will build a
 backend with no frontend assets. The binary is written to
 `target/release/prismnote`.
 
-Requirements: Rust (stable), Node 18+, and Docker if you want sandboxed
-code execution or want to test the container-management endpoints.
+Requirements: Rust (stable), Node 20.19+ (required by Vite 8), and Docker if
+you want sandboxed code execution or want to test the container-management
+endpoints.
 
 ### Development
 
