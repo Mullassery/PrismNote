@@ -287,6 +287,16 @@ impl DockerExecutor {
             name.clone(),
             "--memory".to_string(),
             format!("{}m", opts.memory_mb),
+            // Without an explicit --memory-swap, Docker defaults it to 2x
+            // --memory (or, on hosts where swap accounting isn't
+            // configured the way ours is, may not hard-enforce a ceiling
+            // at all) - a process can allocate well past the intended
+            // limit before anything kills it. Pinning --memory-swap equal
+            // to --memory disables swap for the container entirely, so
+            // --memory is the actual hard ceiling regardless of host swap
+            // configuration.
+            "--memory-swap".to_string(),
+            format!("{}m", opts.memory_mb),
             "--cpus".to_string(),
             format!("{}", opts.cpus),
             "--pids-limit".to_string(),

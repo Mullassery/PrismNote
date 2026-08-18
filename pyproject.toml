@@ -60,8 +60,8 @@ classifiers = [
     "Environment :: Web Environment",
 ]
 dependencies = [
-    "ipykernel==6.0",
-    "jupyter==1.0",
+    "ipykernel>=6.0,<7.0",
+    "jupyter>=1.0,<2.0",
 ]
 
 [project.optional-dependencies]

@@ -45,7 +45,7 @@ jobs:
 
       - name: Install Python package
         run: |
-          cd python && pip install -e ".[dev]" 2>&1
+          pip install -e ".[dev]" 2>&1
 
       - name: Run pytest
         run: |
