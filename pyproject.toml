@@ -93,7 +93,7 @@ ai = ["anthropic==0.7"]
 openai = ["openai==1.0"]
 
 # Big data
-spark = ["pyspark==3.0", "pyarrow==10"]
+spark = ["pyspark==3.0", "pyarrow==25.0.1"]
 
 [project.urls]
 Homepage = "https://github.com/Mullassery/prismnote"
