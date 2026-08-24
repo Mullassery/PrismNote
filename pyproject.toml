@@ -85,7 +85,7 @@ cloud = [
     "redshift_connector==2.0",                  # Apache-2.0
     "databricks-sql-connector==2.0",            # Apache-2.0
     "pyathena==3.0",                            # MIT
-    "trino==0.328",                            # Apache-2.0
+    "trino==0.339.0",                            # Apache-2.0
 ]
 
 # AI features
