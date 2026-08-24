@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "prismnote"
-version = "1.10.0"
+version = "1.11.0"
 description = "PrismNote — Modern data science notebook. SQL + Python execution, 10 SQL dialects, AI Agent, visual data exploration, cloud warehouse connectors, Jupyter-compatible."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -17,7 +17,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",

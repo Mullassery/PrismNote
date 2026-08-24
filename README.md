@@ -16,6 +16,20 @@ and connectors for cloud data warehouses.
 - The release binary embeds the built frontend, so `prismnote` is a single
   executable that serves the whole app.
 
+## Install
+
+```bash
+pip install prismnote
+prismnote
+```
+
+`pip install` installs a thin Python launcher (`python/`) — on first run it
+downloads the matching prebuilt server binary from
+[GitHub Releases](https://github.com/Mullassery/PrismNote/releases) and
+execs it. As of this version, a prebuilt binary is published for **macOS
+(Apple Silicon) only**; other platforms need to build from source (see
+[Building](#building) below) until more platform binaries are uploaded.
+
 ## SQL execution
 
 SQL cells run against real databases — there is no mocked or placeholder
@@ -57,6 +71,24 @@ Real connection + query execution for Snowflake, BigQuery, Redshift, Azure
 Synapse, Databricks, Athena, Presto, and Trino (`crates/server/src/cloud_warehouse/`).
 AWS-signed requests (Athena, Redshift) use a real SigV4 implementation.
 
+## Other integrations
+
+All real API calls, not placeholders:
+
+| Integration | What's real |
+|---|---|
+| Cloud storage | S3 (SigV4), GCS (service-account JWT), Azure Blob (Shared Key signing), Google Drive (OAuth) — upload/download/list/delete |
+| dbt | Shells out to the real `dbt` CLI; parses its `manifest.json`/`run_results.json` |
+| GitHub | Real Contents API for notebook backup/sync |
+| Airflow | Real REST API v1 (list/trigger DAGs, run status, tasks). DAG *creation* writes a file to a configured local DAGs folder, since Airflow's API has no DAG-creation endpoint |
+| Kubernetes | Real `kubectl apply`/`get pods`/`scale` |
+| RunPod | Real GraphQL API for training-instance lifecycle and serverless endpoint deployment |
+
+Two data-quality-scoring code paths (`api::get_quality_score`,
+`lineage::data_quality_score`) are the one area still not wired to real
+execution — they'd need an assertion-storage and table-to-queryable-data
+layer that doesn't exist yet, rather than something fakeable in isolation.
+
 ## Building
 
 ```bash
@@ -91,6 +123,15 @@ cd frontend && npm install && npm run dev
 cargo test --workspace --release   # backend
 cd frontend && npm test            # frontend (vitest)
 ```
+
+### Configuration
+
+Everything runs with no environment variables set — Google Sign-In and AI
+features (code explain/fix/complete, NL-to-SQL, RunPod fine-tuning) are
+just disabled until configured. Copy [`.env.example`](.env.example) to
+`.env` and fill in what you need; see the comments in that file for which
+variables are required together (e.g. `PRISMNOTE_AI_PROVIDER=claude` needs
+`ANTHROPIC_API_KEY`) and which are backend-only vs. frontend (`VITE_`-prefixed).
 
 ## Project layout
 

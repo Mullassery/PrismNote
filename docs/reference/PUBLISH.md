@@ -51,7 +51,7 @@ ls -lh dist/
 ### Option A: Using API Token (Recommended)
 
 ```bash
-export PYPI_API_TOKEN="pypi-AgEIcHlwaS5vcmcCJGM2ZWE1MWJjLWFiZDktNDFmZS1iZTc2LWQ1NjJiMWM4ZmVhYQACKlszLCJiNTY4MmY2NS02ZjFlLTRjNDktYmFlYi0xN2RhNmM5ZGM3ZDAiXQAABiDKNNHRaNn35oX--eg7tV72BsmBmtYOPZ08yfYoH4IO4A"
+export PYPI_API_TOKEN="pypi-<your-token-here>"
 
 twine upload dist/* -u __token__ -p $PYPI_API_TOKEN
 ```
@@ -67,7 +67,7 @@ index-servers =
 [pypi]
 repository = https://upload.pypi.org/legacy/
 username = __token__
-password = pypi-AgEIcHlwaS5vcmcCJGM2ZWE1MWJjLWFiZDktNDFmZS1iZTc2LWQ1NjJiMWM4ZmVhYQACKlszLCJiNTY4MmY2NS02ZjFlLTRjNDktYmFlYi0xN2RhNmM5ZGM3ZDAiXQAABiDKNNHRaNn35oX--eg7tV72BsmBmtYOPZ08yfYoH4IO4A
+password = pypi-<your-token-here>
 ```
 
 Then run:
