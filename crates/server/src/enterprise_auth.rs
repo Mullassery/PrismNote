@@ -207,99 +207,54 @@ impl EnterpriseAuthManager {
         Ok(())
     }
 
-    pub async fn authenticate_with_aad(&mut self, auth_code: &str) -> Result<AuthenticatedUser> {
-        let config = self
-            .aad_config
+    pub async fn authenticate_with_aad(&mut self, _auth_code: &str) -> Result<AuthenticatedUser> {
+        self.aad_config
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("AAD not configured"))?;
 
-        // TODO: Exchange code for token using AAD
-        // TODO: Get user info from Microsoft Graph API
-        // TODO: Extract user roles and groups from AAD
-
-        let user = AuthenticatedUser {
-            user_id: format!("aad-{}", uuid::Uuid::new_v4()),
-            email: "user@company.com".to_string(),
-            display_name: "User Name".to_string(),
-            given_name: Some("User".to_string()),
-            family_name: Some("Name".to_string()),
-            roles: vec![UserRole::Member],
-            groups: vec!["data-science".to_string(), "engineering".to_string()],
-            provider: AuthProvider::MicrosoftAAD,
-            created_at: chrono::Local::now().to_rfc3339(),
-            last_login: chrono::Local::now().to_rfc3339(),
-            is_active: true,
-            department: Some("Engineering".to_string()),
-            manager: Some("Manager Name".to_string()),
-        };
-
-        Ok(user)
+        // Token exchange, Microsoft Graph user lookup, and role/group extraction
+        // are not implemented. Erroring here (rather than returning a fabricated
+        // AuthenticatedUser) matters: the previous behavior granted a real session
+        // with Member role to any caller regardless of auth_code validity.
+        Err(anyhow::anyhow!(
+            "AAD authentication is not implemented (code exchange, Graph API user lookup, and role/group extraction are all TODO) — refusing to fabricate a session"
+        ))
     }
 
     pub async fn authenticate_with_ldap(
         &mut self,
-        username: &str,
-        password: &str,
+        _username: &str,
+        _password: &str,
     ) -> Result<AuthenticatedUser> {
-        let _config = self
-            .ldap_config
+        self.ldap_config
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("LDAP not configured"))?;
 
-        // TODO: Connect to LDAP server
-        // TODO: Bind with provided credentials
-        // TODO: Query user attributes and groups
-
-        let user = AuthenticatedUser {
-            user_id: format!("ldap-{}", username),
-            email: format!("{}@company.com", username),
-            display_name: username.to_string(),
-            given_name: None,
-            family_name: None,
-            roles: vec![UserRole::Member],
-            groups: vec![],
-            provider: AuthProvider::LDAP,
-            created_at: chrono::Local::now().to_rfc3339(),
-            last_login: chrono::Local::now().to_rfc3339(),
-            is_active: true,
-            department: None,
-            manager: None,
-        };
-
-        Ok(user)
+        // Server connection, bind, and attribute/group query are not implemented.
+        // Erroring here matters: the previous behavior granted a real session
+        // with Member role for any username/password pair, without verifying
+        // either against the LDAP server.
+        Err(anyhow::anyhow!(
+            "LDAP authentication is not implemented (server bind and attribute/group query are TODO) — refusing to fabricate a session"
+        ))
     }
 
     pub async fn authenticate_with_oauth(
         &mut self,
         provider: &str,
-        auth_code: &str,
+        _auth_code: &str,
     ) -> Result<AuthenticatedUser> {
-        let _config = self
-            .oauth_configs
+        self.oauth_configs
             .get(provider)
             .ok_or_else(|| anyhow::anyhow!("OAuth provider not configured: {}", provider))?;
 
-        // TODO: Exchange code for token
-        // TODO: Call user info endpoint
-        // TODO: Parse and return user
-
-        let user = AuthenticatedUser {
-            user_id: format!("oauth-{}", uuid::Uuid::new_v4()),
-            email: "user@email.com".to_string(),
-            display_name: "User Name".to_string(),
-            given_name: None,
-            family_name: None,
-            roles: vec![UserRole::Guest],
-            groups: vec![],
-            provider: AuthProvider::OAuth2,
-            created_at: chrono::Local::now().to_rfc3339(),
-            last_login: chrono::Local::now().to_rfc3339(),
-            is_active: true,
-            department: None,
-            manager: None,
-        };
-
-        Ok(user)
+        // Token exchange and user-info lookup are not implemented. Erroring
+        // here matters: the previous behavior granted a real Guest session
+        // for any auth_code against any configured provider.
+        Err(anyhow::anyhow!(
+            "OAuth authentication for provider '{}' is not implemented (token exchange and user-info lookup are TODO) — refusing to fabricate a session",
+            provider
+        ))
     }
 
     pub fn create_session(

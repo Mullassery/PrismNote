@@ -5645,10 +5645,95 @@ pub struct UpdateCatalogRequest {
     pub tags: Option<Vec<String>>,
 }
 
+/// `register_table` only receives metadata (row count, column types) from
+/// the client, never the underlying data itself, so there's no byte-exact
+/// size to measure at this API boundary. This gives a real, principled
+/// estimate from what IS available -- row_count x per-column type width --
+/// rather than the hardcoded 0 it replaced. Widths are common on-disk/in-
+/// memory averages, not a specific engine's exact encoding.
+fn estimate_table_size_bytes(row_count: i64, columns: &[ColumnMetadata]) -> i64 {
+    if row_count <= 0 || columns.is_empty() {
+        return 0;
+    }
+    let row_width_bytes: i64 = columns
+        .iter()
+        .map(|c| estimate_column_width_bytes(&c.data_type))
+        .sum();
+    row_count.saturating_mul(row_width_bytes)
+}
+
+fn estimate_column_width_bytes(data_type: &str) -> i64 {
+    let t = data_type.to_ascii_uppercase();
+    if t.contains("BIGINT")
+        || t.contains("DOUBLE")
+        || t.contains("FLOAT8")
+        || t.contains("TIMESTAMP")
+    {
+        8
+    } else if t.contains("INT") || t.contains("FLOAT") || t.contains("REAL") || t.contains("DATE") {
+        4
+    } else if t.contains("SMALLINT") {
+        2
+    } else if t.contains("BOOL") || t.contains("TINYINT") {
+        1
+    } else if t.contains("DECIMAL") || t.contains("NUMERIC") {
+        16
+    } else if t.contains("UUID") {
+        16
+    } else if t.contains("CHAR") || t.contains("TEXT") || t.contains("STRING") || t.contains("JSON")
+    {
+        // No length available for VARCHAR(N) here (data_type is a bare
+        // type name), so use a typical average string-column width rather
+        // than guessing a specific N.
+        32
+    } else {
+        16
+    }
+}
+
+#[cfg(test)]
+mod table_size_estimate_tests {
+    use super::*;
+
+    fn column(data_type: &str) -> ColumnMetadata {
+        ColumnMetadata {
+            name: "c".to_string(),
+            data_type: data_type.to_string(),
+            nullable: true,
+            description: None,
+            sample_values: vec![],
+            stats: None,
+            created_at: chrono::Utc::now(),
+        }
+    }
+
+    #[test]
+    fn estimates_size_from_row_count_and_column_widths() {
+        let columns = vec![column("INTEGER"), column("VARCHAR")];
+        // 4 (INTEGER) + 32 (VARCHAR) = 36 bytes/row
+        assert_eq!(estimate_table_size_bytes(100, &columns), 3600);
+    }
+
+    #[test]
+    fn zero_rows_or_no_columns_is_zero_not_a_fabricated_number() {
+        assert_eq!(estimate_table_size_bytes(0, &[column("INTEGER")]), 0);
+        assert_eq!(estimate_table_size_bytes(100, &[]), 0);
+    }
+
+    #[test]
+    fn width_lookup_is_case_insensitive() {
+        assert_eq!(
+            estimate_column_width_bytes("integer"),
+            estimate_column_width_bytes("INTEGER")
+        );
+    }
+}
+
 pub async fn register_table(
     State(_state): State<Arc<AppState>>,
     Json(req): Json<RegisterTableRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    let size_bytes = estimate_table_size_bytes(req.row_count, &req.columns);
     let table_meta = TableMetadata {
         table_id: Uuid::new_v4().to_string(),
         name: req.table_name,
@@ -5657,7 +5742,7 @@ pub async fn register_table(
         columns: req.columns,
         created_at: chrono::Utc::now(),
         last_accessed: chrono::Utc::now(),
-        size_bytes: 0, // TODO: calculate from actual data
+        size_bytes,
     };
 
     let mut catalog = DataCatalog::new();

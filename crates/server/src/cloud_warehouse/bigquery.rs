@@ -143,6 +143,81 @@ pub async fn execute_query(
     })
 }
 
+/// BigQuery datasets are the closest equivalent to a "database" here, and
+/// listing them is a dedicated REST endpoint rather than something generic
+/// SQL naturally expresses (unlike Snowflake/Postgres-family `SHOW`/
+/// `information_schema` queries).
+pub async fn list_datasets(conn: &CloudWarehouseConnection) -> Result<Vec<String>> {
+    let client = reqwest::Client::new();
+    let url = format!(
+        "{}/bigquery/v2/projects/{}/datasets",
+        base_url(conn),
+        project_id(conn)?
+    );
+    let response = client
+        .get(&url)
+        .bearer_auth(access_token(conn)?)
+        .send()
+        .await
+        .context("BigQuery datasets.list request failed")?;
+    let status = response.status();
+    let text = response
+        .text()
+        .await
+        .context("failed to read BigQuery datasets.list response body")?;
+    if !status.is_success() {
+        return Err(anyhow!("BigQuery datasets.list returned {status}: {text}"));
+    }
+    let parsed: Value =
+        serde_json::from_str(&text).context("failed to parse BigQuery datasets.list response")?;
+    Ok(parsed["datasets"]
+        .as_array()
+        .map(|ds| {
+            ds.iter()
+                .filter_map(|d| {
+                    d["datasetReference"]["datasetId"]
+                        .as_str()
+                        .map(String::from)
+                })
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
+pub async fn list_tables(conn: &CloudWarehouseConnection, dataset_id: &str) -> Result<Vec<String>> {
+    let client = reqwest::Client::new();
+    let url = format!(
+        "{}/bigquery/v2/projects/{}/datasets/{}/tables",
+        base_url(conn),
+        project_id(conn)?,
+        dataset_id
+    );
+    let response = client
+        .get(&url)
+        .bearer_auth(access_token(conn)?)
+        .send()
+        .await
+        .context("BigQuery tables.list request failed")?;
+    let status = response.status();
+    let text = response
+        .text()
+        .await
+        .context("failed to read BigQuery tables.list response body")?;
+    if !status.is_success() {
+        return Err(anyhow!("BigQuery tables.list returned {status}: {text}"));
+    }
+    let parsed: Value =
+        serde_json::from_str(&text).context("failed to parse BigQuery tables.list response")?;
+    Ok(parsed["tables"]
+        .as_array()
+        .map(|ts| {
+            ts.iter()
+                .filter_map(|t| t["tableReference"]["tableId"].as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -247,5 +322,49 @@ mod tests {
 
         let err = execute_query(&conn, "SELECT 1").await.unwrap_err();
         assert!(err.to_string().contains("401"));
+    }
+
+    #[tokio::test]
+    async fn list_datasets_extracts_dataset_ids() {
+        let mut server = mockito::Server::new_async().await;
+        let conn = test_conn(&server.url());
+
+        server
+            .mock("GET", "/bigquery/v2/projects/my-project/datasets")
+            .match_header("authorization", "Bearer ya29.test-token")
+            .with_status(200)
+            .with_body(
+                r#"{"datasets": [
+                    {"datasetReference": {"datasetId": "analytics"}},
+                    {"datasetReference": {"datasetId": "staging"}}
+                ]}"#,
+            )
+            .create_async()
+            .await;
+
+        let datasets = list_datasets(&conn).await.unwrap();
+        assert_eq!(
+            datasets,
+            vec!["analytics".to_string(), "staging".to_string()]
+        );
+    }
+
+    #[tokio::test]
+    async fn list_tables_extracts_table_ids() {
+        let mut server = mockito::Server::new_async().await;
+        let conn = test_conn(&server.url());
+
+        server
+            .mock(
+                "GET",
+                "/bigquery/v2/projects/my-project/datasets/analytics/tables",
+            )
+            .with_status(200)
+            .with_body(r#"{"tables": [{"tableReference": {"tableId": "users"}}]}"#)
+            .create_async()
+            .await;
+
+        let tables = list_tables(&conn, "analytics").await.unwrap();
+        assert_eq!(tables, vec!["users".to_string()]);
     }
 }

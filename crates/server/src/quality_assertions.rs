@@ -144,13 +144,22 @@ impl AssertionEngine {
         )
     }
 
+    /// `total_count` is the actual row count the assertion's failure count
+    /// was measured against (e.g. `SELECT COUNT(*) FROM {table}` run
+    /// alongside the assertion's own failure-counting query) -- it must
+    /// come from the caller, since this function has no query execution
+    /// capability of its own to obtain it.
     pub fn parse_assertion_result(
         assertion: &QualityAssertion,
         query_result: Option<i64>,
+        total_count: i64,
     ) -> AssertionResult {
         let failed_count = query_result.unwrap_or(0);
-        let total_count = 1000; // TODO: get actual total from query context
-        let failure_percentage = (failed_count as f64 / total_count as f64) * 100.0;
+        let failure_percentage = if total_count > 0 {
+            (failed_count as f64 / total_count as f64) * 100.0
+        } else {
+            0.0
+        };
 
         let passed = match assertion.severity.as_str() {
             "critical" => failed_count == 0,
@@ -194,5 +203,54 @@ impl QualityReport {
         let passed = results.iter().filter(|r| r.passed).count() as f64;
         let total = results.len() as f64;
         (passed / total) * 100.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn failure_percentage_uses_the_real_total_count_not_a_hardcoded_one() {
+        let assertion = AssertionEngine::create_not_null_assertion("email", "users");
+        // 5 failures out of 50 real rows = 10%, not 5/1000 = 0.5%.
+        let result = AssertionEngine::parse_assertion_result(&assertion, Some(5), 50);
+        assert_eq!(result.total_count, 50);
+        assert_eq!(result.failure_percentage, 10.0);
+    }
+
+    #[test]
+    fn zero_total_count_does_not_divide_by_zero() {
+        let assertion = AssertionEngine::create_not_null_assertion("email", "users");
+        let result = AssertionEngine::parse_assertion_result(&assertion, Some(0), 0);
+        assert_eq!(result.failure_percentage, 0.0);
+    }
+
+    #[test]
+    fn warning_severity_passes_under_five_percent_failure() {
+        let mut assertion = AssertionEngine::create_not_null_assertion("email", "users");
+        assertion.severity = "warning".to_string();
+        let result = AssertionEngine::parse_assertion_result(&assertion, Some(4), 100);
+        assert!(
+            result.passed,
+            "4% failure should pass a warning-severity assertion"
+        );
+
+        let result = AssertionEngine::parse_assertion_result(&assertion, Some(6), 100);
+        assert!(
+            !result.passed,
+            "6% failure should fail a warning-severity assertion"
+        );
+    }
+
+    #[test]
+    fn error_severity_requires_zero_failures() {
+        let mut assertion = AssertionEngine::create_not_null_assertion("email", "users");
+        assertion.severity = "error".to_string();
+        let result = AssertionEngine::parse_assertion_result(&assertion, Some(1), 1000);
+        assert!(
+            !result.passed,
+            "any failure should fail an error-severity assertion"
+        );
     }
 }

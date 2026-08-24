@@ -8,7 +8,7 @@ mod bigquery;
 mod databricks;
 mod presto_trino;
 mod redshift;
-mod sigv4;
+pub(crate) mod sigv4;
 mod snowflake;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -271,47 +271,120 @@ impl CloudWarehouseManager {
         presto_trino::execute_query(conn, query, presto_trino::Dialect::Trino).await
     }
 
+    /// Lists databases (BigQuery: datasets) via a real query/API call per
+    /// warehouse type. Only the name is populated from a single portable
+    /// query -- row_count/size_bytes/tables would need either a second
+    /// dialect-specific metadata query per database or a full table scan,
+    /// which this single-round-trip listing call deliberately doesn't do
+    /// (left at zero rather than fabricated).
     pub async fn get_databases(&self, connection_id: &str) -> Result<Vec<DatasetInfo>> {
         let conn = self
             .get_connection(connection_id)
             .ok_or_else(|| anyhow::anyhow!("Connection not found: {}", connection_id))?;
 
-        // TODO: Fetch database list based on warehouse type
-        Ok(vec![DatasetInfo {
-            name: conn.database.clone(),
-            warehouse_type: conn.warehouse_type.clone(),
-            row_count: 0,
-            size_bytes: 0,
-            tables: vec![],
-            last_modified: chrono::Local::now().to_rfc3339(),
-        }])
+        let names: Vec<String> = match conn.warehouse_type {
+            CloudWarehouseType::BigQuery => bigquery::list_datasets(&conn).await?,
+            CloudWarehouseType::Snowflake => {
+                first_column_values(&self.execute_query(connection_id, "SHOW DATABASES").await?)
+            }
+            CloudWarehouseType::Redshift => {
+                first_column_values(
+                    &self
+                        .execute_query(
+                            connection_id,
+                            "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname",
+                        )
+                        .await?,
+                )
+            }
+            CloudWarehouseType::AzureSynapse => {
+                first_column_values(
+                    &self
+                        .execute_query(
+                            connection_id,
+                            "SELECT name FROM sys.databases WHERE database_id > 4 ORDER BY name",
+                        )
+                        .await?,
+                )
+            }
+            CloudWarehouseType::Databricks => {
+                first_column_values(&self.execute_query(connection_id, "SHOW DATABASES").await?)
+            }
+            CloudWarehouseType::Athena => {
+                first_column_values(&self.execute_query(connection_id, "SHOW DATABASES").await?)
+            }
+            CloudWarehouseType::Presto | CloudWarehouseType::Trino => {
+                first_column_values(&self.execute_query(connection_id, "SHOW SCHEMAS").await?)
+            }
+        };
+
+        Ok(names
+            .into_iter()
+            .map(|name| DatasetInfo {
+                name,
+                warehouse_type: conn.warehouse_type.clone(),
+                row_count: 0,
+                size_bytes: 0,
+                tables: vec![],
+                last_modified: chrono::Local::now().to_rfc3339(),
+            })
+            .collect())
     }
 
-    pub async fn get_tables(&self, connection_id: &str, _database: &str) -> Result<Vec<TableInfo>> {
-        let _conn = self
+    /// Lists tables in `database` via a real query/API call per warehouse
+    /// type. `database` is used loosely (schema, for warehouses -- Redshift,
+    /// AzureSynapse -- where the connection is already scoped to one
+    /// database and cross-database queries aren't the norm). As with
+    /// `get_databases`, columns/row_count/size_bytes need per-table
+    /// metadata queries this single listing call doesn't make, so they're
+    /// left at honest zero/empty defaults rather than fabricated.
+    pub async fn get_tables(&self, connection_id: &str, database: &str) -> Result<Vec<TableInfo>> {
+        let conn = self
             .get_connection(connection_id)
             .ok_or_else(|| anyhow::anyhow!("Connection not found: {}", connection_id))?;
 
-        // TODO: Fetch table list from specified database
-        Ok(vec![TableInfo {
-            name: "example_table".to_string(),
-            columns: vec![
-                ColumnInfo {
-                    name: "id".to_string(),
-                    data_type: "INTEGER".to_string(),
-                    nullable: false,
-                },
-                ColumnInfo {
-                    name: "name".to_string(),
-                    data_type: "VARCHAR".to_string(),
-                    nullable: true,
-                },
-            ],
-            row_count: 0,
-            size_bytes: 0,
-            created_at: chrono::Local::now().to_rfc3339(),
-            last_modified: chrono::Local::now().to_rfc3339(),
-        }])
+        let names: Vec<String> = match conn.warehouse_type {
+            CloudWarehouseType::BigQuery => bigquery::list_tables(&conn, database).await?,
+            CloudWarehouseType::Snowflake => {
+                let sql = format!("SHOW TABLES IN DATABASE \"{database}\"");
+                first_column_values(&self.execute_query(connection_id, &sql).await?)
+            }
+            CloudWarehouseType::Redshift => {
+                let sql = format!(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = '{database}' ORDER BY table_name"
+                );
+                first_column_values(&self.execute_query(connection_id, &sql).await?)
+            }
+            CloudWarehouseType::AzureSynapse => first_column_values(
+                &self
+                    .execute_query(connection_id, "SELECT name FROM sys.tables ORDER BY name")
+                    .await?,
+            ),
+            CloudWarehouseType::Databricks => {
+                let sql = format!("SHOW TABLES IN {database}");
+                first_column_values(&self.execute_query(connection_id, &sql).await?)
+            }
+            CloudWarehouseType::Athena => {
+                let sql = format!("SHOW TABLES IN {database}");
+                first_column_values(&self.execute_query(connection_id, &sql).await?)
+            }
+            CloudWarehouseType::Presto | CloudWarehouseType::Trino => {
+                let sql = format!("SHOW TABLES FROM {database}");
+                first_column_values(&self.execute_query(connection_id, &sql).await?)
+            }
+        };
+
+        Ok(names
+            .into_iter()
+            .map(|name| TableInfo {
+                name,
+                columns: vec![],
+                row_count: 0,
+                size_bytes: 0,
+                created_at: chrono::Local::now().to_rfc3339(),
+                last_modified: chrono::Local::now().to_rfc3339(),
+            })
+            .collect())
     }
 
     pub fn estimate_query_cost(
@@ -406,6 +479,23 @@ impl CloudWarehouseManager {
     }
 }
 
+/// Takes the first column of each row as a name string, regardless of that
+/// column's exact label -- robust across `SHOW DATABASES`/`SHOW SCHEMAS`/
+/// `SHOW TABLES` dialects that don't consistently name their sole output
+/// column the same thing.
+fn first_column_values(result: &CloudQueryResult) -> Vec<String> {
+    result
+        .rows
+        .iter()
+        .filter_map(|row| {
+            row.first().map(|v| match v {
+                serde_json::Value::String(s) => s.clone(),
+                other => other.to_string(),
+            })
+        })
+        .collect()
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryCostEstimate {
     pub warehouse_type: CloudWarehouseType,
@@ -424,6 +514,95 @@ impl Default for CloudWarehouseManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn first_column_values_takes_the_first_field_of_each_row_regardless_of_type() {
+        let result = CloudQueryResult {
+            columns: vec!["name".to_string()],
+            rows: vec![
+                vec![serde_json::json!("analytics")],
+                vec![serde_json::json!("staging")],
+            ],
+            row_count: 2,
+            execution_time_ms: 0,
+            estimated_bytes_scanned: 0,
+            estimated_cost_usd: 0.0,
+        };
+        assert_eq!(
+            first_column_values(&result),
+            vec!["analytics".to_string(), "staging".to_string()]
+        );
+    }
+
+    fn bigquery_conn(server_url: &str) -> CloudWarehouseConnection {
+        let mut credentials = HashMap::new();
+        credentials.insert("access_token".to_string(), "ya29.test".to_string());
+        CloudWarehouseConnection {
+            id: "bq-1".to_string(),
+            warehouse_type: CloudWarehouseType::BigQuery,
+            name: "test bq".to_string(),
+            host: Some(server_url.to_string()),
+            port: None,
+            database: "analytics".to_string(),
+            username: String::new(),
+            password: String::new(),
+            credentials,
+            region: None,
+            project_id: Some("my-project".to_string()),
+            account_id: None,
+            warehouse_id: None,
+            timeout_seconds: 30,
+            created_at: chrono::Local::now().to_rfc3339(),
+        }
+    }
+
+    #[tokio::test]
+    async fn get_databases_dispatches_to_bigquery_dataset_listing() {
+        let mut server = mockito::Server::new_async().await;
+        let mut manager = CloudWarehouseManager::new();
+        let conn = bigquery_conn(&server.url());
+        manager.add_connection(conn).unwrap();
+
+        server
+            .mock("GET", "/bigquery/v2/projects/my-project/datasets")
+            .with_status(200)
+            .with_body(r#"{"datasets": [{"datasetReference": {"datasetId": "analytics"}}]}"#)
+            .create_async()
+            .await;
+
+        let databases = manager.get_databases("bq-1").await.unwrap();
+        assert_eq!(databases.len(), 1);
+        assert_eq!(databases[0].name, "analytics");
+        assert_eq!(databases[0].warehouse_type, CloudWarehouseType::BigQuery);
+    }
+
+    #[tokio::test]
+    async fn get_tables_dispatches_to_bigquery_table_listing() {
+        let mut server = mockito::Server::new_async().await;
+        let mut manager = CloudWarehouseManager::new();
+        let conn = bigquery_conn(&server.url());
+        manager.add_connection(conn).unwrap();
+
+        server
+            .mock(
+                "GET",
+                "/bigquery/v2/projects/my-project/datasets/analytics/tables",
+            )
+            .with_status(200)
+            .with_body(r#"{"tables": [{"tableReference": {"tableId": "users"}}]}"#)
+            .create_async()
+            .await;
+
+        let tables = manager.get_tables("bq-1", "analytics").await.unwrap();
+        assert_eq!(tables.len(), 1);
+        assert_eq!(tables[0].name, "users");
+    }
+
+    #[tokio::test]
+    async fn get_databases_unknown_connection_is_an_error() {
+        let manager = CloudWarehouseManager::new();
+        assert!(manager.get_databases("nonexistent").await.is_err());
+    }
 
     #[test]
     fn test_add_connection() {
