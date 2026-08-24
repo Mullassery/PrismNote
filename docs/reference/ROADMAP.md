@@ -4,6 +4,36 @@
 
 ---
 
+## 2026-08-24 status check on "Redux Toolkit selector memoization"
+
+External critique flagged that the Zustand → Redux Toolkit migration risks
+unnecessary re-renders without selector memoization. Checked against the
+actual frontend code:
+
+- No `reselect`/`createSelector` usage anywhere in `frontend/src` — it
+  isn't even imported, despite RTK bundling it. All 9 `useSelector` calls
+  live in one file, `frontend/src/hooks/useNotebookRedux.ts:34-42`, as
+  plain inline arrow functions with no memoization. Line 34
+  (`state.notebook?.notebooks ?? []`) creates a new array reference on
+  every render when `state.notebook` is undefined.
+- No active re-render bug found today (no `.filter/.map/.sort` chains
+  inside a selector yet), but the risk is real for the next selector that
+  derives computed data.
+- Correction to the critique's premise: the Redux migration is **partial**
+  — only the `notebook` slice moved. The actual "data explorer" components
+  (`DataExplorer.tsx`, `FileExplorer.tsx`, `SchemaExplorer.tsx`,
+  `DuckDBExplorer.tsx`) are still driven by **Zustand** via
+  `useExplorerRequest.ts`, along with 6 other hooks (`usePlots.ts`,
+  `useExecutionMinimap.ts`, `useAIContext.ts`, `useViz.ts`,
+  `useSchemaCache.ts`, `useWorkspace.ts`).
+
+TODO: add `createSelector`-wrapped memoized selectors in
+`useNotebookRedux.ts` before adding any derived/computed reads there, and
+decide whether the data-explorer stack finishes migrating to Redux or stays
+on Zustand — right now it's split, which is its own source of confusion.
+
+---
+
 ## 2026-08-07 status check on "Cloud warehouse connections (8 providers)"
 
 This doc (last touched at v1.3.0; the project is now at v1.10.0+) has claimed the 8
