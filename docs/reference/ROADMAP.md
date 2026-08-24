@@ -27,10 +27,22 @@ actual frontend code:
   `useExecutionMinimap.ts`, `useAIContext.ts`, `useViz.ts`,
   `useSchemaCache.ts`, `useWorkspace.ts`).
 
-TODO: add `createSelector`-wrapped memoized selectors in
-`useNotebookRedux.ts` before adding any derived/computed reads there, and
-decide whether the data-explorer stack finishes migrating to Redux or stays
-on Zustand — right now it's split, which is its own source of confusion.
+**Done (2026-08-24):** added `frontend/src/store/notebookSelectors.ts`,
+exporting a named selector per field of the `notebook` slice. The one with
+real derived logic — `selectNotebooks`, the `state.notebook?.notebooks ?? []`
+fallback — is wrapped in `createSelector` so repeated renders (including
+while `state.notebook` is undefined) return the same array reference
+instead of a fresh `[]` each time; the other 8 are plain property-read
+selectors (no computation to memoize). `useNotebookRedux.ts`'s 9
+`useSelector` calls now import these instead of inline arrow functions.
+Covered by `frontend/src/__tests__/notebookSelectors.test.ts` (reference
+stability across repeated calls, and correct recomputation when the slice
+reference actually changes).
+
+Still open: whether the data-explorer stack (`DataExplorer.tsx`,
+`FileExplorer.tsx`, `SchemaExplorer.tsx`, `DuckDBExplorer.tsx`, and the 6
+other Zustand-backed hooks) finishes migrating to Redux or stays on
+Zustand — right now it's split, which is its own source of confusion.
 
 ---
 

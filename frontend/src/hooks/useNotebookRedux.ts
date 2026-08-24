@@ -1,7 +1,18 @@
 import { useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import type { RootState, AppDispatch } from '../store/store'
+import type { AppDispatch } from '../store/store'
 import { store } from '../store/store'
+import {
+  selectNotebooks,
+  selectCurrentNotebookId,
+  selectCurrentNotebook,
+  selectSelectedCellIndex,
+  selectClipboardCell,
+  selectLibrarySuggestions,
+  selectSuggestionsIntent,
+  selectSuggestionsSummary,
+  selectSuggestionsLoading,
+} from '../store/notebookSelectors'
 import {
   addCell,
   updateCell,
@@ -31,15 +42,15 @@ export function useNotebookStore() {
   const dispatch = useDispatch<AppDispatch>()
 
   // Selectors
-  const notebooks = useSelector((state: RootState) => state.notebook?.notebooks ?? [])
-  const currentNotebookId = useSelector((state: RootState) => state.notebook.currentNotebookId)
-  const currentNotebook = useSelector((state: RootState) => state.notebook.currentNotebook)
-  const selectedCellIndex = useSelector((state: RootState) => state.notebook.selectedCellIndex)
-  const clipboardCell = useSelector((state: RootState) => state.notebook.clipboardCell)
-  const librarySuggestions = useSelector((state: RootState) => state.notebook.librarySuggestions)
-  const suggestionsIntent = useSelector((state: RootState) => state.notebook.suggestionsIntent)
-  const suggestionsSummary = useSelector((state: RootState) => state.notebook.suggestionsSummary)
-  const suggestionsLoading = useSelector((state: RootState) => state.notebook.suggestionsLoading)
+  const notebooks = useSelector(selectNotebooks)
+  const currentNotebookId = useSelector(selectCurrentNotebookId)
+  const currentNotebook = useSelector(selectCurrentNotebook)
+  const selectedCellIndex = useSelector(selectSelectedCellIndex)
+  const clipboardCell = useSelector(selectClipboardCell)
+  const librarySuggestions = useSelector(selectLibrarySuggestions)
+  const suggestionsIntent = useSelector(selectSuggestionsIntent)
+  const suggestionsSummary = useSelector(selectSuggestionsSummary)
+  const suggestionsLoading = useSelector(selectSuggestionsLoading)
 
   // Actions
   const createNotebook = useCallback(
