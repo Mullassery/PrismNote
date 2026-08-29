@@ -35,7 +35,14 @@ jobs:
       - name: Build frontend
         run: |
           cd frontend
-          npm run build
+          ANALYZE=true npm run build
+
+      - name: Upload bundle size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-bundle-report
+          path: frontend/dist/stats.html
+          retention-days: 30
 
       - name: Run E2E tests
         run: |
