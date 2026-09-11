@@ -1,10 +1,33 @@
 # PrismNote
 
+## Problem
+
+Most notebook tools force a choice: a lightweight local notebook with no
+real data-warehouse connectivity, or a heavyweight cloud platform for
+warehouse access with no simple local-first story — and running untrusted
+notebook code safely usually means bolting on your own sandboxing.
+
+## Solution
+
 A Jupyter-compatible data-science notebook with a Rust backend and a React
 frontend: real local SQL execution, a real sandboxed code-execution engine,
 and connectors for cloud data warehouses.
 
 [![CI](https://github.com/Mullassery/PrismNote/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PrismNote/actions/workflows/ci.yml)
+
+## Use cases
+
+- **Querying local SQLite/DuckDB files or a Postgres/MySQL server from the
+  same notebook**, with real integration-tested execution, not a mocked
+  query path.
+- **Running untrusted or AI-generated code safely** — the Docker sandbox
+  gives no network access by default, enforced memory/CPU/process limits,
+  and a wall-clock timeout, rather than executing code in-process.
+- **Querying a cloud warehouse (Snowflake, BigQuery, Redshift, Databricks,
+  etc.) from a notebook** without switching to a separate BI tool.
+- **Not yet a good fit for:** MongoDB access (not implemented, returns an
+  explicit error rather than faking success); data-quality scoring (the one
+  area still not wired to real execution — see [Other integrations](#other-integrations)); Linux/Windows without building from source (prebuilt binary is macOS Apple Silicon only today).
 
 ## What this is
 

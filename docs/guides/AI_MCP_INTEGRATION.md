@@ -27,7 +27,7 @@
 - Phase 3 (3-4 weeks): Complete MCP support with all 6 tools
 - Phase 4+ (4+ weeks): Advanced features
 
-See [DEVELOPMENT_ROADMAP.md](../../DEVELOPMENT_ROADMAP.md) for detailed implementation timeline and [FEATURES_STATUS.md](../FEATURES_STATUS.md) for complete feature matrix.
+See [DEVELOPMENT_ROADMAP.md](../archive/DEVELOPMENT_ROADMAP.md) for detailed implementation timeline and [FEATURES_STATUS.md](../FEATURES_STATUS.md) for complete feature matrix.
 
 ---
 

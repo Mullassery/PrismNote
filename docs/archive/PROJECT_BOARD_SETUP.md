@@ -138,13 +138,13 @@ Link issues to milestones:
 
 ## Related Documents
 
-- [DEVELOPMENT_ROADMAP.md](../DEVELOPMENT_ROADMAP.md) - Detailed task breakdown
+- [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) - Detailed task breakdown
 - [FEATURES_STATUS.md](../FEATURES_STATUS.md) - Feature implementation status
 - GitHub Issues: #14-#19 (Epic issues for each phase)
 
 ## Notes
 
-- All issues link back to DEVELOPMENT_ROADMAP.md for detailed context
+- All issues link back to docs/archive/DEVELOPMENT_ROADMAP.md for detailed context (historical)
 - Use GitHub issues for tracking and discussions
 - Use this project board for visual progress tracking
 - Update board status weekly during development
