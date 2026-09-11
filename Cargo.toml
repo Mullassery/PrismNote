@@ -6,7 +6,7 @@ resolver = "2"
 version = "1.11.0"
 edition = "2021"
 authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
-license = "Proprietary"
+license = "Apache-2.0"
 repository = "https://github.com/Mullassery/prismnote"
 
 [workspace.dependencies]
