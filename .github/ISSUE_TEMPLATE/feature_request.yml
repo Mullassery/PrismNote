@@ -1,0 +1,48 @@
+name: Feature Request
+description: Suggest an idea for PrismNote
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Is your feature request related to a problem? Describe it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: Concretely, when/how would you use this?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (your opinion, not a commitment)
+      options:
+        - "Low (nice to have)"
+        - "Medium (would be useful)"
+        - "High (blocking my use case)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context

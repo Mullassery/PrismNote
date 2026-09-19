@@ -1,0 +1,80 @@
+name: Bug Report
+description: Report a bug in PrismNote
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior (including any error messages / stack traces)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: PrismNote version
+      placeholder: "e.g. 1.11.0 (run `prismnote --version` or check pyproject.toml)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Installation method
+      options:
+        - pip install prismnote
+        - Homebrew
+        - Built from source (make build)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS and architecture
+      placeholder: "e.g. macOS 15 arm64, Ubuntu 24.04 x86_64, Windows 11 WSL2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: versions
+    attributes:
+      label: Rust / Node / Docker versions (whichever are relevant to the bug)
+      placeholder: |
+        rustc --version:
+        node --version:
+        docker --version:
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Logs, screenshots, or anything else that would help.
