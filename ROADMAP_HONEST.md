@@ -23,18 +23,16 @@ mostly about a version of the product that no longer matches reality).
   available. Each has an `#[ignore]`-gated integration test
   (`REDSHIFT_TEST_DSN`, `SYNAPSE_TEST_HOST`/`_USER`/`_PASSWORD`) that has
   apparently never been run against a real instance.
-- **`docker_executor::tests::sandbox_enforces_wall_clock_timeout_and_kills_container`
-  is flaky.** Verified 2026-09-19: failed once during
-  `cargo test --workspace --release` (170 passed, 1 failed), then passed
-  twice when run in isolation
-  (`cargo test --release --bin prismnote docker_executor::tests::sandbox_enforces_wall_clock_timeout_and_kills_container -- --exact`).
-  The assertion at `crates/server/src/docker_executor.rs:921-924` checks
-  `docker ps -a` immediately after a timeout-triggered kill; under
-  concurrent test-suite load (other Docker-heavy tests running in
-  parallel) the container removal apparently hasn't completed by the time
-  the check runs. Needs a retry/poll instead of a single check, or a fix to
-  actual cleanup timing — not fixed in this pass because it needs someone
-  to actually reproduce it reliably first.
+- **Fixed 2026-09-21: `docker_executor::tests::sandbox_enforces_wall_clock_timeout_and_kills_container`
+  flakiness.** Root cause confirmed: `docker kill` returns as soon as the
+  daemon sends the signal, but the `--rm` container's actual removal
+  happens asynchronously once the daemon observes the process exit — the
+  test's single immediate `docker ps -a` check (`docker_executor.rs:910-925`)
+  could race real cleanup under concurrent test-suite load. Replaced the
+  single check with a bounded poll (up to 10s, 200ms interval). Verified:
+  `cargo test --release --all-features` — 171 passed, 0 failed, 2 ignored
+  (both default parallel and `--test-threads=1`); the specific test run in
+  isolation also passes.
 - **SQL execution parameterization end-to-end.** `query_validator.rs`'s
   defense-in-depth validation is real and tested (8 passing unit tests),
   but nobody has audited whether every one of the SQLite/DuckDB/Postgres/
@@ -102,12 +100,13 @@ mostly about a version of the product that no longer matches reality).
 ## 3. CI errors / broken
 
 - **`cargo test --workspace --release` — the exact command `ci.yml`'s
-  `rust-build` job runs — failed once locally** (see flaky test above).
-  Could not verify current live GitHub Actions status: `gh run list` /
-  `gh api` to `api.github.com` timed out from this sandbox (network
-  restriction), so whether the badge on `main` is currently green could not
-  be confirmed independently. Treat the existing CI badge with caution
-  until someone checks the Actions tab directly.
+  `rust-build` job runs — failed once locally** on 2026-09-19 (flaky test,
+  fixed 2026-09-21, see "Built, not (fully) tested" above). Could not
+  verify current live GitHub Actions status: `gh run list` / `gh api` to
+  `api.github.com` timed out from this sandbox (network restriction), so
+  whether the badge on `main` is currently green could not be confirmed
+  independently. Treat the existing CI badge with caution until someone
+  checks the Actions tab directly.
 - **`tests.yml` ("Frontend Tests") silently swallows real failures.** Both
   steps use `|| echo "... completed with warnings"`:
   ```yaml
@@ -125,7 +124,11 @@ mostly about a version of the product that no longer matches reality).
     `react-hooks/exhaustive-deps` warning in `src/pages/Login.tsx:38`
     (`handleGoogleResponse` missing from the Google Sign-In `useEffect`
     dependency array — genuine stale-closure risk in the login flow, not
-    just a lint nag). 13 `eslint-disable`/`eslint-disable-next-line`
+    just a lint nag). **Fixed 2026-09-21**: the script-load effect now
+    calls through a ref that's kept up to date every render, so it no
+    longer depends on (or needs to re-run for) a function recreated every
+    render. `npm run lint` now reports 435 errors, 21 warnings (was 22).
+    13 `eslint-disable`/`eslint-disable-next-line`
     comments across 8 files (`App.tsx`×2, `VizPane.tsx`,
     `DataExplorer.tsx`×5, `FindReplace.tsx`, `BottomPanel.tsx`,
     `ServerExplorer.tsx`×2, `DataPanel.tsx`) all suppress
@@ -152,20 +155,22 @@ mostly about a version of the product that no longer matches reality).
     (start with `frontend/src`'s 348 real lint errors, since those are
     production code, not test scaffolding) and only then remove the
     swallow.
-- **`.pre-commit-config.yaml` has at least one broken hook config.** The
-  `bandit` hook (`args: ["-c", ".bandit"]`) references a `.bandit` config
-  file that does not exist anywhere in the repo (confirmed via `find`).
-  Running `pre-commit run bandit` would fail. Not fixed in this pass
-  (either the arg should be removed or a `.bandit` file added — needs a
-  decision about what bandit config is actually wanted).
-- **`.pre-commit-config.yaml`'s mypy hook depends on `types-all`**
-  (`additional_dependencies: [types-all]`), a metapackage that PyPI
-  deprecated/removed some time ago in favor of per-package `types-*`
-  stubs. Not independently confirmed installable in this sandbox (no `pip`
-  binary available to test — only `python3 -m pip`, and full pre-commit
-  environment setup was out of scope for this pass), but this is a known,
-  widely-reported breakage pattern for this exact hook config across many
-  projects; flagging for verification.
+- **Fixed 2026-09-21: `.pre-commit-config.yaml` bandit hook referenced a
+  nonexistent `.bandit` config file.** The `bandit` hook had
+  `args: ["-c", ".bandit"]` pointing at a file that doesn't exist anywhere
+  in the repo. Removed the arg so bandit runs with its defaults. Verified:
+  `pre-commit run bandit --all-files` now runs to completion (finds
+  legitimate low/medium findings in existing code, unrelated to this fix
+  and out of scope here) instead of failing on the missing config file.
+- **Fixed 2026-09-21: `.pre-commit-config.yaml` mypy hook depended on
+  `types-all`**, a metapackage PyPI has removed. Removed the
+  `additional_dependencies: [types-all]` line — the third-party libraries
+  actually imported (`fastapi`, `pydantic`, `starlette`) ship their own
+  inline types, and the hook's existing `--ignore-missing-imports` arg
+  covers anything else. Verified: `pre-commit run mypy --all-files` now
+  runs to completion (surfaces 5 pre-existing real type errors, unrelated
+  to this fix and out of scope here) instead of failing to install
+  `types-all`.
 - **16 open Dependabot branches exist locally and appear unmerged**
   (5 cargo, 3 github-actions, 5 npm, 5 pip — `git branch -a` at the start
   of this pass). Dependency updates are piling up unaddressed; not
@@ -199,19 +204,26 @@ mostly about a version of the product that no longer matches reality).
   surfaces this (`dist/stats.html` uploaded as a CI artifact), but nobody
   has acted on what it shows — dynamic `import()` / manual chunking for
   Monaco would be the fix. Not attempted in this pass.
-- **`JWT_SECRET` silently falls back to a hardcoded, publicly-visible
-  string** (`"default-secret"`, `crates/server/src/middleware/auth.rs:76`,
-  confirmed by its own test `test_jwt_secret_default`). If deployed without
-  explicitly setting `JWT_SECRET`, every issued JWT is forgeable by anyone
-  who has read this repo. See `SECURITY.md`. Not fixed in this pass
-  (changing default auth behavior is a real security-relevant code change,
-  not a doc-pass fix) — flagged here and in SECURITY.md for a dedicated
-  follow-up (recommend: refuse to start / generate+persist a random secret
-  instead of a hardcoded fallback).
-- **`npm audit`: 6 known vulnerabilities** (3 high via `dompurify`
-  transitively through `monaco-editor`; 1 high `nanoid`; 2 moderate
-  `postcss`), all transitive, no direct fix available for the
-  `monaco-editor`/`dompurify` chain without an upstream bump. See
+- **Fixed 2026-09-21: `JWT_SECRET` no longer silently falls back to a
+  hardcoded, publicly-visible string.** `get_jwt_secret()`
+  (`crates/server/src/middleware/auth.rs`) now panics with a clear message
+  if `JWT_SECRET` is unset, checked once at server startup (`main.rs`) so a
+  misconfigured deployment fails immediately instead of serving forgeable
+  tokens. Also fixed: three JWT-issuing call sites in `api.rs`
+  (`auth_register`, `auth_login`, Google OAuth login) hardcoded
+  `"default-secret"` directly rather than reading `JWT_SECRET` at all —
+  even a deployment that *did* set `JWT_SECRET` would have signed tokens
+  with a different, hardcoded secret than the one used to validate them.
+  All three now call `get_jwt_secret()`. Verified:
+  `cargo test --release --all-features` — 171 passed, 0 failed, 2 ignored
+  (including new `test_jwt_secret_panics_when_unset`). See `SECURITY.md`.
+- **Partially fixed 2026-09-21: `npm audit`.** `npm audit fix` (no
+  `--force`, `package.json` unchanged — only transitive dependency patch/
+  minor bumps within existing semver ranges) took the frontend from 10
+  known vulnerabilities down to 2 (1 low, 1 moderate). Verified: `npm test`
+  still 114/114, `npm run build` still succeeds. The remaining 2
+  (`dompurify`, transitively via `monaco-editor`) have no fix available
+  without an upstream `monaco-editor` bump — not attempted, see
   `SECURITY.md`. `cargo audit` could not be run in this sandbox (its
   advisory-database git fetch to GitHub timed out) — Rust dependency
   vulnerability status is **unverified**, not "clean."
@@ -255,3 +267,21 @@ mostly about a version of the product that no longer matches reality).
 
 Firefox/WebKit Playwright projects were not run (chromium only, due to the
 39-minute runtime already incurred for one browser).
+
+## Quick-fix pass, 2026-09-21 (commands + real results)
+
+| Command | Result |
+|---|---|
+| `cargo build --release --all-features` | Builds. Still 217 warnings (no new ones). |
+| `cargo test --release --all-features` (default parallel) | 171 passed, 0 failed, 2 ignored. |
+| `cargo test --release --all-features -- --test-threads=1` | 171 passed, 0 failed, 2 ignored. |
+| `cd frontend && npm run lint` | 435 errors, 21 warnings (was 22 — Login.tsx exhaustive-deps fixed). |
+| `cd frontend && npm test` (vitest) | 114/114 passed. |
+| `cd frontend && npm run build` | Succeeds; same oversized chunks as before (unrelated, not attempted). |
+| `cd frontend && npm audit` | 2 vulnerabilities (1 low, 1 moderate), down from 10 (`npm audit fix`, no `--force`). |
+| `pre-commit run bandit --all-files` | Runs to completion (was: failed on missing `.bandit` file). |
+| `pre-commit run mypy --all-files` | Runs to completion (was: failed installing removed `types-all`). |
+
+Items fixed this pass are marked "Fixed 2026-09-21" inline above. Everything
+else in this file is unchanged from the 2026-09-19/20 audit pass and still
+accurate as of this writing.

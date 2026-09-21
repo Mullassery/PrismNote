@@ -4022,8 +4022,9 @@ pub async fn auth_register(
         .display_name
         .unwrap_or_else(|| req.email.split('@').next().unwrap_or("User").to_string());
 
-    // Generate JWT using a default secret for now (will be injected from AppState later)
-    let auth_manager = EnterpriseAuthManager::new("default-secret".to_string());
+    // Generate JWT using the configured JWT_SECRET (fails fast if unset — see
+    // crate::middleware::auth::get_jwt_secret)
+    let auth_manager = EnterpriseAuthManager::new(crate::middleware::auth::get_jwt_secret());
     let jwt_token = auth_manager
         .generate_jwt(&user_id, &req.email, &[UserRole::Member])
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -4072,7 +4073,7 @@ pub async fn auth_login(
 
     // Generate JWT for now (will be tied to user database later)
     let user_id = format!("user-{}", Uuid::new_v4());
-    let auth_manager = EnterpriseAuthManager::new("default-secret".to_string());
+    let auth_manager = EnterpriseAuthManager::new(crate::middleware::auth::get_jwt_secret());
     let jwt_token = auth_manager
         .generate_jwt(&user_id, &req.email, &[UserRole::Member])
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -4224,7 +4225,7 @@ pub async fn auth_google(
         });
 
     // Generate JWT
-    let auth_manager = EnterpriseAuthManager::new("default-secret".to_string());
+    let auth_manager = EnterpriseAuthManager::new(crate::middleware::auth::get_jwt_secret());
     let jwt_token = auth_manager
         .generate_jwt(&user_id, &payload.email, &[UserRole::Member])
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;

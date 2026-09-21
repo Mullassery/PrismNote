@@ -68,30 +68,32 @@ exist yet.
   tokens found in tracked files during this pass — see also the prior
   "scrub leaked PyPI token" commit `4245d96` in git history, which is why
   this check matters here specifically).
-- **`JWT_SECRET` has a hardcoded fallback.** `crates/server/src/middleware/
-  auth.rs:76`: `get_jwt_secret()` returns the literal string
-  `"default-secret"` if the `JWT_SECRET` environment variable is unset —
-  confirmed by reading the code and its own test
-  (`test_jwt_secret_default`, which asserts the fallback value). If you run
-  this outside local development without setting `JWT_SECRET`, every JWT is
-  signed with a secret that's publicly visible in this repo's source code —
-  anyone can forge a valid auth token. **Set `JWT_SECRET` explicitly in any
-  non-local deployment; do not rely on the default.** This is tracked as an
-  unresolved gap in `ROADMAP_HONEST.md` (arguably the default should refuse
-  to start, or generate+persist a random secret, rather than silently using
-  a known constant).
+- **Fixed 2026-09-21: `JWT_SECRET` no longer has a hardcoded fallback.**
+  `crates/server/src/middleware/auth.rs`'s `get_jwt_secret()` previously
+  returned the literal string `"default-secret"` if the `JWT_SECRET`
+  environment variable was unset. Three JWT-issuing call sites in `api.rs`
+  (`auth_register`, `auth_login`, Google OAuth login) additionally
+  hardcoded `"default-secret"` directly, bypassing `JWT_SECRET` entirely
+  even when it *was* set. Both are fixed: `get_jwt_secret()` now panics
+  with a clear message if `JWT_SECRET` is unset (checked once at server
+  startup, so a misconfigured deployment fails immediately rather than
+  serving forgeable tokens), and all JWT-issuing call sites use
+  `get_jwt_secret()` instead of a hardcoded literal. Set `JWT_SECRET` to a
+  strong, random value (e.g. `openssl rand -hex 32`) before starting the
+  server.
 
-### Known-vulnerable dependencies (as of 2026-09-19, `npm audit` in `frontend/`)
+### Known-vulnerable dependencies (`npm audit` in `frontend/`)
 
-6 vulnerabilities (3 high, 3 moderate), all transitive:
-- `dompurify` (pulled in via `monaco-editor`) — multiple XSS/sanitizer-bypass
-  advisories.
-- `nanoid` — infinite loop with negative/zero size.
-- `postcss` — source-map path traversal / arbitrary `.map` file disclosure.
+Fixed 2026-09-21: `npm audit fix` (no `--force`, no direct/major dependency
+bumps — only transitive patch/minor versions within existing semver
+ranges) resolved 8 of 10 known advisories (`brace-expansion`,
+`browserslist`, `nanoid`, `postcss`, and others pulled in transitively).
+Verified: `frontend/package.json` unexpectedly unchanged, `npm test` still
+114/114, `npm run build` still succeeds.
 
-No fix is currently available without an upstream `monaco-editor` bump for
-the `dompurify` chain; `npm audit fix` may resolve `nanoid`/`postcss`. Not
-fixed in this pass — see `ROADMAP_HONEST.md`.
+2 vulnerabilities remain (1 low, 1 moderate) — `dompurify`, pulled in
+transitively via `monaco-editor`, has no fix available without an upstream
+`monaco-editor` bump. Not fixed in this pass — see `ROADMAP_HONEST.md`.
 
 ## Compliance
 

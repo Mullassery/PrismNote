@@ -119,6 +119,11 @@ pub struct AppState {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
+    // Fail fast if JWT_SECRET isn't configured, rather than starting a server
+    // that would sign/validate auth tokens with a predictable default secret.
+    // See crate::middleware::auth::get_jwt_secret.
+    let _ = middleware::auth::get_jwt_secret();
+
     let notebooks_dir = std::env::var("PRISMNOTE_DIR").unwrap_or_else(|_| {
         format!(
             "{}/.prismnote/notebooks",

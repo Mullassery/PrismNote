@@ -13,6 +13,38 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+### Security
+- **`JWT_SECRET` no longer has a hardcoded fallback.**
+  `crates/server/src/middleware/auth.rs`'s `get_jwt_secret()` used to
+  return the literal string `"default-secret"` if the `JWT_SECRET`
+  environment variable was unset, making every issued JWT forgeable in any
+  deployment that forgot to configure it. It now fails fast — panics with
+  a clear message — and the check runs once at server startup
+  (`main.rs`), so a misconfigured deployment refuses to start rather than
+  serving forgeable tokens. Also fixed three JWT-issuing call sites in
+  `api.rs` (`auth_register`, `auth_login`, Google OAuth login) that
+  hardcoded `"default-secret"` directly, bypassing `JWT_SECRET` entirely
+  even when it was set — they now read the configured secret.
+- **Reduced frontend `npm audit` findings from 10 to 2** via
+  `npm audit fix` (no `--force`; `package.json` unchanged, only transitive
+  dependency versions bumped within existing semver ranges). Remaining 2
+  (`dompurify`, via `monaco-editor`) need an upstream `monaco-editor` bump,
+  not attempted here.
+
+### Fixed
+- Fixed flakiness in
+  `docker_executor::tests::sandbox_enforces_wall_clock_timeout_and_kills_container`:
+  replaced a single immediate `docker ps -a` check (which could race the
+  daemon's asynchronous container cleanup after `docker kill`) with a
+  bounded poll.
+- Fixed a genuine `react-hooks/exhaustive-deps` issue in
+  `frontend/src/pages/Login.tsx`: the Google Sign-In script-load effect
+  now calls through a ref kept current every render instead of closing
+  over a stale `handleGoogleResponse`.
+- Fixed `.pre-commit-config.yaml`: removed the `bandit` hook's reference to
+  a nonexistent `.bandit` config file, and removed the `mypy` hook's
+  dependency on `types-all`, a stub metapackage PyPI has removed.
+
 ### Changed
 - Consolidated documentation: archived ~13 stale, duplicated, or fabricated
   docs (fake "MCP 2.0 Platform" roadmap/vision docs, a stale v0.4.5

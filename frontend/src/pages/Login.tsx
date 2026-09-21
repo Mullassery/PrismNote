@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { LogIn, Lock, Mail, Globe } from 'lucide-react'
 
 declare global {
@@ -15,27 +15,6 @@ declare global {
 }
 
 export default function Login() {
-  useEffect(() => {
-    // Load Google Sign-In script
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.defer = true
-    document.body.appendChild(script)
-
-    script.onload = () => {
-      if (window.google) {
-        window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
-          callback: handleGoogleResponse,
-        })
-      }
-    }
-
-    return () => {
-      document.body.removeChild(script)
-    }
-  }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -82,6 +61,38 @@ export default function Login() {
       setIsLoading(false)
     }
   }
+
+  // The script-load effect below runs once (mount only) and must still call
+  // whatever the *latest* handleGoogleResponse is — it's a new function
+  // object every render. A ref sidesteps both the react-hooks/exhaustive-deps
+  // warning and the actual stale-closure risk without re-injecting the
+  // Google script on every render.
+  const handleGoogleResponseRef = useRef(handleGoogleResponse)
+  useEffect(() => {
+    handleGoogleResponseRef.current = handleGoogleResponse
+  })
+
+  useEffect(() => {
+    // Load Google Sign-In script
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    document.body.appendChild(script)
+
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
+          callback: (response: any) => handleGoogleResponseRef.current(response),
+        })
+      }
+    }
+
+    return () => {
+      document.body.removeChild(script)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

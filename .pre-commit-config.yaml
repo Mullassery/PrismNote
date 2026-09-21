@@ -20,7 +20,10 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-all]
+        # `types-all` was a metapackage that PyPI has since removed; the
+        # third-party libraries actually imported here (fastapi, pydantic,
+        # starlette) ship their own inline types, and --ignore-missing-imports
+        # already covers anything else that doesn't.
         args: ["--ignore-missing-imports"]
 
   # Security
@@ -28,7 +31,9 @@ repos:
     rev: 1.7.5
     hooks:
       - id: bandit
-        args: ["-c", ".bandit"]
+        # No .bandit config file exists in this repo; run with bandit's
+        # defaults rather than pointing at a nonexistent config.
+        args: []
 
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks

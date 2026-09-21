@@ -907,17 +907,31 @@ mod tests {
         );
 
         // Verify the container was actually killed/removed, not left running.
-        let (_, ps_stdout, _) = executor
-            .run(&[
-                "ps",
-                "-a",
-                "--filter",
-                &format!("name={}", result.container_id),
-                "--format",
-                "{{.Names}}",
-            ])
-            .await
-            .unwrap();
+        // `docker kill` returns as soon as the daemon has sent the signal;
+        // the `--rm` container's actual removal happens asynchronously once
+        // the daemon observes the process exit, so a single immediate check
+        // here raced actual cleanup under concurrent test-suite load. Poll
+        // with a bounded timeout instead of asserting on the first sample.
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let mut ps_stdout = String::new();
+        loop {
+            let (_, stdout, _) = executor
+                .run(&[
+                    "ps",
+                    "-a",
+                    "--filter",
+                    &format!("name={}", result.container_id),
+                    "--format",
+                    "{{.Names}}",
+                ])
+                .await
+                .unwrap();
+            ps_stdout = stdout;
+            if !ps_stdout.contains(&result.container_id) || Instant::now() >= deadline {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
         assert!(
             !ps_stdout.contains(&result.container_id),
             "sandbox container should have been cleaned up after timeout, found: {ps_stdout}"

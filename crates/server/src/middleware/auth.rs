@@ -71,9 +71,20 @@ where
     }
 }
 
-/// Get JWT secret from environment or use default (should be injected from AppState)
-fn get_jwt_secret() -> String {
-    std::env::var("JWT_SECRET").unwrap_or_else(|_| "default-secret".to_string())
+/// Get JWT secret from environment.
+///
+/// Fails fast (panics with a clear message) if `JWT_SECRET` is not set,
+/// rather than silently falling back to a hardcoded default. A hardcoded
+/// fallback would make every JWT issued by a deployment that forgot to set
+/// this variable forgeable by anyone who has read this repo's source.
+pub(crate) fn get_jwt_secret() -> String {
+    std::env::var("JWT_SECRET").unwrap_or_else(|_| {
+        panic!(
+            "JWT_SECRET environment variable is not set. Refusing to start with an insecure, \
+             publicly-known default signing key. Set JWT_SECRET to a strong, random secret \
+             (e.g. `openssl rand -hex 32`) before starting the server."
+        )
+    })
 }
 
 /// Extractor for optional authentication (doesn't fail if no token)
@@ -129,9 +140,17 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    // `get_jwt_secret` reads a process-wide environment variable, and these
+    // tests mutate it. Serialize them so they don't race against each other
+    // (or against a poisoned lock from a `should_panic` test) when cargo
+    // runs tests concurrently.
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn test_jwt_secret_from_env() {
+        let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         std::env::set_var("JWT_SECRET", "test-secret-123");
         let secret = get_jwt_secret();
         assert_eq!(secret, "test-secret-123");
@@ -139,9 +158,10 @@ mod tests {
     }
 
     #[test]
-    fn test_jwt_secret_default() {
+    #[should_panic(expected = "JWT_SECRET environment variable is not set")]
+    fn test_jwt_secret_panics_when_unset() {
+        let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         std::env::remove_var("JWT_SECRET");
-        let secret = get_jwt_secret();
-        assert_eq!(secret, "default-secret");
+        let _ = get_jwt_secret();
     }
 }
