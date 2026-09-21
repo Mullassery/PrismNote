@@ -147,6 +147,15 @@ cargo test --workspace --release   # backend
 cd frontend && npm test            # frontend (vitest)
 ```
 
+Real results as of 2026-09-19: backend 170 passed / 1 flaky failure (a
+Docker-sandbox timeout-cleanup test that's timing-sensitive under
+concurrent test load); frontend vitest 114/114 passed. `npm run lint` and
+`npm run test:e2e` currently fail in this repo (435 lint errors; 57/85
+Playwright tests) — CI's frontend workflow does not currently fail the
+build on either, which is a known gap. See
+[ROADMAP_HONEST.md](ROADMAP_HONEST.md) for the full, unfiltered list of
+bugs and gaps found in the most recent audit, including this one.
+
 ### Configuration
 
 Everything runs with no environment variables set — Google Sign-In and AI
@@ -164,6 +173,16 @@ frontend/        React app (components, hooks, API clients)
 python/          PyPI launcher package
 docs/            architecture notes and screenshots
 ```
+
+## Contributing, security, status
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, real test/lint commands
+- [SECURITY.md](SECURITY.md) — reporting vulnerabilities, known
+  security-relevant facts
+- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — verified list of what's broken,
+  untested, not built, or not wired up
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- [CHANGELOG.md](CHANGELOG.md)
 
 ## License
 
