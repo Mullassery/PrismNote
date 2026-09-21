@@ -13,6 +13,8 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-09-22
+
 ### Security
 - **`JWT_SECRET` no longer has a hardcoded fallback.**
   `crates/server/src/middleware/auth.rs`'s `get_jwt_secret()` used to

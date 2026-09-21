@@ -1998,7 +1998,7 @@ checksum = "c6fa0831dd7cc608c38a5e323422a0077678fa5744aa2be4ad91c4ece8eec8d5"
 
 [[package]]
 name = "prismnote_server"
-version = "1.11.0"
+version = "1.11.1"
 dependencies = [
  "anyhow",
  "async-trait",
