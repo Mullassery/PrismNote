@@ -35,7 +35,7 @@ rust-embed = "8"
 jsonwebtoken = "9"
 bcrypt = "0.15"
 rand = "0.8"
-sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-rustls", "chrono", "uuid"] }
+sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio-rustls", "chrono", "uuid"] }
 hex = "0.4"
 hmac = "0.12"
 sha2 = "0.10"
