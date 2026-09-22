@@ -33,3 +33,11 @@ interface Window {
   showOpenFilePicker?(options?: OpenFilePickerOptions): Promise<FileSystemFileHandle[]>
   showSaveFilePicker?(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>
 }
+
+// `FileSystemHandle.move()` (rename/move in place) — also still missing from
+// TS's lib.dom.d.ts snapshot. Optional because it's only supported in newer
+// Chrome (`components/FileExplorer.tsx` feature-detects it at runtime).
+interface FileSystemHandle {
+  move?(newName: string): Promise<void>
+  move?(newParent: FileSystemDirectoryHandle, newName?: string): Promise<void>
+}

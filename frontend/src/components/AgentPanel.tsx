@@ -1,28 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-  Sparkles,
   Send,
   X,
   ChevronDown,
-  Wand2,
   Play,
   Check,
   Ban,
   Plus,
   Pencil,
-  CircleDot,
   Loader,
   Plug,
-  Download,
-  RefreshCw,
-  Minus,
-  Copy,
-  Code,
-  FileText,
-  Database,
-  Eye,
   Search,
 } from 'lucide-react'
+import axios from 'axios'
 import MDPreview from '@uiw/react-markdown-preview'
 import { useNotebookStore } from '../hooks/useNotebookRedux'
 import { useFontSize } from '../hooks/useFontSize'
@@ -167,8 +157,8 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
         if (!r.ok) throw new Error(`Ollama API error: ${r.status}`)
         return r.json()
       })
-      .then((d) => {
-        const names = (d.models ?? []).map((m: any) => m.name)
+      .then((d: { models?: { name: string }[] }) => {
+        const names = (d.models ?? []).map((m) => m.name)
         console.log('Ollama models found:', JSON.stringify(names))
         console.log('Full response:', JSON.stringify(d))
         setModels(names)
@@ -290,10 +280,14 @@ export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose
           copy[copy.length - 1] = { role: 'assistant', text: reply, actions: actions.length ? actions : undefined }
           return copy
         })
-      } catch (e: any) {
+      } catch (e: unknown) {
         setMessages((ms) => {
           const copy = [...ms]
-          const errorMsg = e?.response?.data?.error || e?.message || 'Check your API key in Settings → AI'
+          const errorMsg = axios.isAxiosError(e)
+            ? (e.response?.data as { error?: string } | undefined)?.error || e.message
+            : e instanceof Error
+              ? e.message
+              : 'Check your API key in Settings → AI'
           copy[copy.length - 1] = { role: 'assistant', text: `**Error:** ${PROVIDER_LABEL[provider]} request failed\n\n\`${errorMsg}\`` }
           return copy
         })

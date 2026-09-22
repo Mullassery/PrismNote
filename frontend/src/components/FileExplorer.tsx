@@ -17,16 +17,15 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { useWorkspace } from '../hooks/useWorkspace'
-import { useNotebookStore, getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
+import { getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
 import { setNotebooks } from '../store/notebookSlice'
 import { useFontSize } from '../hooks/useFontSize'
 import ServerExplorer from './ServerExplorer'
+import { isIpynbRaw, type Cell, type Notebook } from '../types/notebook'
 
-interface Entry {
-  name: string
-  kind: 'file' | 'directory'
-  handle: any
-}
+type Entry =
+  | { name: string; kind: 'file'; handle: FileSystemFileHandle }
+  | { name: string; kind: 'directory'; handle: FileSystemDirectoryHandle }
 
 // ── file-type icon mapping with syntax-aware icons ──
 function iconFor(name: string) {
@@ -57,36 +56,39 @@ function iconFor(name: string) {
   }
 }
 
-async function readDir(handle: any): Promise<Entry[]> {
+async function readDir(handle: FileSystemDirectoryHandle): Promise<Entry[]> {
   const items: Entry[] = []
   for await (const [name, h] of handle.entries()) {
     if (name.startsWith('.')) continue // hide dotfiles by default
-    items.push({ name, kind: h.kind, handle: h })
+    if (h.kind === 'directory') items.push({ name, kind: 'directory', handle: h })
+    else items.push({ name, kind: 'file', handle: h })
   }
   items.sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'directory' ? -1 : 1))
   return items
 }
 
 // load an opened .ipynb directly into the notebook store (no backend needed)
-function loadIpynb(name: string, data: any) {
-  const cells = (data.cells ?? []).map((c: any, i: number) => ({
+function loadIpynb(name: string, data: unknown) {
+  if (!isIpynbRaw(data)) return
+  const cells: Cell[] = (data.cells ?? []).map((c, i) => ({
     id: `${name}-${i}`,
     cell_type: c.cell_type ?? 'code',
     source: c.source ?? [],
     outputs: c.outputs ?? [],
+    execution_count: null,
     metadata: c.metadata ?? {},
   }))
-  const nb = { id: `local-${name}`, name: name.replace(/\.ipynb$/, ''), cells, metadata: data.metadata ?? {} }
+  const nb: Notebook = { id: `local-${name}`, name: name.replace(/\.ipynb$/, ''), cells, metadata: data.metadata ?? {} }
   const dispatch = getReduxDispatch()
   const state = getNotebookState()
   dispatch(setNotebooks({
-    notebooks: [...state.notebooks.filter((n: any) => n.id !== nb.id), nb],
+    notebooks: [...state.notebooks.filter((n) => n.id !== nb.id), nb],
     currentNotebookId: nb.id,
     currentNotebook: nb,
   }))
 }
 
-type MenuState = { x: number; y: number; entry: Entry; parent: any } | null
+type MenuState = { x: number; y: number; entry: Entry; parent: FileSystemDirectoryHandle | null } | null
 
 export default function FileExplorer() {
   const rootHandle = useWorkspace((s) => s.rootHandle)
@@ -111,7 +113,10 @@ export default function FileExplorer() {
 
   const openFile = async (e: Entry) => {
     setSelected(e.name)
-    if (e.name.endsWith('.ipynb')) {
+    // `e.kind === 'file'` narrows `e.handle` to FileSystemFileHandle (the
+    // union also includes FileSystemDirectoryHandle, which has no
+    // `.getFile()`) — previously unchecked under `handle: any`.
+    if (e.kind === 'file' && e.name.endsWith('.ipynb')) {
       const file = await e.handle.getFile()
       try {
         loadIpynb(e.name, JSON.parse(await file.text()))
@@ -121,7 +126,7 @@ export default function FileExplorer() {
     }
   }
 
-  const newEntry = async (dir: any, kind: 'file' | 'directory') => {
+  const newEntry = async (dir: FileSystemDirectoryHandle, kind: 'file' | 'directory') => {
     const name = window.prompt(kind === 'file' ? 'New file name' : 'New folder name')
     if (!name) return
     try {
@@ -133,7 +138,8 @@ export default function FileExplorer() {
     }
   }
 
-  const del = async (parent: any, e: Entry) => {
+  const del = async (parent: FileSystemDirectoryHandle | null, e: Entry) => {
+    if (!parent) return
     if (!window.confirm(`Delete "${e.name}"?`)) return
     try {
       await parent.removeEntry(e.name, { recursive: e.kind === 'directory' })
@@ -143,7 +149,7 @@ export default function FileExplorer() {
     }
   }
 
-  const rename = async (_parent: any, e: Entry) => {
+  const rename = async (_parent: FileSystemDirectoryHandle | null, e: Entry) => {
     const name = window.prompt('Rename to', e.name)
     if (!name || name === e.name) return
     try {
@@ -224,8 +230,8 @@ export default function FileExplorer() {
         >
           {menu.entry.kind === 'directory' && (
             <>
-              <MenuRow label="New File" onClick={() => { newEntry(menu.entry.handle, 'file'); setMenu(null) }} />
-              <MenuRow label="New Folder" onClick={() => { newEntry(menu.entry.handle, 'directory'); setMenu(null) }} />
+              <MenuRow label="New File" onClick={() => { if (menu.entry.kind === 'directory') newEntry(menu.entry.handle, 'file'); setMenu(null) }} />
+              <MenuRow label="New Folder" onClick={() => { if (menu.entry.kind === 'directory') newEntry(menu.entry.handle, 'directory'); setMenu(null) }} />
               <div className="my-1 border-t pn-bd" />
             </>
           )}
@@ -259,7 +265,7 @@ function Section({
   children,
 }: {
   title: string
-  dirHandle: any
+  dirHandle: FileSystemDirectoryHandle
   onNewFile: () => void
   onNewFolder: () => void
   onRefresh: () => void
@@ -292,8 +298,8 @@ function Dir({
   onOpenFile,
   onMenu,
 }: {
-  dirHandle: any
-  parent?: any
+  dirHandle: FileSystemDirectoryHandle
+  parent?: FileSystemDirectoryHandle | null
   depth: number
   selected: string
   onOpenFile: (e: Entry) => void
@@ -332,7 +338,7 @@ function Node({
   onMenu,
 }: {
   entry: Entry
-  parent: any
+  parent: FileSystemDirectoryHandle | null
   depth: number
   selected: string
   onOpenFile: (e: Entry) => void
@@ -389,7 +395,7 @@ function Node({
             <Loading depth={depth + 1} />
           ) : (
             entries?.map((e) => (
-              <Node key={e.name} entry={e} parent={entry.handle} depth={depth + 1} selected={selected} onOpenFile={onOpenFile} onMenu={onMenu} />
+              <Node key={e.name} entry={e} parent={entry.kind === 'directory' ? entry.handle : null} depth={depth + 1} selected={selected} onOpenFile={onOpenFile} onMenu={onMenu} />
             ))
           )}
         </div>
