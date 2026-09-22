@@ -4,6 +4,17 @@
 // Throttled + cached to avoid hammering servers.
 
 import { ollamaEndpoint } from './ai'
+import type { Monaco } from '@monaco-editor/react'
+import type { editor as MonacoEditorNS, Position, languages } from 'monaco-editor'
+
+/** Shape returned by the backend's `/api/sql/complete` endpoint. */
+interface SqlCompletionSuggestion {
+  label: string
+  kind: string
+  detail?: string
+  documentation?: string
+  sort_text?: string
+}
 
 const OLLAMA = () => ollamaEndpoint()
 let registeredSql = false
@@ -25,14 +36,14 @@ async function ollamaModel(): Promise<string | null> {
   return cachedModel.name
 }
 
-export function registerSqlCompletions(monaco: any) {
+export function registerSqlCompletions(monaco: Monaco) {
   if (registeredSql) return
   registeredSql = true
 
   // Register SQL completion provider for SQL language
-  monaco.languages.registerCompletionItemProvider('sql', {
+  const sqlProvider: languages.CompletionItemProvider = {
     triggerCharacters: [' ', '.', '('],
-    async provideCompletionItems(model: any, position: any) {
+    async provideCompletionItems(model, position) {
       // throttle: at most one request every 300ms
       const now = Date.now()
       if (now - lastSqlCall < 300) return { suggestions: [] }
@@ -57,10 +68,10 @@ export function registerSqlCompletions(monaco: any) {
         })
 
         if (!res.ok) return { suggestions: [] }
-        const suggestions = await res.json()
+        const suggestions: SqlCompletionSuggestion[] = await res.json()
 
         return {
-          suggestions: suggestions.map((s: any) => ({
+          suggestions: suggestions.map((s) => ({
             label: s.label,
             kind: mapCompletionKind(s.kind, monaco),
             detail: s.detail,
@@ -79,12 +90,13 @@ export function registerSqlCompletions(monaco: any) {
         return { suggestions: [] }
       }
     },
-  })
+  }
+  monaco.languages.registerCompletionItemProvider('sql', sqlProvider)
 
   // Also register for Python SQL magic cells (%sql, --sql, etc)
-  monaco.languages.registerCompletionItemProvider('python', {
+  const pythonSqlProvider: languages.CompletionItemProvider = {
     triggerCharacters: [' ', '.', '('],
-    async provideCompletionItems(model: any, position: any) {
+    async provideCompletionItems(model, position) {
       const line = model.getLineContent(position.lineNumber)
 
       // Only provide SQL suggestions if line starts with SQL magic
@@ -104,10 +116,10 @@ export function registerSqlCompletions(monaco: any) {
         })
 
         if (!res.ok) return { suggestions: [] }
-        const suggestions = await res.json()
+        const suggestions: SqlCompletionSuggestion[] = await res.json()
 
         return {
-          suggestions: suggestions.map((s: any) => ({
+          suggestions: suggestions.map((s) => ({
             label: s.label,
             kind: mapCompletionKind(s.kind, monaco),
             detail: s.detail,
@@ -126,25 +138,35 @@ export function registerSqlCompletions(monaco: any) {
         return { suggestions: [] }
       }
     },
-  })
+  }
+  monaco.languages.registerCompletionItemProvider('python', pythonSqlProvider)
 }
 
-function mapCompletionKind(kind: string, monaco: any): number {
-  const kinds: { [key: string]: number } = {
+function mapCompletionKind(kind: string, monaco: Monaco): languages.CompletionItemKind {
+  const kinds: { [key: string]: languages.CompletionItemKind } = {
     keyword: monaco.languages.CompletionItemKind.Keyword,
     function: monaco.languages.CompletionItemKind.Function,
     table: monaco.languages.CompletionItemKind.Struct,
     column: monaco.languages.CompletionItemKind.Field,
   }
-  return kinds[kind] || monaco.languages.CompletionItemKind.Text
+  return kinds[kind] ?? monaco.languages.CompletionItemKind.Text
 }
 
-export function registerOllamaCompletions(monaco: any) {
+export function registerOllamaCompletions(monaco: Monaco) {
   if (registeredOllama) return
   registeredOllama = true
 
-  monaco.languages.registerInlineCompletionsProvider(['python'], {
-    async provideInlineCompletions(model: any, position: any) {
+  // Not explicitly typed as `languages.InlineCompletionsProvider` — this
+  // provider also implements `freeInlineCompletions`, an older Monaco
+  // provider method no longer in this package's shipped types but still
+  // required at runtime by the editor's inline-completions host (see
+  // comment below); an explicit annotation here would trigger an excess-
+  // property error on that extra method. Passing the untyped-but-inferred
+  // object into registerInlineCompletionsProvider still gets it checked
+  // structurally against the real interface, just without that false
+  // positive.
+  const ollamaProvider = {
+    async provideInlineCompletions(model: MonacoEditorNS.ITextModel, position: Position) {
       // throttle: at most one request ~every 500ms
       const now = Date.now()
       if (now - lastCall < 500) return { items: [] }
@@ -202,5 +224,6 @@ export function registerOllamaCompletions(monaco: any) {
     freeInlineCompletions() {},
     disposeInlineCompletions() {},
     handleItemDidShow() {},
-  })
+  }
+  monaco.languages.registerInlineCompletionsProvider(['python'], ollamaProvider)
 }
