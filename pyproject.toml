@@ -65,10 +65,22 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Development and testing
+# Development and testing.
+#
+# fastapi/starlette/pydantic/httpx are required here (not just in
+# requirements-lock.txt) because CI's python-tests job installs with
+# `pip install -e ".[dev]"` only -- it never installs
+# requirements-lock.txt. Without these, tests/test_security.py (pydantic)
+# and tests/test_middleware.py (fastapi + starlette TestClient, which
+# needs httpx) would fail to even import prismnote.security /
+# prismnote.middleware in CI.
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pydantic>=2.0,<3.0",
+    "fastapi>=0.100.0,<1.0",
+    "starlette>=0.27.0,<1.0",
+    "httpx>=0.24.0,<1.0",
 ]
 
 # Database support — permissively-licensed (OSS) drivers only. See CONNECTORS.md.

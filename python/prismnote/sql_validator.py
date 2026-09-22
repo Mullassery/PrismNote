@@ -40,7 +40,11 @@ def validate_sql_query(sql: str) -> Tuple[bool, str]:
     suspicious_patterns = [
         (r"';.*--", "SQL injection pattern detected: comment after string"),
         (r"\*/.*\*\/", "Nested comments detected"),
-        (r"xp_|sp_", "System procedure call detected"),
+        # sql_normalized is always upper-cased above, so this pattern must
+        # be too -- it previously used lowercase "xp_|sp_" against an
+        # always-uppercase haystack and could never match, silently
+        # disabling this check entirely.
+        (r"XP_|SP_", "System procedure call detected"),
     ]
     
     for pattern, message in suspicious_patterns:
