@@ -6,6 +6,7 @@ import { useWorkspace, openNotebookFile, saveJsonAs, saveTextAs } from '../hooks
 import { restartKernel, interruptKernel } from '../api/kernel'
 import FindReplace from './FindReplace'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
+import { cellSourceText, isIpynbRaw, type Cell, type Notebook } from '../types/notebook'
 
 interface MenuBarProps {
   theme: 'light' | 'dark'
@@ -42,7 +43,7 @@ const [open, setOpen] = useState<string | null>(null)
 
   const clearOutputs = () => {
     if (!currentNotebook) return
-    currentNotebook.cells.forEach((_: any, i: number) => updateCell(i, { outputs: [], execution_count: null }))
+    currentNotebook.cells.forEach((_: Cell, i: number) => updateCell(i, { outputs: [], execution_count: null }))
   }
 
   useEffect(() => {
@@ -56,7 +57,7 @@ const [open, setOpen] = useState<string | null>(null)
   const openFolder = useWorkspace((s) => s.openFolder)
 
   const newNotebook = () => {
-    const existing = (getNotebookState() as any).notebooks as { name: string }[]
+    const existing = getNotebookState().notebooks
     let name = 'Untitled'
     for (let i = 1; existing.some((n) => n.name === name); i++) name = `Untitled ${i}`
     createNotebook(name)
@@ -65,19 +66,20 @@ const [open, setOpen] = useState<string | null>(null)
   // Open a .ipynb from disk and load it directly into the store (no backend).
   const openFile = async () => {
     const res = await openNotebookFile()
-    if (!res) return
-    const cells = (res.data.cells ?? []).map((c: any, i: number) => ({
+    if (!res || !isIpynbRaw(res.data)) return
+    const cells: Cell[] = (res.data.cells ?? []).map((c, i) => ({
       id: `${res.name}-${i}`,
       cell_type: c.cell_type ?? 'code',
       source: c.source ?? [],
       outputs: c.outputs ?? [],
+      execution_count: null,
       metadata: c.metadata ?? {},
     }))
-    const nb = { id: `local-${res.name}`, name: res.name.replace(/\.ipynb$/, ''), cells, metadata: res.data.metadata ?? {} }
+    const nb: Notebook = { id: `local-${res.name}`, name: res.name.replace(/\.ipynb$/, ''), cells, metadata: res.data.metadata ?? {} }
     const dispatch = getReduxDispatch()
     const state = getNotebookState()
     dispatch(setNotebooks({
-      notebooks: [...state.notebooks.filter((n: any) => n.id !== nb.id), nb],
+      notebooks: [...state.notebooks.filter((n) => n.id !== nb.id), nb],
       currentNotebookId: nb.id,
       currentNotebook: nb,
     }))
@@ -88,7 +90,7 @@ const [open, setOpen] = useState<string | null>(null)
     if (saveNotebook) saveNotebook()
     if (!currentNotebook) return
     const ipynb = {
-      cells: currentNotebook.cells.map((c: any) => ({
+      cells: currentNotebook.cells.map((c) => ({
         cell_type: c.cell_type,
         source: Array.isArray(c.source) ? c.source : [c.source],
         outputs: c.outputs ?? [],
@@ -102,7 +104,7 @@ const [open, setOpen] = useState<string | null>(null)
     await saveJsonAs(`${currentNotebook.name}.ipynb`, ipynb)
   }
 
-  const srcOf = (c: any) => (Array.isArray(c.source) ? c.source.join('') : c.source || '')
+  const srcOf = (c: Cell) => cellSourceText(c.source)
 
   const runRange = async (from: number, to: number) => {
     if (!currentNotebook) return
@@ -124,7 +126,7 @@ const [open, setOpen] = useState<string | null>(null)
   const exportPy = () => {
     if (!currentNotebook) return
     const py = currentNotebook.cells
-      .map((c: any) =>
+      .map((c: Cell) =>
         c.cell_type === 'markdown'
           ? '# %% [markdown]\n' + srcOf(c).split('\n').map((l: string) => '# ' + l).join('\n')
           : '# %%\n' + srcOf(c),

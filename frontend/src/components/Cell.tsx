@@ -1,7 +1,10 @@
 import Editor, { DiffEditor } from '@monaco-editor/react'
+import type { Monaco } from '@monaco-editor/react'
+import type { editor as MonacoEditorNS } from 'monaco-editor'
+import axios from 'axios'
 import MDPreview from '@uiw/react-markdown-preview'
 import { useEffect, useRef, useState, useCallback, memo } from 'react'
-import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown, GripVertical, Database, Code2 } from 'lucide-react'
+import { Play, Trash2, Sparkles, Wand2, Check, X, Loader2, Square, ChevronDown, GripVertical } from 'lucide-react'
 import Output from './Output'
 import LanguageSelector from './LanguageSelector'
 import { useNotebookStore } from '../hooks/useNotebookRedux'
@@ -11,20 +14,34 @@ import { subscribeCellStream } from '../api/stream'
 import { registerOllamaCompletions, registerSqlCompletions } from '../api/autocomplete'
 import { registerPythonFormatter } from '../api/format'
 import { parseTraceback } from '../lib/pyerror'
-import { LANGUAGES, getMonacoMode, type CellLanguage } from '../lib/languages'
-import { executeSqlQuery, validateSqlQuery, type SqlExecutionError } from '../lib/sqlExecutor'
+import { getMonacoMode, type CellLanguage } from '../lib/languages'
+import { executeSqlQuery, validateSqlQuery, type SqlExecutionError, type QueryResult } from '../lib/sqlExecutor'
 import SqlConnectionPicker from './SqlConnectionPicker'
 import SqlResultsView from './SqlResultsView'
+import type { Cell as CellData, CellOutput } from '../types/notebook'
 
 interface CellProps {
-  cell: any
+  cell: CellData
   cellIndex: number
 }
 
 const isDark = () => document.documentElement.classList.contains('dark')
 
+/** Extract a user-facing message from an AI-endpoint failure: prefer the
+ * backend's structured `suggestion` field (axios error response body), fall
+ * back to the error's own message. */
+function aiErrorMessage(e: unknown): string {
+  if (axios.isAxiosError(e)) {
+    const data = e.response?.data as { suggestion?: string } | undefined
+    if (data?.suggestion) return data.suggestion
+    return e.message || 'AI request failed'
+  }
+  if (e instanceof Error) return e.message
+  return 'AI request failed'
+}
+
 /** Pull a human-readable error string out of a cell's outputs, if any. */
-function errorFromOutputs(outputs: any[]): string | null {
+function errorFromOutputs(outputs: CellOutput[]): string | null {
   for (const o of outputs ?? []) {
     if (o?.output_type === 'error') {
       if (Array.isArray(o.traceback) && o.traceback.length) return o.traceback.join('\n')
@@ -45,11 +62,10 @@ function CellInner({ cell, cellIndex }: CellProps) {
 
   // Language support
   const [language, setLanguage] = useState<CellLanguage>(cell.language || 'python')
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
 
   // SQL-specific state
   const [selectedSqlConnection, setSelectedSqlConnection] = useState(cell.sqlConnection || '')
-  const [sqlResult, setSqlResult] = useState<any | null>(null)
+  const [sqlResult, setSqlResult] = useState<QueryResult | null>(null)
   const [sqlError, setSqlError] = useState<SqlExecutionError | null>(null)
 
   // AI state
@@ -60,8 +76,8 @@ function CellInner({ cell, cellIndex }: CellProps) {
   const [proposal, setProposal] = useState<string | null>(null) // diff preview target
   const [explanation, setExplanation] = useState<string | null>(null)
   const promptRef = useRef<HTMLInputElement>(null)
-  const editorRef = useRef<any>(null)
-  const monacoRef = useRef<any>(null)
+  const editorRef = useRef<MonacoEditorNS.IStandaloneCodeEditor | null>(null)
+  const monacoRef = useRef<Monaco | null>(null)
 
   const sourceText = Array.isArray(cell.source) ? cell.source.join('') : cell.source
   const cellError = cell.cell_type === 'code' ? errorFromOutputs(cell.outputs) : null
@@ -142,8 +158,10 @@ function CellInner({ cell, cellIndex }: CellProps) {
           const result = await executeSqlQuery(selectedSqlConnection, cell.sqlConnection || 'postgresql', code)
           setSqlResult(result)
           setSqlError(null)
-        } catch (error: any) {
-          setSqlError(error)
+        } catch (error: unknown) {
+          // executeSqlQuery always rejects with a normalized SqlExecutionError
+          // (see lib/sqlExecutor.ts's toSqlExecutionError/empty-query throw).
+          setSqlError(error as SqlExecutionError)
           setSqlResult(null)
         }
         return
@@ -160,8 +178,8 @@ function CellInner({ cell, cellIndex }: CellProps) {
   // Context = the other code cells, so the model knows the surrounding notebook.
   const notebookContext = () =>
     (currentNotebook?.cells ?? [])
-      .filter((c: any, i: number) => i !== cellIndex && c.cell_type === 'code')
-      .map((c: any) => (Array.isArray(c.source) ? c.source.join('') : c.source))
+      .filter((c: CellData, i: number) => i !== cellIndex && c.cell_type === 'code')
+      .map((c: CellData) => (Array.isArray(c.source) ? c.source.join('') : c.source))
       .join('\n\n')
 
   const openAi = () => {
@@ -192,8 +210,8 @@ function CellInner({ cell, cellIndex }: CellProps) {
     try {
       const next = await aiEdit(sourceText, instruction, notebookContext())
       setProposal(next)
-    } catch (e: any) {
-      setAiError(e?.response?.data?.suggestion || e?.message || 'AI request failed')
+    } catch (e: unknown) {
+      setAiError(aiErrorMessage(e))
     } finally {
       setAiBusy(false)
     }
@@ -207,8 +225,8 @@ function CellInner({ cell, cellIndex }: CellProps) {
     try {
       const next = await aiFix(sourceText, cellError)
       setProposal(next)
-    } catch (e: any) {
-      setAiError(e?.response?.data?.suggestion || e?.message || 'AI request failed')
+    } catch (e: unknown) {
+      setAiError(aiErrorMessage(e))
     } finally {
       setAiBusy(false)
     }
@@ -221,8 +239,8 @@ function CellInner({ cell, cellIndex }: CellProps) {
     setExplanation(null)
     try {
       setExplanation(await aiExplain(sourceText))
-    } catch (e: any) {
-      setAiError(e?.response?.data?.suggestion || e?.message || 'AI request failed')
+    } catch (e: unknown) {
+      setAiError(aiErrorMessage(e))
     } finally {
       setAiBusy(false)
     }
@@ -230,7 +248,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
 
   // A dynamic-form widget changed: set its value in the kernel, then re-run this
   // cell so downstream logic recomputes with the new input.
-  const onWidget = async (name: string, value: any) => {
+  const onWidget = async (name: string, value: string | number | boolean) => {
     if (!currentNotebook) return
     try {
       await fetch(`/api/notebooks/${currentNotebook.id}/execute`, {
@@ -257,7 +275,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
 
   const rejectProposal = () => setProposal(null)
 
-  const handleEditorMount = useCallback((editor: any, monaco: any) => {
+  const handleEditorMount = useCallback((editor: MonacoEditorNS.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor
     monacoRef.current = monaco
     // Use refs for command callbacks instead of direct function references.
@@ -325,7 +343,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
           {cell.cell_type === 'code' && language === 'sql' && (
             <SqlConnectionPicker
               selectedConnId={selectedSqlConnection}
-              onSelect={(connId, _dbType) => {
+              onSelect={(connId) => {
                 setSelectedSqlConnection(connId)
                 updateCell(cellIndex, { sqlConnection: connId })
               }}
@@ -563,7 +581,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
 
       {cell.outputs.length > 0 && (
         <div className="border-t pn-bd bg-[var(--pn-hover)] p-4">
-          {cell.outputs.map((output: any, idx: number) => (
+          {cell.outputs.map((output, idx: number) => (
             <Output key={idx} output={output} onWidget={onWidget} />
           ))}
           {cell.cell_type === 'code' && (

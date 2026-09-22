@@ -1,16 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Table2, BarChart3, LineChart } from 'lucide-react'
-
-interface DF {
-  columns: (string | number)[]
-  data: any[][]
-}
+import type { DataFrame as DF } from '../types/notebook'
 
 type View = 'table' | 'bar' | 'line'
 
 const PALETTE = ['#3b82f6', '#34d399', '#60a5fa', '#f472b6', '#fbbf24', '#f87171']
 
-function isNum(v: any) {
+function isNum(v: unknown) {
   return typeof v === 'number' && Number.isFinite(v)
 }
 
@@ -66,7 +62,7 @@ export default function DataFrameView({ df, html }: { df: DF; html?: string }) {
   )
 }
 
-function FallbackTable({ cols, data }: { cols: string[]; data: any[][] }) {
+function FallbackTable({ cols, data }: { cols: string[]; data: unknown[][] }) {
   return (
     <div className="overflow-auto max-h-80 p-2">
       <table className="text-[12px] text-gray-300">

@@ -1,29 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import axios from 'axios'
+import type { Cell, Notebook, CellLanguage } from '../types/notebook'
+import type { RootState } from './store'
 
 const API_BASE = '/api'
 
-export type CellLanguage = 'python' | 'sql' | 'r' | 'javascript'
-
-interface Cell {
-  id: string
-  cell_type: 'code' | 'markdown'
-  language?: CellLanguage // NEW: language for code cells (default: 'python' for backward compat)
-  source: string[]
-  outputs: any[]
-  execution_count: number | null
-  metadata: Record<string, any>
-  // SQL-specific metadata
-  sqlConnection?: string // Connection ID for SQL cells
-}
-
-interface Notebook {
-  id: string
-  name: string
-  cells: Cell[]
-  metadata: Record<string, any>
-}
+export type { CellLanguage, Cell, Notebook }
 
 interface LibrarySuggestion {
   name: string
@@ -34,6 +17,12 @@ interface LibrarySuggestion {
   is_update: boolean
   category: 'data' | 'viz' | 'ml' | 'web' | 'utility'
   confidence: number
+}
+
+interface SuggestLibrariesResponse {
+  suggestions: LibrarySuggestion[]
+  detected_intent: string
+  context_summary: string
 }
 
 interface NotebookState {
@@ -118,9 +107,9 @@ export const saveNotebook = createAsyncThunk(
   }
 )
 
-export const suggestLibraries = createAsyncThunk(
+export const suggestLibraries = createAsyncThunk<SuggestLibrariesResponse | null, string, { state: RootState }>(
   'notebook/suggestLibraries',
-  async (notebookId: string, { getState }: any) => {
+  async (notebookId, { getState }) => {
     const state = getState()
     const notebook = state.notebook.currentNotebook
     if (!notebook) return null
@@ -130,7 +119,7 @@ export const suggestLibraries = createAsyncThunk(
       .map((c: Cell) => (Array.isArray(c.source) ? c.source.join('') : c.source))
       .join('\n\n')
 
-    const res = await axios.post(`${API_BASE}/notebooks/${notebookId}/suggest-libraries`, {
+    const res = await axios.post<SuggestLibrariesResponse>(`${API_BASE}/notebooks/${notebookId}/suggest-libraries`, {
       notebook_code: notebookCode,
       installed_packages: [],
       ignored_libraries: [],

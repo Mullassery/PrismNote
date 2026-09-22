@@ -18,7 +18,7 @@ import { queryDatabase } from '../api/data'
 /** Normalized query result shape consumed by `SqlResultsView`. */
 export interface QueryResult {
   columns: string[]
-  rows: any[][]
+  rows: unknown[][]
   rowCount: number
   executionTimeMs?: number
 }

@@ -15,7 +15,7 @@ export interface WorkspaceStore {
   setRoot: (h: FileSystemDirectoryHandle) => void
 }
 
-const supported = typeof (window as any).showDirectoryPicker === 'function'
+const supported = typeof window.showDirectoryPicker === 'function'
 
 export const useWorkspace = create<WorkspaceStore>((set) => ({
   rootHandle: null,
@@ -25,18 +25,19 @@ export const useWorkspace = create<WorkspaceStore>((set) => ({
   setRoot: (h) => set({ rootHandle: h, rootName: h.name, rev: Date.now() }),
   refresh: () => set({ rev: Date.now() }),
   openFolder: async () => {
-    if (!supported) {
+    if (!supported || !window.showDirectoryPicker) {
       alert('Your browser does not support the File System Access API. Use Chrome/Edge.')
       return
     }
     try {
-      const handle: FileSystemDirectoryHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' })
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' })
       set({ rootHandle: handle, rootName: handle.name, rev: Date.now() })
-    } catch (err: any) {
-      if (err?.name === 'AbortError') return // user cancelled — fine
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return // user cancelled — fine
+      const message = err instanceof Error ? err.message : String(err)
       alert(
         'Could not open the folder picker.\n\n' +
-          (err?.message || err) +
+          message +
           '\n\nThe native folder picker only appears in a normal Chrome window — it cannot show inside an automated/preview browser.'
       )
     }
@@ -44,13 +45,13 @@ export const useWorkspace = create<WorkspaceStore>((set) => ({
 }))
 
 /** Open a .ipynb from disk and return its parsed JSON + file name. */
-export async function openNotebookFile(): Promise<{ name: string; data: any } | null> {
-  if (typeof (window as any).showOpenFilePicker !== 'function') {
+export async function openNotebookFile(): Promise<{ name: string; data: unknown } | null> {
+  if (typeof window.showOpenFilePicker !== 'function') {
     alert('Your browser does not support file open. Use Chrome/Edge.')
     return null
   }
   try {
-    const [handle] = await (window as any).showOpenFilePicker({
+    const [handle] = await window.showOpenFilePicker({
       types: [{ description: 'Notebook', accept: { 'application/json': ['.ipynb', '.json'] } }],
     })
     const file = await handle.getFile()
@@ -63,9 +64,9 @@ export async function openNotebookFile(): Promise<{ name: string; data: any } | 
 
 /** Save arbitrary text to disk via the Save dialog (falls back to download). */
 export async function saveTextAs(suggestedName: string, text: string) {
-  if (typeof (window as any).showSaveFilePicker === 'function') {
+  if (typeof window.showSaveFilePicker === 'function') {
     try {
-      const handle = await (window as any).showSaveFilePicker({ suggestedName })
+      const handle = await window.showSaveFilePicker({ suggestedName })
       const w = await handle.createWritable()
       await w.write(text)
       await w.close()
@@ -83,11 +84,11 @@ export async function saveTextAs(suggestedName: string, text: string) {
 }
 
 /** Save arbitrary JSON to disk via the Save dialog. */
-export async function saveJsonAs(suggestedName: string, data: any) {
+export async function saveJsonAs(suggestedName: string, data: unknown) {
   const json = JSON.stringify(data, null, 2)
-  if (typeof (window as any).showSaveFilePicker === 'function') {
+  if (typeof window.showSaveFilePicker === 'function') {
     try {
-      const handle = await (window as any).showSaveFilePicker({
+      const handle = await window.showSaveFilePicker({
         suggestedName,
         types: [{ description: 'Notebook', accept: { 'application/json': ['.ipynb'] } }],
       })

@@ -1,4 +1,11 @@
 import { create } from 'zustand'
+import type { CellOutput, MimeValue } from '../types/notebook'
+
+function asText(v: MimeValue | undefined): string | undefined {
+  if (Array.isArray(v)) return v.join('')
+  if (typeof v === 'string') return v
+  return undefined
+}
 
 export interface Plot {
   id: string
@@ -13,7 +20,7 @@ interface PlotsState {
   currentIndex: number
   /** Register a plot from a notebook output; deduped by content so re-renders
    *  of the same figure don't pile up. Returns true if it was newly added. */
-  addFromOutput: (output: any) => boolean
+  addFromOutput: (output: CellOutput) => boolean
   select: (index: number) => void
   next: () => void
   prev: () => void
@@ -30,15 +37,13 @@ function hash(s: string): string {
 export const usePlots = create<PlotsState>((set, get) => ({
   plots: [],
   currentIndex: 0,
-  addFromOutput: (output: any) => {
+  addFromOutput: (output: CellOutput) => {
     const data = output?.data
     if (!data) return false
-    const png: string | undefined = data['image/png']
-    const svgRaw = data['image/svg+xml']
-    const svg: string | undefined = Array.isArray(svgRaw) ? svgRaw.join('') : svgRaw
-    const htmlRaw = data['text/html']
+    const png = asText(data['image/png'])
+    const svg = asText(data['image/svg+xml'])
+    const htmlStr = asText(data['text/html'])
     // Only treat HTML as a plot if it looks like an interactive viz (plotly/vega/bokeh).
-    const htmlStr: string | undefined = Array.isArray(htmlRaw) ? htmlRaw.join('') : htmlRaw
     const isVizHtml =
       htmlStr && /plotly|vega|bokeh|require\.config|data-plotly/i.test(htmlStr)
     const html = isVizHtml ? htmlStr : undefined

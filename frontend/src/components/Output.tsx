@@ -4,36 +4,51 @@ import { AlertTriangle, ChevronRight } from 'lucide-react'
 import { parseTraceback } from '../lib/pyerror'
 import DataFrameView from './DataFrameView'
 import { usePlots } from '../hooks/usePlots'
+import { isDataFrame, type CellOutput, type MimeValue, type WidgetSpec } from '../types/notebook'
+
+/** MIME-bundle text values arrive as either a single string or an array of
+ * chunks to be joined (the streamed-text convention nbformat uses). */
+function asText(v: MimeValue | undefined): string {
+  if (Array.isArray(v)) return v.join('')
+  if (typeof v === 'string') return v
+  return v == null ? '' : String(v)
+}
+
+function isWidgetSpec(v: unknown): v is WidgetSpec {
+  if (!v || typeof v !== 'object') return false
+  const spec = v as Record<string, unknown>
+  return typeof spec.name === 'string' && typeof spec.type === 'string'
+}
 
 interface OutputProps {
-  output: any
-  onWidget?: (name: string, value: any) => void
+  output: CellOutput
+  onWidget?: (name: string, value: string | number | boolean) => void
 }
 
 const DF_MIME = 'application/vnd.prismnote.df+json'
 const WIDGET_MIME = 'application/vnd.prismnote.widget+json'
 
-function WidgetControl({ spec, onChange }: { spec: any; onChange?: (name: string, value: any) => void }) {
-  const fire = (v: any) => onChange?.(spec.name, v)
+function WidgetControl({ spec, onChange }: { spec: WidgetSpec; onChange?: (name: string, value: string | number | boolean) => void }) {
+  const fire = (v: string | number | boolean) => onChange?.(spec.name, v)
   return (
     <div className="flex items-center gap-2 py-1 text-[13px] text-gray-200">
       <label className="text-gray-400 min-w-[90px]">{spec.name}</label>
       {spec.type === 'text' && (
-        <input defaultValue={spec.value ?? ''} onBlur={(e) => fire(e.target.value)}
+        <input defaultValue={typeof spec.value === 'string' ? spec.value : ''} onBlur={(e) => fire(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && fire((e.target as HTMLInputElement).value)}
           className="px-2 py-1 rounded bg-white/5 border border-white/10 outline-none focus:border-blue-500" />
       )}
       {spec.type === 'slider' && (
         <span className="flex items-center gap-2">
-          <input type="range" min={spec.min} max={spec.max} defaultValue={spec.value}
+          <input type="range" min={spec.min} max={spec.max} defaultValue={Number(spec.value)}
             onChange={(e) => fire(Number(e.target.value))} />
-          <span className="tabular-nums text-gray-400 w-10">{spec.value}</span>
+          <span className="tabular-nums text-gray-400 w-10">{String(spec.value)}</span>
         </span>
       )}
       {spec.type === 'select' && (
-        <select defaultValue={spec.value} onChange={(e) => fire(e.target.value)}
+        <select defaultValue={String(spec.value)} onChange={(e) => fire(e.target.value)}
           className="px-2 py-1 rounded bg-white/5 border border-white/10 outline-none">
-          {(spec.options ?? []).map((o: any) => <option key={String(o)} value={o}>{String(o)}</option>)}
+          {(spec.options ?? []).map((o) => <option key={String(o)} value={o}>{String(o)}</option>)}
         </select>
       )}
       {spec.type === 'checkbox' && (
@@ -43,7 +58,7 @@ function WidgetControl({ spec, onChange }: { spec: any; onChange?: (name: string
   )
 }
 
-function ErrorOutput({ output }: { output: any }) {
+function ErrorOutput({ output }: { output: CellOutput }) {
   const [showTrace, setShowTrace] = useState(false)
   const raw = Array.isArray(output.traceback)
     ? output.traceback.join('\n')
@@ -88,7 +103,7 @@ export default function Output({ output, onWidget }: OutputProps) {
 
   // Interactive input widgets (prism.input/slider/select/checkbox).
   const widget = output.data?.[WIDGET_MIME]
-  if (widget) return <WidgetControl spec={widget} onChange={onWidget} />
+  if (isWidgetSpec(widget)) return <WidgetControl spec={widget} onChange={onWidget} />
 
   // %md magic and any text/markdown bundle render as formatted markdown.
   const md = output.data?.['text/markdown']
@@ -96,7 +111,7 @@ export default function Output({ output, onWidget }: OutputProps) {
     return (
       <div className="bg-slate-800 p-3 rounded">
         <MDPreview
-          source={Array.isArray(md) ? md.join('') : md}
+          source={asText(md)}
           style={{ backgroundColor: 'transparent', color: '#e5e7eb' }}
         />
       </div>
@@ -105,8 +120,8 @@ export default function Output({ output, onWidget }: OutputProps) {
 
   // DataFrame results get a Table/Bar/Line switcher.
   const dfPayload = output.data?.[DF_MIME]
-  if (dfPayload && (output.output_type === 'execute_result' || output.output_type === 'display_data')) {
-    return <DataFrameView df={dfPayload} html={output.data?.['text/html']} />
+  if (isDataFrame(dfPayload) && (output.output_type === 'execute_result' || output.output_type === 'display_data')) {
+    return <DataFrameView df={dfPayload} html={asText(output.data?.['text/html'])} />
   }
 
   switch (output.output_type) {
@@ -121,15 +136,13 @@ export default function Output({ output, onWidget }: OutputProps) {
         <div className="bg-slate-800 p-3 rounded text-sm text-gray-300">
           {output.data?.['text/plain'] && (
             <pre className="font-mono overflow-x-auto">
-              {Array.isArray(output.data['text/plain'])
-                ? output.data['text/plain'].join('')
-                : output.data['text/plain']}
+              {asText(output.data['text/plain'])}
             </pre>
           )}
           {output.data?.['text/html'] && (
             <div
               className="viz-container"
-              dangerouslySetInnerHTML={{ __html: output.data['text/html'] }}
+              dangerouslySetInnerHTML={{ __html: asText(output.data['text/html']) }}
             />
           )}
         </div>
@@ -139,7 +152,7 @@ export default function Output({ output, onWidget }: OutputProps) {
         <div className="bg-slate-800 p-3 rounded">
           {output.data?.['image/png'] && (
             <img
-              src={`data:image/png;base64,${output.data['image/png']}`}
+              src={`data:image/png;base64,${asText(output.data['image/png'])}`}
               alt="output"
               className="viz-container max-w-full h-auto rounded"
               style={{ imageRendering: 'crisp-edges' }}
@@ -148,7 +161,7 @@ export default function Output({ output, onWidget }: OutputProps) {
           {output.data?.['text/html'] && (
             <div
               className="viz-container"
-              dangerouslySetInnerHTML={{ __html: output.data['text/html'] }}
+              dangerouslySetInnerHTML={{ __html: asText(output.data['text/html']) }}
             />
           )}
           {output.data?.['application/json'] && (

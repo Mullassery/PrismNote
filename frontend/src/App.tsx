@@ -4,7 +4,6 @@ import './styles/animations.css'
 import './styles/components.css'
 import {
   Files,
-  Search as SearchIcon,
   TerminalSquare,
   Settings as SettingsIcon,
   CircleUserRound,
@@ -16,9 +15,7 @@ import {
   Palette,
   Play,
   PanelLeft,
-  PanelRight,
   PanelBottom,
-  Command as CommandIcon,
   Rocket,
 } from 'lucide-react'
 import { Briefcase, GitBranch, Database, Table2, Library, BarChart3, Network, GitGraph, Sparkles } from 'lucide-react'
@@ -48,6 +45,8 @@ import { useNotebookStore, getNotebookState, getReduxDispatch } from './hooks/us
 import { setNotebooks } from './store/notebookSlice'
 import { useWorkspace, openNotebookFile, saveJsonAs } from './hooks/useWorkspace'
 import { useAuth } from './hooks/useAuth'
+import { cellSourceText, isIpynbRaw, type Cell, type Notebook as NotebookData } from './types/notebook'
+import type { LucideIcon } from 'lucide-react'
 
 function App() {
   const auth = useAuth()
@@ -276,19 +275,20 @@ function App() {
 
   const openFile = async () => {
     const res = await openNotebookFile()
-    if (!res) return
-    const cells = (res.data.cells ?? []).map((c: any, i: number) => ({
+    if (!res || !isIpynbRaw(res.data)) return
+    const cells: Cell[] = (res.data.cells ?? []).map((c, i) => ({
       id: `${res.name}-${i}`,
       cell_type: c.cell_type ?? 'code',
       source: c.source ?? [],
       outputs: c.outputs ?? [],
+      execution_count: null,
       metadata: c.metadata ?? {},
     }))
-    const nb = { id: `local-${res.name}`, name: res.name.replace(/\.ipynb$/, ''), cells, metadata: res.data.metadata ?? {} }
+    const nb: NotebookData = { id: `local-${res.name}`, name: res.name.replace(/\.ipynb$/, ''), cells, metadata: res.data.metadata ?? {} }
     const dispatch = getReduxDispatch()
     const state = getNotebookState()
     dispatch(setNotebooks({
-      notebooks: [...state.notebooks.filter((n: any) => n.id !== nb.id), nb],
+      notebooks: [...state.notebooks.filter((n) => n.id !== nb.id), nb],
       currentNotebookId: nb.id,
       currentNotebook: nb,
     }))
@@ -300,7 +300,7 @@ function App() {
     const nb = getNotebookState().currentNotebook
     if (!nb) return
     const ipynb = {
-      cells: nb.cells.map((c: any) => ({
+      cells: nb.cells.map((c) => ({
         cell_type: c.cell_type,
         source: Array.isArray(c.source) ? c.source : [c.source],
         outputs: c.outputs ?? [],
@@ -347,7 +347,7 @@ function App() {
     { id: 't-light', title: 'Light', category: 'Color Theme', run: () => applyTheme('light') },
   ]
 
-  const railBtn = (active: boolean, onClick: () => void, title: string, Icon: any, stop = false) => (
+  const railBtn = (active: boolean, onClick: () => void, title: string, Icon: LucideIcon, stop = false) => (
     <button
       aria-pressed={active}
       aria-label={title.split('  ')[0]}
@@ -416,7 +416,7 @@ function App() {
                   { label: 'Settings', shortcut: '⌘,', action: () => setOverlay('settings') },
                   { label: 'Color Theme…', action: () => setOverlay('theme'), sep: true },
                   { label: 'About PrismNote', action: () => alert('PrismNote — a modern data-science notebook.\nRust engine · React UI.') },
-                ].map((it: any, i) => (
+                ].map((it: { label: string; shortcut?: string; action: () => void; sep?: boolean }, i) => (
                   <div key={i}>
                     <button
                       onClick={() => { it.action?.(); setRailMenu(null) }}
@@ -622,7 +622,7 @@ function App() {
             </div>
             <div className="flex-1 overflow-auto">
               <AIAssistant
-                selectedCode={currentNotebook?.cells?.[0]?.source?.join?.('') || ''}
+                selectedCode={cellSourceText(currentNotebook?.cells?.[0]?.source)}
                 selectedLanguage="python"
                 hasError={false}
                 onCodeGenerated={(code) => {
