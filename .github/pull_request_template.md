@@ -17,33 +17,30 @@ Fixes #
 - 
 
 ## Testing
-<!-- Describe how you tested these changes -->
+<!-- Describe how you actually ran these tests and what the real output was.
+     Do not check a box for something you didn't run. -->
 - [ ] Added new tests
 - [ ] Updated existing tests
-- [ ] All tests passing locally
-- [ ] Code coverage maintained (80%+)
+- [ ] Ran the relevant test suite locally and it passed (`cargo test --workspace --release`
+      and/or `cd frontend && npm test` / `npm run test:e2e`) — paste real output if it's
+      not obvious
 
 ## Checklist
-- [ ] Code follows project style guidelines (run `make format`)
-- [ ] Linting passes (run `make lint`)
-- [ ] Type checking passes (run `make format`)
-- [ ] New functions/classes have docstrings
-- [ ] Documentation updated (if needed)
-- [ ] No breaking changes (or documented clearly)
-- [ ] Pre-commit hooks pass
-- [ ] Self-reviewed code before requesting review
+- [ ] Code follows project style (`make fmt` for Rust/Python, standard TS/React style)
+- [ ] `make lint` run for areas touched (note: `npm run lint` currently fails on
+      `main` with pre-existing errors — see `ROADMAP_HONEST.md`; don't add new ones)
+- [ ] Documentation updated (README.md / ROADMAP_HONEST.md) if this changes what's
+      built, working, or broken
+- [ ] No breaking changes (or clearly documented if there are)
+- [ ] Self-reviewed the diff before requesting review
 
-## Performance Impact
+## Performance impact
 <!-- If applicable, describe any performance changes -->
 No performance impact / Improves / Degrades
 
 ## Screenshots
 <!-- If applicable, add screenshots or GIFs -->
 
-## Additional Context
+## Additional context
 <!-- Any additional information that reviewers should know -->
-
----
-**Ready for review:** Yes / Needs work
-
-Co-Authored-By: 
+ 
