@@ -1,20 +1,23 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useVirtualizer, type Virtualizer, type VirtualItem } from '@tanstack/react-virtual'
 import {
   X, Table2, ListTree, Sigma, Info, Search, ArrowUp, ArrowDown,
   NotebookPen, Download, BarChart3, Loader2, Hash, Type, Calendar, ToggleLeft, Filter as FilterIcon, AlertTriangle,
   Brackets, Braces, Workflow, FileText, Database, Variable as VariableIcon, ArrowRight,
   Minus, Plus, ChevronDown,
+  type LucideIcon,
 } from 'lucide-react'
 import { useFontSize } from '../hooks/useFontSize'
 import {
   exploreOverview, exploreSchema, explorePage, exploreProfile, exploreExportCode, exploreDescribe, exploreLineage,
   type Source, type SchemaResult, type Overview, type ColumnProfile, type ColumnSchema,
-  type Sort, type Filter, type LogicalType, type ColumnStat, type Lineage,
+  type Sort, type Filter, type FilterOp, type LogicalType, type ColumnStat, type Lineage,
 } from '../api/explore'
 import { useNotebookStore, getNotebookState } from '../hooks/useNotebookRedux'
 import { listVariables } from '../api/kernel'
 import { useAIContext } from '../hooks/useAIContext'
+import { apiErrorMessage } from '../lib/errors'
+import { cellSourceText, type Cell, type Notebook } from '../types/notebook'
 
 export type ExplorerTarget = { var: string } | { source: Source }
 
@@ -65,7 +68,11 @@ function parseFilter(col: string, lg: LogicalType, raw: string): Filter[] {
     const range = t.match(/^(-?\d+\.?\d*)\s*\.\.\s*(-?\d+\.?\d*)$/)
     if (range) return [{ col, op: '>=', value: +range[1] }, { col, op: '<=', value: +range[2] }]
     const cmp = t.match(/^(>=|<=|>|<|=|!=)\s*(-?\d+\.?\d*)$/)
-    if (cmp) return [{ col, op: (cmp[1] === '=' ? '==' : cmp[1]) as any, value: +cmp[2] }]
+    if (cmp) {
+      // The regex guarantees cmp[1] is one of these six operator strings.
+      const CMP_OPS: Record<string, FilterOp> = { '>=': '>=', '<=': '<=', '>': '>', '<': '<', '=': '==', '!=': '!=' }
+      return [{ col, op: CMP_OPS[cmp[1]], value: +cmp[2] }]
+    }
     if (/^-?\d+\.?\d*$/.test(t)) return [{ col, op: '==', value: +t }]
   }
   if (t === 'null') return [{ col, op: 'isnull' }]
@@ -104,7 +111,7 @@ export function ExplorerPicker({
   const [sql, setSql] = useState('')
 
   useEffect(() => {
-    listVariables().then((vs) => setVars(vs.filter((v: any) => /DataFrame|ndarray|Series/.test(v.type)))).catch(() => {})
+    listVariables().then((vs) => setVars(vs.filter((v) => /DataFrame|ndarray|Series/.test(v.type)))).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -247,7 +254,7 @@ export default function DataExplorer({
   const [selectedCol, setSelectedCol] = useState<string | null>(null)
 
   // paged row cache
-  const [rows, setRows] = useState<(any[] | undefined)[]>([])
+  const [rows, setRows] = useState<(unknown[] | undefined)[]>([])
   const [total, setTotal] = useState(0)
   const loadingPages = useRef<Set<number>>(new Set())
   const reqId = useRef(0)
@@ -282,7 +289,7 @@ export default function DataExplorer({
             .catch(() => {}),
         )
       })
-      .catch((e: any) => alive && setError(e?.response?.data?.error || e?.message || 'failed to load'))
+      .catch((e: unknown) => alive && setError(apiErrorMessage(e, 'failed to load')))
       .finally(() => alive && setLoading(false))
     return () => {
       alive = false
@@ -297,13 +304,13 @@ export default function DataExplorer({
     explorePage(target, { offset: 0, limit: PAGE, sort, filters, search })
       .then((r) => {
         if (id !== reqId.current) return
-        const arr: (any[] | undefined)[] = new Array(r.total)
+        const arr: (unknown[] | undefined)[] = new Array(r.total)
         r.data.forEach((row, i) => (arr[i] = row))
         setRows(arr)
         setTotal(r.total)
         loadingPages.current = new Set()
       })
-      .catch((e: any) => id === reqId.current && setError(e?.response?.data?.error || e?.message || 'query failed'))
+      .catch((e: unknown) => id === reqId.current && setError(apiErrorMessage(e, 'query failed')))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(target), JSON.stringify(sort), JSON.stringify(filters), search])
 
@@ -381,6 +388,19 @@ export default function DataExplorer({
   }, [onClose])
 
   // ── actions ──
+  // NOTE (found while typing, not fixed — see ROADMAP_HONEST.md): this calls
+  // `.createNotebook()`/`.addCell()`/`.updateCell()` on `getNotebookState()`'s
+  // return value, but that function returns the plain Redux state slice
+  // (NotebookState — data only), not the action dispatchers `useNotebookStore()`
+  // provides. Those methods don't exist on the real return type, so at
+  // runtime this throws `TypeError: store.createNotebook is not a function`
+  // the first time it's reached (this file never calls `useNotebookStore()`,
+  // which is why it's also flagged as an unused import). `as any` here
+  // preserves the exact pre-existing (broken) behavior rather than either
+  // silently rewiring this to call the hook (an actual behavior change,
+  // and hooks can't be called from inside an event handler like this
+  // anyway — it would need to be called at the component's top level) or
+  // inventing a fake type that lies about what exists.
   const insertAsCell = async () => {
     try {
       const code = await exploreExportCode(target, { sort, filters })
@@ -391,20 +411,20 @@ export default function DataExplorer({
       const idx = s2.currentNotebook.cells.length - 1
       s2.updateCell(idx, { source: code.split(/(?<=\n)/) })
       onClose()
-    } catch (e: any) {
-      setError(e?.response?.data?.error || e?.message || 'could not generate code')
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, 'could not generate code'))
     }
   }
 
   const downloadCsv = async () => {
     const cap = Math.min(total, 50000)
-    const parts: any[][] = []
+    const parts: unknown[][] = []
     for (let off = 0; off < cap; off += 500) {
       const r = await explorePage(target, { offset: off, limit: 500, sort, filters, search })
       parts.push(...r.data)
       if (!r.data.length) break
     }
-    const esc = (v: any) => {
+    const esc = (v: unknown) => {
       const s = v == null ? '' : String(v)
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
     }
@@ -527,13 +547,11 @@ export default function DataExplorer({
               <PreviewGrid
                 cols={cols}
                 rows={rows}
-                total={total}
                 sort={sort}
                 profiles={profiles}
                 scrollRef={scrollRef}
                 rowVirt={rowVirt}
                 items={items}
-                rowH={rowH}
                 font={fontSize}
                 showFilters={showFilters}
                 colFilters={colFilters}
@@ -568,7 +586,22 @@ export default function DataExplorer({
 function PreviewGrid({
   cols, rows, sort, profiles, scrollRef, rowVirt, items, font,
   showFilters, colFilters, setColFilters, onSort, onSelectCol, selectedCol,
-}: any) {
+}: {
+  cols: ColumnSchema[]
+  rows: (unknown[] | undefined)[]
+  sort: Sort[]
+  profiles: Record<string, ColumnProfile>
+  scrollRef: RefObject<HTMLDivElement | null>
+  rowVirt: Virtualizer<HTMLDivElement, Element>
+  items: VirtualItem[]
+  font: number
+  showFilters: boolean
+  colFilters: Record<string, string>
+  setColFilters: (updater: (m: Record<string, string>) => Record<string, string>) => void
+  onSort: (col: string, additive: boolean) => void
+  onSelectCol: (col: string | null) => void
+  selectedCol: string | null
+}) {
   const colW = 168
   const idxW = 56
   return (
@@ -577,9 +610,9 @@ function PreviewGrid({
         {/* header */}
         <div className="sticky top-0 z-10 flex pn-surface border-b pn-bd">
           <div style={{ width: idxW }} className="shrink-0 px-2 py-1 text-[10px] pn-faint border-r pn-bd">#</div>
-          {cols.map((c: ColumnSchema) => {
+          {cols.map((c) => {
             const Icon = typeIcon(c.logical)
-            const s = sort.find((s: Sort) => s.col === c.name)
+            const s = sort.find((s) => s.col === c.name)
             return (
               <div key={c.name} style={{ width: colW }}
                 className={`shrink-0 px-2 py-1 border-r pn-bd cursor-pointer hover:bg-white/5 ${selectedCol === c.name ? 'bg-blue-500/10' : ''}`}
@@ -604,11 +637,11 @@ function PreviewGrid({
         {showFilters && (
           <div className="flex pn-surface border-b pn-bd sticky top-[42px] z-10">
             <div style={{ width: idxW }} className="shrink-0 border-r pn-bd" />
-            {cols.map((c: ColumnSchema) => (
+            {cols.map((c) => (
               <div key={c.name} style={{ width: colW }} className="shrink-0 px-1 py-1 border-r pn-bd">
                 <input
                   value={colFilters[c.name] ?? ''}
-                  onChange={(e) => setColFilters((m: any) => ({ ...m, [c.name]: e.target.value }))}
+                  onChange={(e) => setColFilters((m) => ({ ...m, [c.name]: e.target.value }))}
                   placeholder={c.logical === 'number' ? '>0, 1..9' : 'contains…'}
                   className="w-full px-1.5 py-0.5 rounded bg-white/5 border pn-bd text-[11px] pn-text outline-none focus:border-blue-500" />
               </div>
@@ -617,13 +650,13 @@ function PreviewGrid({
         )}
         {/* body */}
         <div style={{ height: rowVirt.getTotalSize(), position: 'relative' }}>
-          {items.map((it: any) => {
+          {items.map((it) => {
             const row = rows[it.index]
             return (
               <div key={it.key} className="flex absolute left-0 hover:bg-white/5"
                 style={{ top: it.start, height: it.size, width: '100%' }}>
                 <div style={{ width: idxW, fontSize: font - 1 }} className="shrink-0 px-2 pn-faint border-r pn-bd flex items-center tabular-nums">{it.index}</div>
-                {cols.map((c: ColumnSchema, ci: number) => (
+                {cols.map((c, ci: number) => (
                   <div key={c.name} style={{ width: colW, fontSize: font }}
                     className="shrink-0 px-2 pn-text border-r pn-bd flex items-center truncate font-mono">
                     {row ? <CellValue v={row[ci]} lg={c.logical} /> : <span className="pn-faint">·</span>}
@@ -638,7 +671,7 @@ function PreviewGrid({
   )
 }
 
-function CellValue({ v, lg }: { v: any; lg: LogicalType }) {
+function CellValue({ v, lg }: { v: unknown; lg: LogicalType }) {
   if (v == null) return <span className="text-rose-400/60 italic">null</span>
   if (lg === 'number') return <span className="tabular-nums">{typeof v === 'number' ? fmtNum(v) : String(v)}</span>
   if (lg === 'array' || lg === 'struct' || (typeof v === 'object')) {
@@ -693,7 +726,7 @@ function StatsTab({ target, cols, profiles }: { target: ExplorerTarget; cols: Co
     setStatErr(null)
     exploreDescribe(target)
       .then((d) => alive && setStats(d.columns))
-      .catch((e: any) => alive && setStatErr(e?.response?.data?.error || e?.message || 'failed'))
+      .catch((e: unknown) => alive && setStatErr(apiErrorMessage(e, 'failed')))
     return () => { alive = false }
   }, [JSON.stringify(target)])
 
@@ -930,14 +963,14 @@ function LineageTab({ target, title }: { target: ExplorerTarget; title: string }
     setLin(null); setErr(null)
     exploreLineage(target)
       .then((l) => alive && setLin(l))
-      .catch((e: any) => alive && setErr(e?.response?.data?.error || e?.message || 'failed'))
+      .catch((e: unknown) => alive && setErr(apiErrorMessage(e, 'failed')))
     return () => { alive = false }
   }, [JSON.stringify(target)])
 
   const varName = 'var' in target ? target.var : (lin?.kind === 'variable' ? lin.name : undefined)
-  const nb = (getNotebookState() as any).currentNotebook
-  const cells: { source: string[] }[] = nb?.cells ?? []
-  const cellText = (i: number) => (Array.isArray(cells[i]?.source) ? cells[i].source.join('') : String(cells[i]?.source ?? ''))
+  const nb: Notebook | null = getNotebookState().currentNotebook
+  const cells: Cell[] = nb?.cells ?? []
+  const cellText = (i: number) => cellSourceText(cells[i]?.source)
 
   // Notebook lineage for a live variable: defining cells + upstream/downstream.
   const { definedIn, usedIn, upstream } = useMemo(() => {
@@ -971,7 +1004,7 @@ function LineageTab({ target, title }: { target: ExplorerTarget; title: string }
   if (!lin) return <div className="flex-1 p-4 pn-faint text-sm flex items-center gap-2"><Loader2 size={15} className="animate-spin" /> Tracing lineage…</div>
 
   const KindIcon = lin.kind === 'file' ? FileText : lin.kind === 'sql' ? Database : VariableIcon
-  const node = (icon: any, label: string, sub?: string, accent = 'pn-bd') => {
+  const node = (icon: LucideIcon, label: string, sub?: string, accent = 'pn-bd') => {
     const I = icon
     return (
       <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${accent} bg-white/[0.03]`}>

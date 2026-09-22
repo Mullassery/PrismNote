@@ -59,7 +59,7 @@ export interface ColumnStat {
   skew?: number | null
   kurtosis?: number | null
   // categorical
-  top?: any
+  top?: string | number | boolean | null
   freq?: number
 }
 
@@ -99,12 +99,12 @@ export type FilterOp =
 export interface Filter {
   col: string
   op: FilterOp
-  value?: any
+  value?: string | number | boolean
 }
 
 export interface PageResult {
   columns: string[]
-  data: any[][]
+  data: unknown[][]
   total: number
 }
 
@@ -120,12 +120,12 @@ export type ColumnProfile =
       q?: number[]
       hist: { counts: number[]; edges: number[] }
     }
-  | { kind: 'datetime'; null_pct: number; min: any; max: any; cardinality: number }
+  | { kind: 'datetime'; null_pct: number; min: string | number | null; max: string | number | null; cardinality: number }
   | {
       kind: 'category'
       null_pct: number
       cardinality: number
-      top: { value: any; count: number }[]
+      top: { value: string | number | boolean | null; count: number }[]
     }
   | {
       kind: 'nested'
@@ -146,7 +146,7 @@ export interface Measure {
 /** Either `{ var }` or `{ source }` identifies the target frame. */
 type Target = { var: string } | { source: Source }
 
-const post = <T,>(url: string, body: any) => axios.post<T>(url, body).then((r) => r.data)
+const post = <T,>(url: string, body: unknown) => axios.post<T>(url, body).then((r) => r.data)
 
 export const exploreOverview = (t: Target) =>
   post<Overview>('/api/explore/overview', t)
