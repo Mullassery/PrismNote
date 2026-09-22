@@ -13,6 +13,50 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+### Fixed
+- Bumped `sqlx` 0.7 → 0.8.6 to resolve a `cargo build`
+  future-incompatibility warning (`sqlx-postgres` relied on never-type
+  fallback behavior slated to become a hard error). No code changes
+  required; verified `cargo build --release --all-features` (warning gone)
+  and `cargo test --workspace --release` (171 passed, 0 failed, 2 ignored —
+  unchanged from before the bump).
+- `python/prismnote/sql_validator.py`'s system-procedure-call check
+  (`xp_`/`sp_` pattern) could never match, because the pattern was
+  lowercase while the string it's checked against is always upper-cased
+  first — found while adding real unit test coverage for this module.
+  Changed the pattern to `XP_|SP_`.
+- `pyproject.toml`'s `dev` extra was missing `fastapi`/`starlette`/
+  `pydantic`/`httpx`, which are only declared in `requirements-lock.txt`
+  (not installed by CI's `python-tests` job, which runs
+  `pip install -e ".[dev]"`). This meant `prismnote/middleware.py`
+  (imports `fastapi` at module level) and the new `security.py`/
+  `middleware.py` tests below would have failed to import in real CI
+  despite working locally. Added those four packages to `dev`.
+
+### Security
+- Added real unit test coverage for the four previously-untested
+  security-relevant Python modules (`security.py`, `sql_validator.py`,
+  `rate_limit.py`, `middleware.py`) — 107 new tests using realistic
+  malicious/edge-case inputs (path traversal, absolute-path escapes, SQL
+  injection comment/nested-comment/system-procedure payloads, credential/
+  stack-trace leak checks on FastAPI error responses). `python3 -m pytest
+  tests/ -v` now runs 109 tests (was 2, both skipped) when the package is
+  installed. See `ROADMAP_HONEST.md` for the two real bugs this testing
+  pass found (one fixed above, one documented as a known rate-limiter
+  availability bug for very-low `requests_per_minute` configurations).
+- Corrected the README's "Other integrations" claim that cloud storage
+  (S3/GCS/Azure Blob/Google Drive) is "real API calls, not placeholders."
+  Verified the client code in `cloud_storage.rs` is real and unit-tested,
+  but the actual `/cloud-storage` HTTP endpoints
+  (`add_cloud_storage`/`list_cloud_storage`/`remove_cloud_storage`) are
+  hardcoded stub handlers never wired to it or to the separate
+  `file_manager::CloudStorageManager` mount registry — a user submitting
+  real cloud credentials through this API gets a fake success response and
+  no actual storage integration. Not wired up in this pass (a real
+  feature-completion task, not a bounded fix); README and
+  `ROADMAP_HONEST.md` corrected instead of leaving the inaccurate claim in
+  place.
+
 ## [1.11.1] - 2026-09-22
 
 ### Security

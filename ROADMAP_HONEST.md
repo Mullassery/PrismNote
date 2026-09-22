@@ -39,12 +39,43 @@ mostly about a version of the product that no longer matches reality).
   MySQL/8-cloud-warehouse execution paths uses real parameterized queries
   versus string interpolation for the actual SQL execution (as opposed to
   the pre-execution validation layer). Not audited in this pass.
-- **Cloud storage (`CloudStorageManager`).** `cargo build` reports
-  `struct CloudStorageManager is never constructed` (2 warnings) — the
-  README's claim of real, tested S3/GCS/Azure Blob/Google Drive support may
-  route through free functions rather than this struct; not independently
-  re-verified in this pass (README's existing claims were taken as
-  previously-verified, not re-tested here).
+- **Cloud storage (`CloudStorageManager`) — Verified 2026-09-22: it's
+  genuinely dead code, and the README's "not placeholders" claim was false
+  for the actual exposed API.** There are *two* separate `CloudStorageManager`
+  structs, both triggering the "never constructed" warning:
+  `crates/server/src/cloud_storage.rs:1078` (real S3 SigV4 / GCS
+  service-account JWT / Azure Blob Shared Key HMAC / Google Drive OAuth
+  HTTP clients, with real mockito-backed unit tests) and
+  `crates/server/src/file_manager.rs:194` (a separate mount-registry that
+  persists `CloudStorageMount` records to disk). Neither is referenced from
+  `AppState`, `main.rs`, or anywhere in `api.rs` (confirmed via
+  `grep -rn "CloudStorageManager" crates/server/src` — zero hits outside
+  each struct's own file). The actual HTTP routes a user would call —
+  `api::add_cloud_storage` (`api.rs:2898`), `api::list_cloud_storage`
+  (`api.rs:2913`), `api::remove_cloud_storage` (`api.rs:2928`) — are
+  standalone stub handlers that touch neither struct:
+  `add_cloud_storage` returns a hardcoded `"status": "mounted"` JSON blob
+  without validating the provider, storing credentials, or calling any
+  client code; `list_cloud_storage` always returns four hardcoded
+  `"Example S3"/"Example GCS"/"Example Azure"/"Example Google Drive"`
+  entries regardless of what was ever "added"; `remove_cloud_storage`
+  unconditionally returns `204 unmounted`. Separately, the real file
+  upload/download routes (`api::upload_file`/`download_file`, `api.rs:2793`)
+  go through `file_manager::FileManager` — plain local-disk storage,
+  unrelated to either `CloudStorageManager`. Net effect: a user who submits
+  real S3/GCS/Azure/Google Drive credentials via `POST /cloud-storage`
+  receives a success response but nothing is stored or validated, and no
+  cloud upload/download path exists anywhere in the routed API. This is not
+  a rough edge — it's the same shape as the already-documented
+  `versioning.rs` dead-code case, except the README explicitly claimed
+  "All real API calls, not placeholders" for this integration, which was
+  inaccurate. **Not wired up in this pass** — doing so safely (credential
+  storage/persistence design, `AppState` wiring, request schema, which of
+  the two structs to keep vs. delete) is a real feature-completion task,
+  not a bounded fix; forcing it through risked introducing credential-
+  handling bugs in a security-relevant subsystem. README's "Other
+  integrations" table and "Not yet a good fit for" list corrected to state
+  this accurately instead of claiming it works.
 
 ## 2. Not built
 
@@ -227,13 +258,58 @@ mostly about a version of the product that no longer matches reality).
   `SECURITY.md`. `cargo audit` could not be run in this sandbox (its
   advisory-database git fetch to GitHub timed out) — Rust dependency
   vulnerability status is **unverified**, not "clean."
-- **Python package (`python/prismnote/`) has effectively zero test
-  coverage.** `security.py` (79 lines), `sql_validator.py` (81 lines),
-  `rate_limit.py` (157 lines), and `middleware.py` (115 lines) — all
-  security-relevant modules — have no dedicated test files anywhere in the
-  repo. The only Python test file, `tests/test_python_bindings.py`, has 2
-  tests, both of which **skip** (not pass) unless the package is installed
-  first (verified: `python3 -m pytest tests/ -v` → "2 skipped").
+- **Fixed 2026-09-22: Python security-relevant modules now have real test
+  coverage.** `security.py`, `sql_validator.py`, `rate_limit.py`, and
+  `middleware.py` previously had zero dedicated tests. Added
+  `tests/test_security.py` (32 tests: `NotebookRequest` path-traversal/
+  invalid-character rejection including the absolute-path-escape edge case
+  in `FileAccessValidator.validate_path`), `tests/test_sql_validator.py`
+  (46 tests: forbidden-keyword detection, injection-comment/nested-comment/
+  system-procedure patterns, `sanitize_identifier`, `safe_execute` verifying
+  the cursor is never touched on a rejected query), `tests/test_rate_limit.py`
+  (17 tests: token-bucket burst/replenishment/cap behavior via a
+  monkeypatched clock — no real sleeps — plus hourly-window expiry and
+  concurrency-slot accounting), and `tests/test_middleware.py` (12 tests:
+  real FastAPI `TestClient` requests through `ErrorHandlingMiddleware`,
+  proving `ValueError` messages are surfaced but arbitrary internal
+  exception text/credentials are not, plus `SecurityHeadersMiddleware` and
+  `RequestLoggingMiddleware` header/logging behavior).
+
+  **Two real bugs found while writing these tests (using actual malicious
+  inputs, not just happy-path calls):**
+  1. **Fixed:** `sql_validator.py`'s "system procedure call" check
+     (`xp_`/`sp_` detection) could never fire — `sql_normalized` is always
+     upper-cased before the check runs, but the pattern was the lowercase
+     `r"xp_|sp_"`, so `re.search` never matched against an all-uppercase
+     string. Changed to `r"XP_|SP_"`. Regression-tested (including a
+     lowercase-input case, since the bug was specifically about the
+     pattern's case, not the input's).
+  2. **Not fixed, documented via
+     `test_low_rpm_permanently_locks_out_the_client_known_bug` in
+     `tests/test_rate_limit.py`:** `PerClientRateLimiter`'s token bucket
+     caps `tokens` at `min(self.burst_size, ...)` every call
+     (`rate_limit.py:46`). `burst_size = (requests_per_minute / 60) * 10`,
+     which is < 1.0 for any `requests_per_minute < 6`. Once burst_size
+     itself is below 1.0, the bucket can never accumulate a full token no
+     matter how much wall-clock time passes (verified with a simulated
+     3-year gap) — the client is rate-limited to permanent zero throughput,
+     not just "very strict." This is a real availability bug (self-inflicted
+     denial of service against legitimate users configuring a low limit),
+     left unfixed in this pass since it requires a design decision (e.g.
+     `burst_size = max(1.0, rps * 10)`, or reworking the burst-multiplier
+     formula) rather than being a bounded one-line fix.
+
+  Verified end-to-end exactly as CI runs it: `pip install -e ".[dev]"` then
+  `pytest tests/ -v --tb=short` → **109 passed** (was: 2 skipped). Also
+  fixed a real CI gap this surfaced: `pyproject.toml`'s `dev` extra only
+  had `pytest`/`pytest-cov` — `fastapi`/`starlette`/`pydantic`/`httpx` were
+  only listed in `requirements-lock.txt`, which CI's `python-tests` job
+  never installs. Without adding them to `dev`, the new
+  `security.py`/`middleware.py` tests (and `middleware.py` itself, which
+  imports `fastapi` at module level) would have failed to import in the
+  real GitHub Actions environment despite passing locally. Verified in a
+  clean venv running the exact CI command
+  (`pip install -e ".[dev]"` then `pytest tests/ -v --tb=short`).
 - **11 `#[allow(dead_code)]` suppressions in Rust**
   (`sql_executor.rs`×2, `docker_executor.rs`×5, `api.rs`, `db/connections.rs`,
   `db/executor.rs`, plus one `#[allow(clippy::too_many_arguments)]` in
@@ -243,10 +319,20 @@ mostly about a version of the product that no longer matches reality).
   pieces elsewhere). Not cleaned up in this pass — would need a
   per-warning judgment call (delete dead code vs. wire it up) that's
   outside a documentation pass's scope.
-- **`sqlx-postgres` future-incompatibility warning.** `cargo build`
-  reports `sqlx-postgres v0.7.4` "contains code that will be rejected by a
-  future version of Rust." Needs a version bump at some point; not urgent
-  today but will eventually force an unplanned dependency bump.
+- **Fixed 2026-09-22: `sqlx-postgres` future-incompatibility warning.**
+  `cargo build` used to report `sqlx-postgres v0.7.4` "contains code that
+  will be rejected by a future version of Rust" (never-type-fallback
+  dependency, would become a hard error under Rust 2024). Bumped
+  `sqlx` 0.7 → 0.8.6 (workspace `Cargo.toml`) — one major behind the
+  brand-new 0.9.0, to minimize churn. No code changes were required; all 79
+  `sqlx::`-referencing call sites across
+  `query_manager.rs`/`audit.rs`/`execution.rs`/`main.rs`/
+  `middleware/ownership.rs`/`api.rs`/`session/mod.rs`/`db/init.rs`/
+  `cloud_warehouse/redshift.rs`/`db/executor.rs` compiled unchanged.
+  Verified: `cargo build --release --all-features` (warning gone, still 217
+  unrelated pre-existing warnings, no new ones) and
+  `cargo test --workspace --release` (171 passed, 0 failed, 2 ignored —
+  matches the pre-bump baseline exactly).
 
 ---
 
