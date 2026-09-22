@@ -35,7 +35,7 @@ export interface AIRequest {
   code: string
   language: CellLanguage
   context?: {
-    notebook_state?: Record<string, any>
+    notebook_state?: Record<string, unknown>
     previous_cells?: string[]
     error?: string
     requirements?: string[]
@@ -63,19 +63,23 @@ export interface AIResponse {
 export interface MCPTool {
   name: string
   description: string
-  input_schema: Record<string, any>
-  output_schema: Record<string, any>
+  // A lightweight type-name map (e.g. `{ code: 'string', context: 'object' }`),
+  // not a full JSON Schema — matches how MCP_TOOLS below actually declares them.
+  input_schema: Record<string, string>
+  output_schema: Record<string, string>
   provider: string
 }
 
 export interface MCPRequest {
   tool_name: string
-  arguments: Record<string, any>
-  context?: Record<string, any>
+  arguments: Record<string, unknown>
+  context?: Record<string, unknown>
 }
 
 export interface MCPResponse {
-  result: any
+  // A tool's result shape is defined by its own output_schema, not statically
+  // known here.
+  result: unknown
   metadata?: {
     execution_time?: number
     tokens_used?: number
@@ -417,7 +421,8 @@ async function callClaudeAPI(prompt: string, request: AIRequest): Promise<AIResp
     }
   } catch (error) {
     throw new Error(
-      `Claude API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Claude API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { cause: error }
     )
   }
 }
@@ -518,7 +523,8 @@ async function callOpenAIAPI(prompt: string, request: AIRequest): Promise<AIResp
     }
   } catch (error) {
     throw new Error(
-      `OpenAI API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `OpenAI API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { cause: error }
     )
   }
 }
@@ -583,7 +589,8 @@ async function callOllamaAPI(prompt: string, request: AIRequest): Promise<AIResp
     }
   } catch (error) {
     throw new Error(
-      `Ollama API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Ollama API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { cause: error }
     )
   }
 }
@@ -617,9 +624,11 @@ export function getSuggestedActions(language: CellLanguage, hasError: boolean): 
 /**
  * Check AI provider health
  */
-export async function checkProviderHealth(_provider: AIProvider): Promise<boolean> {
+export async function checkProviderHealth(provider: AIProvider): Promise<boolean> {
   try {
-    // Would make test request to provider
+    // Would make test request to `provider` (kept as a documented parameter
+    // of this placeholder's public signature even though it's unused yet).
+    void provider
     return true
   } catch {
     return false
@@ -632,8 +641,10 @@ export async function checkProviderHealth(_provider: AIProvider): Promise<boolea
 export interface AIUsageStats {
   total_requests: number
   total_tokens: number
-  requests_by_action: Record<AIAction, number>
-  requests_by_language: Record<CellLanguage, number>
+  // Partial: this placeholder implementation never actually tallies usage
+  // (see below), so no action/language key is guaranteed to be present.
+  requests_by_action: Partial<Record<AIAction, number>>
+  requests_by_language: Partial<Record<CellLanguage, number>>
   providers_used: AIProvider[]
 }
 
@@ -642,8 +653,8 @@ export async function getAIUsageStats(): Promise<AIUsageStats> {
   return {
     total_requests: 0,
     total_tokens: 0,
-    requests_by_action: {} as any,
-    requests_by_language: {} as any,
+    requests_by_action: {},
+    requests_by_language: {},
     providers_used: [],
   }
 }

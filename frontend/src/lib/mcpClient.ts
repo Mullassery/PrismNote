@@ -19,23 +19,39 @@
  *    - See: DEVELOPMENT_ROADMAP.md Phase 3.2.2
  */
 
+// A real (nested) JSON Schema object, e.g. `{ type: 'object', properties: {...} }`
+// — unlike aiIntegration.ts's flat type-name maps, these vary in shape per tool.
+export type JsonSchema = Record<string, unknown>
+
 export interface MCPTool {
   name: string
   description: string
-  inputSchema: Record<string, any>
-  outputSchema: Record<string, any>
+  inputSchema: JsonSchema
+  outputSchema: JsonSchema
 }
 
 export interface MCPRequest {
   tool: string
-  args: Record<string, any>
+  args: Record<string, unknown>
 }
 
 export interface MCPResponse {
   success: boolean
-  result?: any
+  // Shape is defined by the tool's own outputSchema, not statically known here.
+  result?: unknown
   error?: string
   executionTime?: number
+}
+
+interface DiscoveryResponse {
+  tools?: MCPTool[]
+}
+
+function asDiscoveryResponse(value: unknown): DiscoveryResponse {
+  if (value && typeof value === 'object' && Array.isArray((value as DiscoveryResponse).tools)) {
+    return value as DiscoveryResponse
+  }
+  return {}
 }
 
 export interface MCPServerConfig {
@@ -91,7 +107,7 @@ class MCPClient {
     if (!this.config) throw new Error('MCP client not initialized')
 
     try {
-      let response: any
+      let response: DiscoveryResponse | undefined
 
       switch (this.config.type) {
         case 'http':
@@ -102,15 +118,15 @@ class MCPClient {
           break
 
         case 'socket':
-          response = await this._querySocket('/tools', {})
+          response = asDiscoveryResponse(await this._querySocket('/tools', {}))
           break
 
         case 'stdio':
-          response = await this._queryStdio('list_tools', {})
+          response = asDiscoveryResponse(await this._queryStdio('list_tools', {}))
           break
       }
 
-      if (response.tools) {
+      if (response?.tools) {
         response.tools.forEach((tool: MCPTool) => {
           this.tools.set(tool.name, tool)
         })
@@ -240,7 +256,7 @@ class MCPClient {
     }
 
     try {
-      let result: any
+      let result: unknown
 
       switch (this.config?.type) {
         case 'http':
@@ -297,7 +313,7 @@ class MCPClient {
    *
    * See: DEVELOPMENT_ROADMAP.md Phase 3.2.2
    */
-  private async _querySocket(path: string, data: any): Promise<any> {
+  private async _querySocket(path: string, data: Record<string, unknown>): Promise<unknown> {
     console.warn(
       '⚠️ Socket transport incomplete, falling back to HTTP. ' +
       'Full socket support coming in Phase 3.'
@@ -327,7 +343,11 @@ class MCPClient {
    *
    * See: DEVELOPMENT_ROADMAP.md Phase 3.2.1
    */
-  private async _queryStdio(_method: string, _params: any): Promise<any> {
+  private async _queryStdio(method: string, params: Record<string, unknown>): Promise<unknown> {
+    // Kept as documented parameters of this not-yet-implemented transport's
+    // signature (mirrors _querySocket) even though unused before the throw.
+    void method
+    void params
     throw new Error(
       'Stdio transport is not yet implemented.\n' +
       'Please use HTTP transport instead (http://localhost:3001).\n' +
