@@ -251,7 +251,6 @@ function App() {
       const { target, title } = useExplorerRequest.getState()
       if (target) { closeCenterOverlays(); setExplorer({ target, title }) }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [explorerReqNonce])
 
   // Auto-open plots panel when visualization is created
@@ -260,7 +259,6 @@ function App() {
     if (vizNonce > 0) {
       setPlotsOpen(true)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vizNonce])
 
   // Create instantly with a unique default name (rename later). Avoids

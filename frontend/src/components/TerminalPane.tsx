@@ -43,7 +43,7 @@ export default function TerminalPane({
 
     setCmd('')
 
-    let out = ''
+    let out: string
     try {
       const res = await fetch('/api/terminal/exec', {
         method: 'POST',

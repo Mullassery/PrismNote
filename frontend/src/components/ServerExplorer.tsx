@@ -61,7 +61,7 @@ export default function ServerExplorer({ initialPath }: { initialPath?: string }
     } finally { setLoading(false) }
   }
 
-  useEffect(() => { load(initialPath); /* eslint-disable-next-line */ }, [])
+  useEffect(() => { load(initialPath) }, [])
   // auto-refresh when the window regains focus (catches external changes)
   useEffect(() => {
     const onFocus = () => { if (cwd) load(cwd) }
@@ -95,7 +95,7 @@ export default function ServerExplorer({ initialPath }: { initialPath?: string }
 
   const onRowClick = (ev: React.MouseEvent, e: Entry, idx: number) => {
     if (ev.metaKey || ev.ctrlKey) {
-      setSelected((s) => { const n = new Set(s); n.has(e.path) ? n.delete(e.path) : n.add(e.path); return n })
+      setSelected((s) => { const n = new Set(s); if (n.has(e.path)) n.delete(e.path); else n.add(e.path); return n })
       anchor.current = idx
     } else if (ev.shiftKey && anchor.current >= 0) {
       const [a, b] = [anchor.current, idx].sort((x, y) => x - y)

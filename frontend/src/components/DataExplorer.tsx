@@ -13,7 +13,7 @@ import {
   type Source, type SchemaResult, type Overview, type ColumnProfile, type ColumnSchema,
   type Sort, type Filter, type FilterOp, type LogicalType, type ColumnStat, type Lineage,
 } from '../api/explore'
-import { useNotebookStore, getNotebookState } from '../hooks/useNotebookRedux'
+import { getNotebookState } from '../hooks/useNotebookRedux'
 import { listVariables } from '../api/kernel'
 import { useAIContext } from '../hooks/useAIContext'
 import { apiErrorMessage } from '../lib/errors'

@@ -89,23 +89,21 @@ function stripActions(text: string) {
 
 export default function AgentPanel({ onClose, inBottomPanel = false }: { onClose: () => void; inBottomPanel?: boolean }) {
   const { addCell, currentNotebook, executeCell, updateCell } = useNotebookStore()
-  const [mode, setMode] = useState<Mode>('plan')
+  const [mode] = useState<Mode>('plan')
   const [models, setModels] = useState<string[]>([])
   const [model, setModel] = useState('')
   const [provider, setProvider] = useState<Provider>('ollama')
   const [cloudModel, setCloudModel] = useState('')
-  const { size: fontSize, inc, dec } = useFontSize('pn-ai-font', 13)
+  const { size: fontSize } = useFontSize('pn-ai-font', 13)
   const [modelOpen, setModelOpen] = useState(false)
   const [connected, setConnected] = useState<boolean | null>(null)
   const [tavilyConnected, setTavilyConnected] = useState<boolean | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
-  const [contextOpen, setContextOpen] = useState(true)
   const [webSearchEnabled, setWebSearchEnabled] = useState(() =>
     localStorage.getItem('pn-ai-web-search') !== 'false'
   )
-  const sessionIdRef = useRef(Date.now().toString())
   const endRef = useRef<HTMLDivElement>(null)
 
   // Load conversation history from session storage on mount
