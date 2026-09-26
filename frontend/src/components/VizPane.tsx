@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { VegaEmbed } from 'react-vega'
 import type { View } from 'vega'
+import type { VisualizationSpec } from 'vega-embed'
 import {
   Images, Wand2, ZoomIn, ZoomOut, Maximize2, Copy, Download, ExternalLink, Trash2,
   ChevronLeft, ChevronRight, Sun, Moon, NotebookPen, BarChart3, LineChart, AreaChart,
   ScatterChart, PieChart, Grid3x3, Loader2,
+  type LucideIcon,
 } from 'lucide-react'
 import { usePlots } from '../hooks/usePlots'
 import { useViz } from '../hooks/useViz'
 import { exploreSchema, exploreAggregate, type ColumnSchema, type Measure } from '../api/explore'
 import { listVariables } from '../api/kernel'
-import { useNotebookStore, getNotebookState } from '../hooks/useNotebookRedux'
+import { getNotebookState } from '../hooks/useNotebookRedux'
+import { apiErrorMessage } from '../lib/errors'
 import type { ExplorerTarget } from './DataExplorer'
 
 type Mode = 'gallery' | 'explore'
@@ -165,7 +168,7 @@ function Gallery() {
 type ChartType = 'bar' | 'line' | 'area' | 'scatter' | 'pie' | 'heatmap'
 type AggType = Measure['agg']
 
-const CHARTS: { id: ChartType; icon: any; label: string }[] = [
+const CHARTS: { id: ChartType; icon: LucideIcon; label: string }[] = [
   { id: 'bar', icon: BarChart3, label: 'Bar' },
   { id: 'line', icon: LineChart, label: 'Line' },
   { id: 'area', icon: AreaChart, label: 'Area' },
@@ -186,7 +189,7 @@ function Explore() {
   const [dim2, setDim2] = useState<string>('') // color / heatmap-y
   const [measure, setMeasure] = useState<string>('')
   const [agg, setAgg] = useState<AggType>('sum')
-  const [data, setData] = useState<Record<string, any>[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const viewRef = useRef<View | null>(null)
@@ -196,7 +199,7 @@ function Explore() {
   // populate the variable picker (DataFrame-typed only) when no target supplied
   useEffect(() => {
     if (target) return
-    listVariables().then((vs) => setVars(vs.filter((v: any) => /DataFrame/.test(v.type)))).catch(() => {})
+    listVariables().then((vs) => setVars(vs.filter((v) => /DataFrame/.test(v.type)))).catch(() => {})
   }, [target])
 
   // load schema for the active target
@@ -210,7 +213,7 @@ function Explore() {
         setDim(firstCat?.name ?? sc.columns[0]?.name ?? '')
         setMeasure(firstNum?.name ?? '')
       })
-      .catch((e: any) => setErr(e?.response?.data?.error || e?.message || 'failed to load schema'))
+      .catch((e: unknown) => setErr(apiErrorMessage(e, 'failed to load schema')))
   }, [JSON.stringify(localTarget)])
 
   const dims = chart === 'heatmap' ? [dim, dim2].filter(Boolean) : [dim].filter(Boolean)
@@ -227,13 +230,20 @@ function Explore() {
         const recs = r.data.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])))
         setData(recs)
       })
-      .catch((e: any) => setErr(e?.response?.data?.error || e?.message || 'aggregation failed'))
+      .catch((e: unknown) => setErr(apiErrorMessage(e, 'aggregation failed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(localTarget), chart, dim, dim2, measure, agg])
 
   const spec = useMemo(() => buildSpec(chart, dim, dim2, measureField, data), [chart, dim, dim2, measureField, data])
 
+  // NOTE (found while typing, not fixed — see ROADMAP_HONEST.md): same
+  // pre-existing bug documented in DataExplorer.tsx/DataPanel.tsx's
+  // insertAsCell — `getNotebookState()` returns the plain Redux state
+  // slice, not action dispatchers, so `.createNotebook()`/`.addCell()`/
+  // `.updateCell()` don't exist on it and this throws a TypeError at
+  // runtime (this file never calls the `useNotebookStore()` hook that
+  // actually provides those actions). Left as `as any`.
   const insertAltair = async () => {
     const code = altairCode(localTitle || 'df', chart, dim, dim2, measure, agg)
     const store = getNotebookState() as any
@@ -324,7 +334,11 @@ function Explore() {
           ) : loading ? (
             <div className="pn-faint flex items-center gap-2 text-sm"><Loader2 size={16} className="animate-spin" /> Aggregating…</div>
           ) : data.length ? (
-            <VegaEmbed className="w-full" spec={spec as any}
+            // `spec` is a plain JSON object we assemble ourselves in buildSpec()
+            // to match the Vega-Lite spec shape at runtime; VisualizationSpec's
+            // real type (from vega-embed) is a deep, strict union we don't
+            // attempt to fully reconstruct here (see buildSpec's own comment).
+            <VegaEmbed className="w-full" spec={spec as VisualizationSpec}
               options={{ actions: false, renderer: 'svg' }}
               onEmbed={(r) => { viewRef.current = r.view }} />
           ) : (
@@ -348,8 +362,12 @@ function Shelf({ label, value, options, onChange }: { label: string; value: stri
 }
 
 // Build a Vega-Lite spec from the shelf selections, with rows inlined.
-function buildSpec(chart: ChartType, dim: string, dim2: string, measureField: string, data: Record<string, any>[]) {
-  const base: any = {
+// Returns a plain object shaped like a Vega-Lite spec rather than the real
+// (deep, strict) `VisualizationSpec` union from vega-embed — reconstructing
+// that type precisely for every mark/encoding combination below isn't
+// attempted here (see the cast where this is passed to <VegaEmbed>).
+function buildSpec(chart: ChartType, dim: string, dim2: string, measureField: string, data: Record<string, unknown>[]) {
+  const base: Record<string, unknown> = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
     data: { values: data },
     width: 'container',

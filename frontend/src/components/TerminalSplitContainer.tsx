@@ -4,9 +4,8 @@
  * Useful for ROS workflows (publishers, listeners, monitoring)
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import type { JSX } from 'react'
-import { Plus, Trash2, Code2, Split } from 'lucide-react'
 import TerminalPane from './TerminalPane'
 
 export interface TerminalConfig {
@@ -105,7 +104,6 @@ function renderTerminalTree(config: TerminalConfig, ctx: RenderContext): JSX.Ele
 
   const { direction = 'vertical', children = [], size = 50 } = config
   const isVertical = direction === 'vertical'
-  const dividerSize = 4
 
   return (
     <div
