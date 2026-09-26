@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../store/store'
+import type { Cell, CellLanguage } from '../types/notebook'
 import { store } from '../store/store'
 import {
   selectNotebooks,
@@ -23,8 +24,6 @@ import {
   copyCell,
   cutCell,
   pasteCell,
-  setSuggestions,
-  removeSuggestion,
   createNotebook as createNotebookAction,
   deleteNotebook as deleteNotebookAction,
   setCurrentNotebook as setCurrentNotebookAction,
@@ -75,7 +74,7 @@ export function useNotebookStore() {
   )
 
   const executeCell = useCallback(
-    async (index: number, language?: string, sqlConnection?: string) => {
+    async (index: number, language?: CellLanguage, sqlConnection?: string) => {
       if (!currentNotebook) return
       const cell = currentNotebook.cells[index]
       if (!cell) return
@@ -85,7 +84,7 @@ export function useNotebookStore() {
           notebookId: currentNotebook.id,
           cellId: cell.id,
           code,
-          language: language as any,
+          language,
           sqlConnection,
         })
       )
@@ -127,7 +126,7 @@ export function useNotebookStore() {
     deleteNotebook,
     setCurrentNotebook,
     addCell: (type: 'code' | 'markdown', index?: number) => dispatch(addCell({ type, index })),
-    updateCell: (index: number, updates: any) => dispatch(updateCell({ index, updates })),
+    updateCell: (index: number, updates: Partial<Cell>) => dispatch(updateCell({ index, updates })),
     deleteCell: (index: number) => dispatch(deleteCell(index)),
     setSelectedCell: (index: number | null) => dispatch(setSelectedCell(index)),
     moveCell: (index: number, dir: -1 | 1) => dispatch(moveCell({ index, dir })),

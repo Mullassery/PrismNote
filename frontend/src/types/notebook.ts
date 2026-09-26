@@ -8,6 +8,8 @@
 // stay as `unknown` rather than `any` so callers are forced to narrow before
 // use.
 
+import type { CellLanguage as FullCellLanguage } from '../lib/languages'
+
 /** A single entry in a Jupyter-style MIME output bundle. String values are
  * the common case; some renderers (e.g. streamed text) split the value into
  * an array of chunks that get joined. */
@@ -30,7 +32,14 @@ export interface CellOutput {
   traceback?: string[]
 }
 
-export type CellLanguage = 'python' | 'sql' | 'r' | 'javascript'
+// Re-exported from lib/languages.ts (the single source of truth for which
+// languages a cell can be — 14 total, not just the 4 this alias used to
+// declare on its own before that mismatch was caught by typing Cell.tsx/
+// useNotebookRedux.ts's `language` plumbing: cells can genuinely be
+// markdown/cpp/rust/etc, per LanguageSelector and lib/codeExecutor's per-
+// language executors, and always could be at runtime — this was simply
+// never enforced before those call sites were `any`).
+export type CellLanguage = FullCellLanguage
 
 export interface Cell {
   id: string
