@@ -35,8 +35,37 @@ accuracy in this pass).
   extraction), and `frontend/src/types/file-system-access.d.ts` (ambient
   types for the File System Access API, which TypeScript's bundled DOM
   types still don't cover).
+- **Frontend lint cleanup, second pass: `frontend/src` errors reduced from
+  74 to 63** (warnings 21 → 18). Confirmed the remaining 13
+  `@typescript-eslint/no-explicit-any` errors are exactly the two cases
+  already documented above (7 intentional bug-marker `any`s + 6 in the
+  dead `lib/codeExecutor.ts`) — no further `no-explicit-any` progress is
+  available without a behavior change or touching that flagged dead code.
+  Instead cleared every other safely-fixable error: dead state/imports in
+  `AgentPanel.tsx` (6) and `DataExplorer.tsx` (1), a ternary-used-as-a-
+  statement in `ServerExplorer.tsx`, a useless variable initializer in
+  `TerminalPane.tsx`, three stale `eslint-disable` comments no longer
+  suppressing anything (`App.tsx`×2, `ServerExplorer.tsx`), and extracted
+  `main.tsx`'s inline `AppErrorFallback` component into
+  `frontend/src/components/AppErrorFallback.tsx` (`react-refresh/
+  only-export-components` requires components to live in a file with
+  exports). See `ROADMAP_HONEST.md` for two real, undocumented gaps found
+  while removing dead state (not fixed — feature gaps, not typing):
+  `AgentPanel.tsx`'s Plan/Act mode toggle has no UI, so "Act" mode is
+  unreachable; `AgentPanel.tsx` is missing the font zoom +/- controls every
+  other panel using `useFontSize` has. `npm test` stayed at 114/114 and
+  `npm run build` stayed clean throughout.
 
 ### Fixed
+- `Toolbar.tsx`'s rename-then-save flow called `useNotebookStore()` (a
+  React hook) from inside a `setTimeout` callback, outside any component
+  render — a rules-of-hooks violation that throws `Invalid hook call` when
+  the timeout fires, silently breaking auto-save after every notebook
+  rename. Found via the new `react-hooks/rules-of-hooks` lint rule during
+  the lint-cleanup pass above; fixed by calling the `saveNotebook`
+  reference already destructured at the top of the component instead of
+  re-invoking the hook (same function, same timing, no other behavior
+  change).
 - Bumped `sqlx` 0.7 → 0.8.6 to resolve a `cargo build`
   future-incompatibility warning (`sqlx-postgres` relied on never-type
   fallback behavior slated to become a hard error). No code changes

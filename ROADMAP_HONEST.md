@@ -258,6 +258,98 @@ mostly about a version of the product that no longer matches reality).
     one real definition. See `CHANGELOG.md` under `[Unreleased]` and the
     commit history for the full file-by-file breakdown (11 commits,
     `ef12268`..`fcc1049`).
+  - **Second pass, 2026-09-27: `frontend/src` errors reduced 74 → 63
+    (warnings 21 → 18); confirmed the remaining 13 `no-explicit-any`
+    errors are exactly the two already-documented cases above (the 7
+    intentional bug-marker `any`s and `codeExecutor.ts`'s 6) — there is
+    no further `no-explicit-any` work available in `frontend/src` without
+    either a behavior change or touching the flagged dead code.** This
+    pass instead cleared every remaining lint error that was safely
+    fixable without a behavior change (dead vars/imports, a
+    ternary-used-as-a-statement, a useless initializer, stale
+    `eslint-disable` comments no longer suppressing anything) plus one
+    real bug whose fix was trivial and obviously correct per this
+    project's typing-pass rules:
+    - **Fixed: `Toolbar.tsx`'s rename-then-save flow called a React hook
+      outside render.** `commitName()` did
+      `setTimeout(() => { const hook = useNotebookStore(); hook.saveNotebook() }, 0)`.
+      `useNotebookStore()` calls `useDispatch`/`useSelector` internally, so
+      invoking it inside a `setTimeout` callback — outside any component
+      render — violates the rules of hooks and throws `Invalid hook call`
+      when the timeout fires, silently breaking save-after-rename every
+      time a notebook is renamed. Fixed by using the `saveNotebook`
+      reference already destructured at the top of the component instead
+      of re-invoking the hook — same function, same timing, no other
+      behavior change. Caught by the new `react-hooks/rules-of-hooks`
+      lint rule.
+    - **Found, not fixed — `AgentPanel.tsx`'s "act" mode is unreachable.**
+      `const [mode, setMode] = useState<Mode>('plan')` — `mode` is read in
+      several places (which system prompt to use, whether to parse
+      `<action>` tags, the "Planning"/"Thinking" label) but `setMode` was
+      never called anywhere in the file, confirmed by
+      `grep -n setMode AgentPanel.tsx`. There is no UI toggle between
+      Plan/Act mode in this component, so the AI panel is permanently
+      stuck in "plan" mode; the "act" (code-writing/action-taking) system
+      prompt and `<action>` parsing path are dead code today. Building the
+      missing toggle is a real feature gap, not a typing fix, so only the
+      now-provably-dead `setMode` setter was removed (`const [mode] =
+      useState(...)`) to clear the `no-unused-vars` error; the underlying
+      gap is left for a follow-up.
+    - **Found, not fixed — `AgentPanel.tsx` is missing the font
+      zoom controls every other panel using `useFontSize` has.** `inc`/
+      `dec` were destructured from `useFontSize('pn-ai-font', 13)` but
+      never wired to a button — confirmed by comparison with
+      `Toolbar.tsx`, `DataExplorer.tsx`, `PlotsPanel.tsx`, `Notebook.tsx`,
+      `FileExplorer.tsx`, `BottomPanel.tsx`, and `DataPanel.tsx`, all of
+      which use the same hook and do wire `inc`/`dec` to +/- buttons.
+      Removed the unused destructure (`const { size: fontSize } =
+      useFontSize(...)`) rather than add new UI, which would be a feature
+      change out of scope for a lint pass.
+    - Also removed as genuinely dead (no observable behavior change):
+      `AgentPanel.tsx`'s `contextOpen`/`setContextOpen` state (read
+      nowhere) and `sessionIdRef` (read nowhere); `DataExplorer.tsx`'s
+      unused `useNotebookStore` import — the other half of the
+      already-documented `insertAsCell()`/`getNotebookState()` bug above
+      (this file never calls the hook, which is why the import was dead);
+      two stale `eslint-disable-next-line react-hooks/exhaustive-deps`
+      comments in `App.tsx` and one stray/misplaced
+      `eslint-disable-next-line` in `ServerExplorer.tsx`, all three now
+      reported as "unused eslint-disable directive" because the
+      underlying warning they once suppressed no longer fires.
+    - Mechanical, zero-behavior-change rewrites: `ServerExplorer.tsx`'s
+      `n.has(e.path) ? n.delete(e.path) : n.add(e.path)` ternary-used-as-
+      a-statement (`no-unused-expressions`) rewritten as an equivalent
+      `if`/`else`; `TerminalPane.tsx`'s `let out = ''` (`no-useless-
+      assignment`, since both branches of the following `try`/`catch`
+      always assign it before use) changed to `let out: string`; `main.tsx`
+      (the app entry point, which has no exports of its own) had its
+      inline `AppErrorFallback` component extracted verbatim to
+      `src/components/AppErrorFallback.tsx`, since
+      `react-refresh/only-export-components` requires component
+      definitions to live in a file that has exports.
+    - **Remaining 63 `frontend/src` errors, confirmed by rule breakdown
+      (`react-hooks/set-state-in-effect`: 21, `react-hooks/immutability`:
+      17 — mostly functions/state referenced before their `const`
+      declaration relative to an effect, a temporal-dead-zone-adjacent
+      pattern — `@typescript-eslint/no-explicit-any`: 13 (documented
+      above), `@typescript-eslint/no-unused-vars`: 7 (all in
+      `codeExecutor.ts`), `react-hooks/static-components`: 2 (e.g.
+      `Notebook.tsx` defines an `Inserter` component inside the component
+      body, recreating it every render), `react-hooks/refs`: 2 (reading a
+      ref's `.current` during render, e.g. `Notebook.tsx`'s
+      `cellRefsMap.current` DOM-ref map passed to `ExecutionMinimap`),
+      `react-hooks/preserve-manual-memoization`: 1) — every non-`any`/
+      non-`unused-vars` error here requires an actual behavior or
+      control-flow restructuring (lazy `useState` initializers instead of
+      set-state-in-effect, reordering function declarations relative to
+      the effects/callbacks that reference them, hoisting components out
+      of render bodies, redesigning how DOM ref maps are read) to fix
+      correctly, not a type annotation. Consistent with the "~54 out of
+      scope" assessment above (that figure covered the same errors before
+      this pass's other fixes reduced the total); left for a dedicated
+      React-hooks-correctness pass, not attempted here.** `npm run build`
+      and `npm test` (114/114) verified after every batch. Commits
+      `e06128c`, `9aa0940`, `4d3ce2f`.
   - `npm run test:e2e` (`--project=chromium` only, single browser): **28
     passed, 57 failed** out of 85 tests (67% failure rate), run took 39
     minutes. Failures are concentrated in
@@ -279,7 +371,7 @@ mostly about a version of the product that no longer matches reality).
     (start with `frontend/src`'s 348 real lint errors, since those are
     production code, not test scaffolding) and only then remove the
     swallow. **Update 2026-09-27: `frontend/src`'s lint errors are down to
-    74 (see below) — still not zero, so the swallow should stay in place
+    63 (see below) — still not zero, so the swallow should stay in place
     until the remaining `codeExecutor.ts` dead-code call, the 7 documented
     `insertAsCell`/layout bugs, and the pre-existing `react-hooks/*`
     errors are resolved, then separately re-evaluated alongside the 57
