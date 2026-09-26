@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Database, X, Plus, Trash2, Play, Loader2, Cloud, AlertTriangle, NotebookPen, Minus, ChevronRight, Table2 } from 'lucide-react'
 import Editor from '@monaco-editor/react'
+import type { languages } from 'monaco-editor'
 import {
   listDatabases, createDatabase, deleteDatabase, queryDatabase,
   listWarehouses, queryWarehouse, queryCode, getDatabaseSchema, getWarehouseSchema,
   type DbConnection, type QueryResult, type DatabaseSchema,
 } from '../api/data'
 import DataFrameView from './DataFrameView'
-import { useNotebookStore, getNotebookState } from '../hooks/useNotebookRedux'
+import { getNotebookState } from '../hooks/useNotebookRedux'
 import { useFontSize } from '../hooks/useFontSize'
+import { apiErrorMessage } from '../lib/errors'
 
 type Conn = { id: string; name: string; kind: 'db' | 'warehouse'; sub: string }
 
@@ -28,7 +30,7 @@ function SqlEditor({ value, onChange, schema }: { value: string; onChange: (v: s
             const word = model.getWordUntilPosition(position)
             const range = { startLineNumber: position.lineNumber, startColumn: word.startColumn, endLineNumber: position.lineNumber, endColumn: word.endColumn }
 
-            const suggestions: any[] = []
+            const suggestions: languages.CompletionItem[] = []
 
             // Add SQL keywords
             const keywords = ['SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'LIMIT', 'OFFSET', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'ON', 'AS', 'AND', 'OR', 'NOT', 'IN', 'BETWEEN', 'LIKE', 'IS', 'NULL', 'DISTINCT', 'HAVING']
@@ -90,7 +92,7 @@ function SqlEditor({ value, onChange, schema }: { value: string; onChange: (v: s
         lineHeight: 20,
         quickSuggestions: { other: true, comments: false, strings: false },
         suggestOnTriggerCharacters: true,
-      } as any}
+      }}
       beforeMount={(monaco) => {
         monaco.editor.defineTheme('pn-dark', {
           base: 'vs-dark',
@@ -123,7 +125,7 @@ export default function DataPanel({ onClose }: { onClose: () => void }) {
     const [dbs, whs] = await Promise.all([listDatabases().catch(() => []), listWarehouses().catch(() => [])])
     const list: Conn[] = [
       ...dbs.map((d) => ({ id: d.id, name: d.name, kind: 'db' as const, sub: d.db_type })),
-      ...whs.map((w: any) => ({ id: w.id, name: w.name, kind: 'warehouse' as const, sub: String(w.warehouse_type ?? 'warehouse').toLowerCase() })),
+      ...whs.map((w) => ({ id: w.id, name: w.name, kind: 'warehouse' as const, sub: String(w.warehouse_type ?? 'warehouse').toLowerCase() })),
     ]
     setConns(list)
     if (!sel && list.length) setSel(list[0])
@@ -153,13 +155,20 @@ export default function DataPanel({ onClose }: { onClose: () => void }) {
     try {
       const r = sel.kind === 'db' ? await queryDatabase(sel.id, sql) : await queryWarehouse(sel.id, sql)
       setResult(r)
-    } catch (e: any) {
-      setError(e?.response?.data?.error || e?.message || 'query failed')
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, 'query failed'))
     } finally {
       setRunning(false)
     }
   }
 
+  // NOTE (found while typing, not fixed — see ROADMAP_HONEST.md): same
+  // pre-existing bug as DataExplorer.tsx's insertAsCell — `getNotebookState()`
+  // returns the plain Redux state slice, not action dispatchers, so
+  // `.createNotebook()`/`.addCell()`/`.updateCell()` don't exist on it and
+  // this throws a TypeError at runtime (this file never calls the
+  // `useNotebookStore()` hook that actually provides those actions). Left
+  // as `as any` rather than silently rewiring behavior mid-typing-pass.
   const insertAsCell = async () => {
     if (!sel) return
     try {
@@ -173,8 +182,8 @@ export default function DataPanel({ onClose }: { onClose: () => void }) {
       const idx = s2.currentNotebook.cells.length - 1
       s2.updateCell(idx, { source: code.split(/(?<=\n)/) })
       onClose() // jump back to the notebook with the new cell
-    } catch (e: any) {
-      setError(e?.response?.data?.error || e?.message || 'could not generate cell')
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, 'could not generate cell'))
     }
   }
 

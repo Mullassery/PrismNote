@@ -15,8 +15,15 @@ export interface DbConnection {
 
 export interface QueryResult {
   columns: (string | number)[]
-  rows: any[][]
+  rows: unknown[][]
   row_count: number
+}
+
+/** A cloud warehouse connection (Snowflake/BigQuery/Redshift/Synapse/etc). */
+export interface WarehouseConnection {
+  id: string
+  name: string
+  warehouse_type?: string
 }
 
 export const listDatabases = () =>
@@ -46,7 +53,7 @@ export const queryDatabase = (id: string, query: string) =>
     .then((r) => r.data)
 
 export const listWarehouses = () =>
-  axios.get<{ connections: any[] }>('/api/cloud-warehouses').then((r) => r.data.connections)
+  axios.get<{ connections: WarehouseConnection[] }>('/api/cloud-warehouses').then((r) => r.data.connections)
 
 export const queryWarehouse = (id: string, query: string) =>
   axios

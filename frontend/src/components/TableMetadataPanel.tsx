@@ -1,10 +1,17 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { useSchemaCache } from '../hooks/useSchemaCache'
 import { queryDatabase } from '../api/data'
 import type { DbType } from '../lib/schemaParser'
 
 type Tab = 'columns' | 'preview' | 'stats'
+
+interface ColumnQuickProfile {
+  count: number
+  nonNull: number
+  distinct: number
+  nullPercent: number
+}
 
 interface TableMetadataPanelProps {
   connId: string
@@ -21,14 +28,18 @@ export default function TableMetadataPanel({
   schemaName,
   onClose,
 }: TableMetadataPanelProps) {
+  // dbType isn't needed here — queryDatabase resolves the driver from connId
+  // server-side — but is kept in the props contract for consistency with
+  // sibling panels (e.g. SchemaExplorer) that do need it.
+  void _dbType
   const schemaCache = useSchemaCache()
   const [activeTab, setActiveTab] = useState<Tab>('columns')
-  const [previewData, setPreviewData] = useState<any[] | null>(null)
+  const [previewData, setPreviewData] = useState<unknown[][] | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [statsData, setStatsData] = useState<{ rowCount: number; sizeBytes?: number } | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
   const [expandedColumn, setExpandedColumn] = useState<string | null>(null)
-  const [columnProfiles, setColumnProfiles] = useState<Record<string, any>>({})
+  const [columnProfiles, setColumnProfiles] = useState<Record<string, ColumnQuickProfile>>({})
 
   const detail = schemaCache.tableDetails[`${connId}.${schemaName}.${tableName}`]
 
@@ -58,7 +69,7 @@ export default function TableMetadataPanel({
       const table = `${schemaName ? `"${schemaName}".` : ''}"${tableName}"`
       const response = await queryDatabase(connId, `SELECT COUNT(*) AS cnt FROM ${table}`)
       if (response?.rows?.[0]) {
-        setStatsData({ rowCount: response.rows[0][0] })
+        setStatsData({ rowCount: Number(response.rows[0][0]) || 0 })
       }
     } catch (err) {
       console.error('Failed to load stats:', err)
@@ -79,13 +90,15 @@ export default function TableMetadataPanel({
         `SELECT COUNT(*) AS cnt, COUNT(${col}) AS non_null, COUNT(DISTINCT ${col}) AS dist FROM ${table}`
       )
       if (response?.rows?.[0]) {
+        const count = Number(response.rows[0][0]) || 0
+        const nonNull = Number(response.rows[0][1]) || 0
         setColumnProfiles({
           ...columnProfiles,
           [columnName]: {
-            count: response.rows[0][0],
-            nonNull: response.rows[0][1],
-            distinct: response.rows[0][2],
-            nullPercent: Math.round((1 - response.rows[0][1] / response.rows[0][0]) * 100),
+            count,
+            nonNull,
+            distinct: Number(response.rows[0][2]) || 0,
+            nullPercent: Math.round((1 - nonNull / count) * 100),
           },
         })
       }
@@ -236,7 +249,7 @@ export default function TableMetadataPanel({
                   <tbody>
                     {previewData.map((row, i) => (
                       <tr key={i} className="border-b pn-bd hover:bg-pn-hover/30">
-                        {Object.values(row).map((val: any, j) => (
+                        {Object.values(row).map((val: unknown, j) => (
                           <td key={j} className="px-2 py-1 pn-text truncate max-w-xs" title={String(val)}>
                             {val === null ? <span className="pn-faint italic">null</span> : String(val).slice(0, 50)}
                           </td>

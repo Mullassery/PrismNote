@@ -3,18 +3,15 @@ import { ChevronRight, Database as DatabaseIcon, Loader2, AlertCircle, RotateCcw
 import { useSchemaCache } from '../hooks/useSchemaCache'
 import { listDatabases } from '../api/data'
 import type { DbConnection } from '../api/data'
+import { toDbType, type SchemaTable } from '../lib/schemaParser'
 
 interface SchemaExplorerProps {
   onSelectTable: (connId: string, tableName: string, schemaName: string, dbType: string) => void
 }
 
-interface ColumnRow {
-  name: string
-  type: string
-  nullable: boolean
-  isPk?: boolean
-  isFk?: boolean
-}
+/** A connection row, with an optional pre-filtered table list stashed on it
+ * by the search box (see `filteredConnections` below). */
+type FilterableConnection = DbConnection & { _filteredTables?: SchemaTable[] }
 
 export default function SchemaExplorer({ onSelectTable }: SchemaExplorerProps) {
   const schemaCache = useSchemaCache()
@@ -34,7 +31,7 @@ export default function SchemaExplorer({ onSelectTable }: SchemaExplorerProps) {
         // Auto-expand first connection
         if (conns.length > 0) {
           setExpandedConnections(new Set([conns[0].id]))
-          schemaCache.fetchSchema(conns[0].id, (conns[0].db_type || 'postgresql') as any)
+          schemaCache.fetchSchema(conns[0].id, toDbType(conns[0].db_type || 'postgresql'))
         }
       } catch (err) {
         console.error('Failed to load connections:', err)
@@ -51,7 +48,7 @@ export default function SchemaExplorer({ onSelectTable }: SchemaExplorerProps) {
       newExpanded.delete(connId)
     } else {
       newExpanded.add(connId)
-      schemaCache.fetchSchema(connId, dbType as any)
+      schemaCache.fetchSchema(connId, toDbType(dbType))
     }
     setExpandedConnections(newExpanded)
   }
@@ -62,13 +59,13 @@ export default function SchemaExplorer({ onSelectTable }: SchemaExplorerProps) {
       newExpanded.delete(tableKey)
     } else {
       newExpanded.add(tableKey)
-      schemaCache.fetchTableDetail(connId, dbType as any, tableName, schemaName)
+      schemaCache.fetchTableDetail(connId, toDbType(dbType), tableName, schemaName)
     }
     setExpandedTables(newExpanded)
   }
 
   // Filter tables by search query
-  const filteredConnections = useMemo(() => {
+  const filteredConnections = useMemo((): FilterableConnection[] => {
     if (!searchQuery) return connections
     return connections.map((conn) => {
       const schema = schemaCache.schemas[conn.id]
@@ -133,7 +130,7 @@ export default function SchemaExplorer({ onSelectTable }: SchemaExplorerProps) {
         {filteredConnections.map((conn) => {
           const schema = schemaCache.schemas[conn.id]
           const isExpanded = expandedConnections.has(conn.id)
-          const tables = (conn as any)._filteredTables || schema?.tables || []
+          const tables = conn._filteredTables || schema?.tables || []
 
           return (
             <div key={conn.id} className="border-b pn-bd last:border-b-0">
@@ -160,7 +157,7 @@ export default function SchemaExplorer({ onSelectTable }: SchemaExplorerProps) {
                       <AlertCircle size={12} />
                       <span>{schema.error || 'Failed to load schema'}</span>
                       <button
-                        onClick={() => schemaCache.fetchSchema(conn.id, conn.db_type as any)}
+                        onClick={() => schemaCache.fetchSchema(conn.id, toDbType(conn.db_type))}
                         className="pn-hover rounded p-0.5"
                       >
                         <RotateCcw size={12} />
@@ -168,7 +165,7 @@ export default function SchemaExplorer({ onSelectTable }: SchemaExplorerProps) {
                     </div>
                   )}
 
-                  {(tables || []).map((table: any) => {
+                  {(tables || []).map((table) => {
                     const tableKey = `${conn.id}.${table.schema}.${table.name}`
                     const tableExpanded = expandedTables.has(tableKey)
                     const detail = schemaCache.tableDetails[tableKey]

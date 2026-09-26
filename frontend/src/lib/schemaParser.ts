@@ -396,12 +396,12 @@ export function buildTopValuesQuery(
  * Parse PRAGMA table_info() result from SQLite
  * PRAGMA returns: (cid, name, type, notnull, dflt_value, pk)
  */
-export function parseSqlitePragmaTableInfo(rows: any[][]): ColumnInfo[] {
+export function parseSqlitePragmaTableInfo(rows: unknown[][]): ColumnInfo[] {
   return rows.map((row) => ({
-    name: row[1], // name
-    type: row[2], // type
+    name: String(row[1]), // name
+    type: String(row[2]), // type
     nullable: row[3] === 0, // notnull inverted
-    default: row[4], // dflt_value
+    default: row[4] == null ? undefined : String(row[4]), // dflt_value
     maxLength: undefined,
     precision: undefined,
     scale: undefined,
@@ -412,12 +412,12 @@ export function parseSqlitePragmaTableInfo(rows: any[][]): ColumnInfo[] {
  * Parse PRAGMA foreign_key_list() result from SQLite
  * PRAGMA returns: (id, seq, table, from, to, on_delete, on_update, match)
  */
-export function parseSqliteForeignKeys(rows: any[][]): ConstraintInfo[] {
+export function parseSqliteForeignKeys(rows: unknown[][]): ConstraintInfo[] {
   return rows.map((row) => ({
-    column: row[3], // from
-    type: 'FOREIGN_KEY',
-    foreignTable: row[2], // table
-    foreignColumn: row[4], // to
+    column: String(row[3]), // from
+    type: 'FOREIGN_KEY' as const,
+    foreignTable: String(row[2]), // table
+    foreignColumn: String(row[4]), // to
   }))
 }
 
@@ -425,9 +425,9 @@ export function parseSqliteForeignKeys(rows: any[][]): ConstraintInfo[] {
  * Convert query response { columns, rows } into an array of objects
  * Used by all consuming code to normalize the response shape from POST /api/databases/:id/query
  */
-export function parseQueryResults(columns: string[], rows: any[][]): Record<string, any>[] {
+export function parseQueryResults(columns: string[], rows: unknown[][]): Record<string, unknown>[] {
   return rows.map((row) => {
-    const obj: Record<string, any> = {}
+    const obj: Record<string, unknown> = {}
     columns.forEach((col, i) => {
       obj[col.toLowerCase()] = row[i]
     })

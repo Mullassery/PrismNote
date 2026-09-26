@@ -43,9 +43,9 @@ interface ColumnProfile {
   count: number
   nonNullCount: number
   distinctCount: number
-  minValue: any
-  maxValue: any
-  topValues?: Array<{ value: any; count: number }>
+  minValue: unknown
+  maxValue: unknown
+  topValues?: Array<{ value: unknown; count: number }>
   fetchedAt: number
 }
 
@@ -66,6 +66,16 @@ interface SchemaCacheState {
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+/** Coerce a raw query-result cell (unknown) to a number, or undefined if it's nullish. */
+function toNumberOrUndefined(v: unknown): number | undefined {
+  return v == null ? undefined : Number(v)
+}
+
+/** Coerce a raw query-result cell (unknown) to a string, or undefined if it's nullish. */
+function toStringOrUndefined(v: unknown): string | undefined {
+  return v == null ? undefined : String(v)
+}
 
 const useSchemaCacheStore = create<SchemaCacheState>((set, get) => ({
   schemas: {},
@@ -102,16 +112,16 @@ const useSchemaCacheStore = create<SchemaCacheState>((set, get) => ({
       }
 
       // Parse results into SchemaTable objects
-      const tables = response.rows.map((row: any[]) => {
+      const tables = response.rows.map((row: unknown[]) => {
         const col0 = String(response.columns[0] || '').toLowerCase()
-        const schema = col0.includes('schema') ? row[0] : undefined
+        const schema = col0.includes('schema') && row[0] != null ? String(row[0]) : undefined
         const nameIdx = response.columns.findIndex((c: string | number) => String(c).toLowerCase() === 'name')
         const typeIdx = response.columns.findIndex((c: string | number) => String(c).toLowerCase() === 'type')
 
         return {
           schema,
-          name: row[nameIdx] || row[1],
-          type: (row[typeIdx] || row[2])?.toUpperCase(),
+          name: String(row[nameIdx] || row[1]),
+          type: String(row[typeIdx] || row[2] || '').toUpperCase(),
         } as SchemaTable
       })
 
@@ -180,14 +190,14 @@ const useSchemaCacheStore = create<SchemaCacheState>((set, get) => ({
       } else if (colResponse?.rows) {
         const colNames = (colResponse.columns as Array<string | number>).map(String)
         const parsed = parseQueryResults(colNames, colResponse.rows)
-        columns = parsed.map((row: any) => ({
-          name: row.name || row.column_name,
-          type: row.type || row.data_type || row.column_type,
+        columns = parsed.map((row): ColumnInfo => ({
+          name: String(row.name || row.column_name || ''),
+          type: String(row.type || row.data_type || row.column_type || ''),
           nullable: row.nullable !== false && row.is_nullable !== 'NO',
-          default: row.default || row.column_default,
-          maxLength: row.max_length || row.character_maximum_length,
-          precision: row.precision || row.numeric_precision,
-          scale: row.scale || row.numeric_scale,
+          default: toStringOrUndefined(row.default || row.column_default),
+          maxLength: toNumberOrUndefined(row.max_length || row.character_maximum_length),
+          precision: toNumberOrUndefined(row.precision || row.numeric_precision),
+          scale: toNumberOrUndefined(row.scale || row.numeric_scale),
         }))
       }
 
@@ -199,11 +209,14 @@ const useSchemaCacheStore = create<SchemaCacheState>((set, get) => ({
         const constraintNames = (constraintResponse.columns as Array<string | number>).map(String)
         const parsed = parseQueryResults(constraintNames, constraintResponse.rows)
         constraints = parsed
-          .map((row: any) => ({
-            column: row.column,
-            type: (row.type || '').toUpperCase().replace(' ', '_'),
-            foreignTable: row.foreign_table,
-            foreignColumn: row.foreign_column,
+          .map((row): ConstraintInfo => ({
+            column: String(row.column ?? ''),
+            // Narrowed to ConstraintInfo['type'] by inferRelationships/callers
+            // treating anything unrecognized the same as an absent constraint
+            // (matches the pre-existing untyped behavior).
+            type: String(row.type || '').toUpperCase().replace(' ', '_') as ConstraintInfo['type'],
+            foreignTable: toStringOrUndefined(row.foreign_table),
+            foreignColumn: toStringOrUndefined(row.foreign_column),
           }))
           .filter((c) => c.column) // Filter out nulls from LEFT JOINs
       }
@@ -274,9 +287,9 @@ const useSchemaCacheStore = create<SchemaCacheState>((set, get) => ({
         const row = response.rows[0]
         const profile: ColumnProfile = {
           column: columnName,
-          count: row[0] || 0,
-          nonNullCount: row[1] || 0,
-          distinctCount: row[2] || 0,
+          count: Number(row[0]) || 0,
+          nonNullCount: Number(row[1]) || 0,
+          distinctCount: Number(row[2]) || 0,
           minValue: row[3],
           maxValue: row[4],
           fetchedAt: Date.now(),
