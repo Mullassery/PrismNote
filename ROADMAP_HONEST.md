@@ -165,6 +165,99 @@ mostly about a version of the product that no longer matches reality).
     `ServerExplorer.tsx`×2, `DataPanel.tsx`) all suppress
     `react-hooks/exhaustive-deps` — worth auditing for real bugs, not
     assuming they're all safe.
+  - **Fixed (partial) 2026-09-27: `frontend/src`'s 348 real
+    `@typescript-eslint/no-explicit-any` errors reduced to 74 (348 → 74
+    errors in `frontend/src`; file-wide `npm run lint`: 435 → 161 errors,
+    21 warnings unchanged since these are unrelated `react-hooks/*`
+    warnings, not touched this pass).** Every `any` replaced with a real
+    type, or `unknown` + a type guard/coercion where the value is
+    genuinely dynamic (parsed JSON from an API response, a raw DB driver
+    row, a third-party callback payload) — no blanket `eslint-disable` and
+    no `as any`/`as unknown as X` casts used to silence the linter without
+    real typing. ~35 production files touched across `src/components`,
+    `src/lib`, `src/hooks`, `src/api`, `src/store`, `src/pages`, plus a new
+    `src/types/notebook.ts` (shared `Cell`/`Notebook`/`CellOutput`/
+    `MimeBundle` types + `cellSourceText`/`isDataFrame`/`isIpynbRaw`/
+    `mimeText` helpers) and `src/lib/errors.ts` (shared `apiErrorMessage()`
+    for the `catch (e: any) { e?.response?.data?.error }` pattern that was
+    duplicated across ~8 files) and `src/types/file-system-access.d.ts`
+    (ambient types for `window.showDirectoryPicker`/`showOpenFilePicker`/
+    `showSaveFilePicker`/`FileSystemHandle.move()`, which TS's bundled
+    `lib.dom.d.ts` still doesn't ship). `npm test` stayed at 114/114 and
+    `npm run build`/`tsc -b` stayed clean throughout, verified after every
+    batch of files, not just at the end.
+
+    Of the 74 remaining `frontend/src` errors:
+    - **13 in `src/lib/codeExecutor.ts`, deliberately skipped, not typed.**
+      This module is entirely dead code (zero imports anywhere in `src` or
+      `tests`) that also fakes real behavior: its `executeQuery()` always
+      returns hardcoded mock rows (`{ id: 1, name: 'Sample', value: 100 }`)
+      regardless of the query, and its Python/R/etc. executors hit
+      `http://localhost:8888` (raw Jupyter REST API) directly, bypassing
+      this app's actual backend entirely. Typing a fake stub would dress
+      it up as reviewed/real; per this org's no-fake-stubs convention, it
+      should be deleted, not typed — that's a call for a follow-up pass,
+      not something to fold into a typing-only pass.
+    - **7 intentionally left as `any`, each with an inline comment
+      explaining why, because typing them accurately would either force a
+      behavior change or require inventing a type that lies about what
+      exists:**
+      - `DataExplorer.tsx`'s and `DataPanel.tsx`'s `insertAsCell()` (2
+        `any` each) and `VizPane.tsx`'s `insertAltair()` (2 `any`) all
+        call `.createNotebook()`/`.addCell()`/`.updateCell()` on
+        `getNotebookState()`'s return value — but that function returns
+        the plain Redux state slice (data only), not the action
+        dispatchers `useNotebookStore()` provides. **This is a real,
+        previously-undiscovered bug**: none of those methods exist on the
+        real return type, so clicking "Insert as Cell" / "Copy as code" in
+        the Data Explorer, Data Querying panel, or Chart Builder throws
+        `TypeError: store.createNotebook is not a function` the first
+        time it's reached today (none of these three files even call
+        `useNotebookStore()`, which is also why it shows up as an unused
+        import in each). Not fixed here — the real fix (call
+        `useNotebookStore()` at each component's top level and use its
+        actions) is a behavior change, out of scope for a typing-only
+        pass. `ServerExplorer.tsx`'s equivalent `openNotebook()`, by
+        contrast, was already correct (dispatches the real `setNotebooks`
+        action) and is now fully typed with no `any`.
+      - `RelationshipMap.tsx`'s `applyLayout()` (1 `any`): the
+        `'force-directed'` layout option passes `name: 'cose'` (cytoscape
+        core's built-in layout) but options (`nodeSpacing`, `edgeLengthVal`,
+        `directed`) that only the `cose-bilkent` extension recognizes —
+        the same extension is registered via `cytoscape.use(coseLayout)`
+        above, but under the name `'cose-bilkent'`, not `'cose'`. So this
+        almost certainly runs plain `cose` with those three options
+        silently ignored, not the intended `cose-bilkent` layout. Typing
+        this against cytoscape's real `LayoutOptions` union would force
+        fixing that mismatch or produce a type error either way.
+    - **The remaining ~54 are pre-existing `react-hooks/*` (set-state-in-
+      effect, exhaustive-deps, immutability/temporal-dead-zone ordering,
+      rules-of-hooks, static-components, incompatible-library),
+      `no-unused-expressions`, and `no-useless-assignment` errors —
+      unrelated to `no-explicit-any`, predate this pass, and require
+      behavior/control-flow changes, not typing. Out of scope here.**
+
+    Also found and fixed as trivial, verified-behavior-preserving cleanup
+    while typing (not the main goal, but cheap once a file was already
+    open): dead `Record<string, any>`/`any[]` fields on otherwise-unused-
+    but-real components (`api/client.ts`, `lib/mcpClient.ts`,
+    `components/DuckDBExplorer.tsx` — all confirmed unreferenced elsewhere
+    in the app, unlike `codeExecutor.ts` these don't fake data so were
+    typed rather than skipped); ~25 dead imports/unused destructures
+    across small components; 4 `no-useless-escape` regex fixes in
+    `lib/codeTemplates.ts` and 3 more in `hooks/useAIContext.ts` (verified
+    byte-identical regex behavior before/after); a real latent crash in
+    `components/FileExplorer.tsx`'s `openFile()` (called `.getFile()`
+    without checking the entry was a file, not a directory, before typing
+    made the union visible) and two silently-no-op cytoscape style
+    properties (`text-overflow`, `box-shadow` — not real cytoscape style
+    keys) in `RelationshipMap.tsx`; a real type-consistency gap where
+    `types/notebook.ts` had its own narrower `CellLanguage` (4 values)
+    shadowing `lib/languages.ts`'s broader one (14 values) that
+    `Cell.tsx`'s language picker already used at runtime — unified to the
+    one real definition. See `CHANGELOG.md` under `[Unreleased]` and the
+    commit history for the full file-by-file breakdown (11 commits,
+    `ef12268`..`fcc1049`).
   - `npm run test:e2e` (`--project=chromium` only, single browser): **28
     passed, 57 failed** out of 85 tests (67% failure rate), run took 39
     minutes. Failures are concentrated in
@@ -185,7 +278,12 @@ mostly about a version of the product that no longer matches reality).
     through a doc-standardization pass. Recommendation: fix incrementally
     (start with `frontend/src`'s 348 real lint errors, since those are
     production code, not test scaffolding) and only then remove the
-    swallow.
+    swallow. **Update 2026-09-27: `frontend/src`'s lint errors are down to
+    74 (see below) — still not zero, so the swallow should stay in place
+    until the remaining `codeExecutor.ts` dead-code call, the 7 documented
+    `insertAsCell`/layout bugs, and the pre-existing `react-hooks/*`
+    errors are resolved, then separately re-evaluated alongside the 57
+    failing E2E tests.**
 - **Fixed 2026-09-21: `.pre-commit-config.yaml` bandit hook referenced a
   nonexistent `.bandit` config file.** The `bandit` hook had
   `args: ["-c", ".bandit"]` pointing at a file that doesn't exist anywhere

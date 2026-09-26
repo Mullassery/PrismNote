@@ -13,6 +13,29 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+### Changed
+- **Frontend lint cleanup: `frontend/src`'s `@typescript-eslint/no-explicit-any`
+  errors reduced from 348 to 74** (file-wide `npm run lint`: 435 → 161
+  errors; 21 warnings unchanged, unrelated `react-hooks/*` rules not
+  touched this pass). Every `any` replaced with a real type or `unknown` +
+  a type guard — no blanket `eslint-disable`, no `as any`/`as unknown as X`
+  casts used to silence the linter. Roughly 35 production files touched;
+  see `ROADMAP_HONEST.md` section 3 for the full breakdown, what's
+  intentionally left (`lib/codeExecutor.ts`'s dead/fake-data module,
+  skipped entirely; 7 documented `any`s marking real bugs found but not
+  fixed — a `getNotebookState()`-returns-state-not-actions crash in three
+  components' "insert as cell" actions, and a cytoscape layout-name
+  mismatch), and the small number of real bugs found and fixed as part of
+  typing (a latent crash in `FileExplorer.tsx`'s file-vs-directory
+  handling, two no-op cytoscape style properties, a `CellLanguage` type
+  duplicate that didn't cover cells' real language set). `npm test`
+  stayed at 114/114 and `npm run build`/`tsc -b` stayed clean throughout.
+  Adds `frontend/src/types/notebook.ts` (shared Cell/Notebook/CellOutput
+  types + helpers), `frontend/src/lib/errors.ts` (shared API error-message
+  extraction), and `frontend/src/types/file-system-access.d.ts` (ambient
+  types for the File System Access API, which TypeScript's bundled DOM
+  types still don't cover).
+
 ### Fixed
 - Bumped `sqlx` 0.7 → 0.8.6 to resolve a `cargo build`
   future-incompatibility warning (`sqlx-postgres` relied on never-type
