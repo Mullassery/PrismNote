@@ -1,4 +1,6 @@
 import axios from 'axios'
+import type { Monaco } from '@monaco-editor/react'
+import type { editor as MonacoEditorNS } from 'monaco-editor'
 
 /** Pretty-print Python via the backend (Black → autopep8). Returns the original
  *  code on any failure so formatting never loses the user's work. */
@@ -12,11 +14,11 @@ let registered = false
 
 /** Register Python formatting providers once. Black formats whole files, so the
  *  range provider (used by format-on-paste) reformats the entire model too. */
-export function registerPythonFormatter(monaco: any) {
+export function registerPythonFormatter(monaco: Monaco) {
   if (registered) return
   registered = true
 
-  const formatWhole = async (model: any) => {
+  const formatWhole = async (model: MonacoEditorNS.ITextModel) => {
     const src = model.getValue()
     const formatted = await formatCode(src)
     if (formatted === src) return []
@@ -24,9 +26,9 @@ export function registerPythonFormatter(monaco: any) {
   }
 
   monaco.languages.registerDocumentFormattingEditProvider('python', {
-    provideDocumentFormattingEdits: (model: any) => formatWhole(model),
+    provideDocumentFormattingEdits: (model: MonacoEditorNS.ITextModel) => formatWhole(model),
   })
   monaco.languages.registerDocumentRangeFormattingEditProvider('python', {
-    provideDocumentRangeFormattingEdits: (model: any) => formatWhole(model),
+    provideDocumentRangeFormattingEdits: (model: MonacoEditorNS.ITextModel) => formatWhole(model),
   })
 }

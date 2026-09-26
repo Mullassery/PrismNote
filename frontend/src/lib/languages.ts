@@ -319,7 +319,7 @@ export function getInteropLanguages(language: CellLanguage): CellLanguage[] {
  */
 export function getLanguagesByCategory(category: LanguageConfig['category']): CellLanguage[] {
   return Object.entries(LANGUAGES)
-    .filter(([_, config]) => config.category === category)
+    .filter(([, config]) => config.category === category)
     .map(([key]) => key as CellLanguage)
 }
 
@@ -328,7 +328,7 @@ export function getLanguagesByCategory(category: LanguageConfig['category']): Ce
  */
 export function getExecutableLanguages(): CellLanguage[] {
   return Object.entries(LANGUAGES)
-    .filter(([_, config]) => config.features.execution)
+    .filter(([, config]) => config.features.execution)
     .map(([key]) => key as CellLanguage)
 }
 
@@ -337,7 +337,7 @@ export function getExecutableLanguages(): CellLanguage[] {
  */
 export function getVisualizableLanguages(): CellLanguage[] {
   return Object.entries(LANGUAGES)
-    .filter(([_, config]) => config.features.visualization)
+    .filter(([, config]) => config.features.visualization)
     .map(([key]) => key as CellLanguage)
 }
 
@@ -405,7 +405,7 @@ export function getLanguagesSorted(): { category: string; languages: Array<[Cell
   return categories.map(category => ({
     category: category.charAt(0).toUpperCase() + category.slice(1),
     languages: Object.entries(LANGUAGES)
-      .filter(([_, config]) => config.category === category)
+      .filter(([, config]) => config.category === category)
       .map(([key, config]) => [key as CellLanguage, config]),
   }))
 }

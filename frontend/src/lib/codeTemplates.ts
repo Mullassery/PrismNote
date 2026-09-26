@@ -258,7 +258,7 @@ test_that("addition works", {
 Return a personalized greeting.
 """
 function greet(name::String)::String
-    return "Hello, \$name!"
+    return "Hello, $name!"
 end
 
 result = greet("World")
@@ -281,7 +281,7 @@ y = sin.(x)  # Vectorized sin
 mean_y = mean(y)
 std_y = std(y)
 
-println("Mean: \$mean_y, Std: \$std_y")`,
+println("Mean: $mean_y, Std: $std_y")`,
       autoFormat: true,
       autoDocument: true,
       autoComplete: true,
@@ -296,7 +296,7 @@ catch e
     if e isa DivideError
         println("Division by zero!")
     else
-        println("Other error: \$e")
+        println("Other error: $e")
     end
 finally
     println("Cleanup done")

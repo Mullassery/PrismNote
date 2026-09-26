@@ -1,13 +1,45 @@
 import { useState, useEffect, useRef } from 'react'
 import { LogIn, Lock, Mail, Globe } from 'lucide-react'
 
+/** Response passed to the Google Identity Services `callback` — see
+ * https://developers.google.com/identity/gsi/web/reference/js-reference#CredentialResponse */
+interface GoogleCredentialResponse {
+  credential: string
+  select_by?: string
+}
+
+/** Config accepted by `google.accounts.id.initialize()` — only the fields
+ * this file actually passes (Google's real type has many more optional
+ * fields; see https://developers.google.com/identity/gsi/web/reference/js-reference#IdConfiguration). */
+interface GoogleIdConfiguration {
+  client_id: string
+  callback: (response: GoogleCredentialResponse) => void
+}
+
+/** Options accepted by `google.accounts.id.renderButton()` — see
+ * https://developers.google.com/identity/gsi/web/reference/js-reference#GsiButtonConfiguration */
+interface GoogleButtonOptions {
+  // Typed as a plain string, not the documented 'outline'|'filled_blue'|
+  // 'filled_black' union: this file actually passes theme: 'dark' below,
+  // which isn't one of Google's documented values (found while typing —
+  // not fixed, since swapping it changes the rendered button's look; left
+  // as-is and noted in ROADMAP_HONEST.md).
+  theme?: string
+  size?: 'large' | 'medium' | 'small'
+  width?: string | number
+  type?: 'standard' | 'icon'
+  text?: string
+  shape?: string
+  logo_alignment?: string
+}
+
 declare global {
   interface Window {
     google?: {
       accounts: {
         id: {
-          initialize: (config: any) => void
-          renderButton: (element: Element, options: any) => void
+          initialize: (config: GoogleIdConfiguration) => void
+          renderButton: (element: Element, options: GoogleButtonOptions) => void
         }
       }
     }
@@ -26,7 +58,7 @@ export default function Login() {
     window.location.href = '/'
   }
 
-  const handleGoogleResponse = async (response: any) => {
+  const handleGoogleResponse = async (response: GoogleCredentialResponse) => {
     try {
       setError(null)
       setIsLoading(true)
@@ -84,7 +116,7 @@ export default function Login() {
       if (window.google) {
         window.google.accounts.id.initialize({
           client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
-          callback: (response: any) => handleGoogleResponseRef.current(response),
+          callback: (response: GoogleCredentialResponse) => handleGoogleResponseRef.current(response),
         })
       }
     }
