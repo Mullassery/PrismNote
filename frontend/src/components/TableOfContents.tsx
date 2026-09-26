@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { List } from 'lucide-react'
+import { cellSourceText, type Cell } from '../types/notebook'
 
 interface TOCItem {
   level: number        // 1-6 (# to ######)
@@ -8,13 +9,13 @@ interface TOCItem {
   id: string
 }
 
-function parseTOC(cells: any[]): TOCItem[] {
+function parseTOC(cells: Cell[]): TOCItem[] {
   const toc: TOCItem[] = []
 
   cells.forEach((cell, idx) => {
     if (cell.cell_type !== 'markdown') return
 
-    const source = Array.isArray(cell.source) ? cell.source.join('') : cell.source
+    const source = cellSourceText(cell.source)
     const lines = source.split('\n')
 
     lines.forEach((line: string) => {
@@ -36,7 +37,7 @@ function parseTOC(cells: any[]): TOCItem[] {
 }
 
 interface TableOfContentsProps {
-  cells?: any[]
+  cells?: Cell[]
 }
 
 export default function TableOfContents({ cells = [] }: TableOfContentsProps) {

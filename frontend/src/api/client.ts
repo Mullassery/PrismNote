@@ -2,6 +2,8 @@
  * API client with automatic JWT token injection
  */
 
+import type { Notebook } from '../types/notebook'
+
 export interface FetchOptions extends RequestInit {
   skipAuth?: boolean
 }
@@ -118,7 +120,7 @@ class APIClient {
     })
   }
 
-  async updateNotebook(id: string, notebook: any) {
+  async updateNotebook(id: string, notebook: Notebook) {
     return this.request(`/notebooks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(notebook),

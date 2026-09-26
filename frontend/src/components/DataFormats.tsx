@@ -20,7 +20,7 @@ interface IcebergTable {
   fileCount: number
   sizeBytes: number
   createdAt: string
-  snapshots: Array<any>
+  snapshots: Array<unknown>
 }
 
 export default function DataFormats() {

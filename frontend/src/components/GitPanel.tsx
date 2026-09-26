@@ -26,11 +26,11 @@ export default function GitPanel({ onClose, initialFocus }: { onClose: () => voi
   const run = async (fn: () => Promise<{ ok?: boolean; output?: string } | GitStatus>) => {
     setBusy(true)
     try {
-      const r: any = await fn()
-      if (r.output !== undefined) setLog(r.output || (r.ok ? '✓ done' : 'failed'))
+      const r = await fn()
+      if ('output' in r && r.output !== undefined) setLog(r.output || (r.ok ? '✓ done' : 'failed'))
       if (dir) setStatus(await gitStatus(dir))
-    } catch (e: any) {
-      setLog(e?.message || 'error')
+    } catch (e: unknown) {
+      setLog(e instanceof Error ? e.message : 'error')
     } finally {
       setBusy(false)
     }

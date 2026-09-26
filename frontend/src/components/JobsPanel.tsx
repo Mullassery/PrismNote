@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Play, Trash2, X, Plus, Clock, CheckCircle2, XCircle, Loader2, Briefcase, Workflow, Copy } from 'lucide-react'
 import { listJobs, createJob, runJob, deleteJob, airflowDag, type JobSummary, type Schedule } from '../api/jobs'
 import { useNotebookStore } from '../hooks/useNotebookRedux'
+import { cellSourceText, type Cell } from '../types/notebook'
 
 // Airflow-like Jobs view: save the current notebook as a runnable job, run it on
 // demand or on a schedule, and see status/history.
@@ -34,8 +35,8 @@ const [jobs, setJobs] = useState<JobSummary[]>([])
 
   const codeCells = () =>
     (currentNotebook?.cells ?? [])
-      .filter((c: any) => c.cell_type === 'code')
-      .map((c: any) => (Array.isArray(c.source) ? c.source.join('') : c.source))
+      .filter((c: Cell) => c.cell_type === 'code')
+      .map((c: Cell) => cellSourceText(c.source))
 
   const submitCreate = async () => {
     const cells = codeCells()

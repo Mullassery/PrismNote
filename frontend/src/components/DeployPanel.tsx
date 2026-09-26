@@ -2,20 +2,32 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Rocket, X, Copy, Download, Loader2 } from 'lucide-react'
 
+interface DeployCommands {
+  docker?: string
+  kubernetes?: string
+  fly?: string
+}
+
+/** `/api/deploy/artifacts` returns one string field per generated file
+ * (keyed by filename, e.g. "Dockerfile") plus a `commands` object. */
+type DeployArtifacts = Record<string, string | DeployCommands | undefined>
+
 // Cloud deployment made easy: shows ready-to-use Dockerfile, docker-compose,
 // Kubernetes manifest, and fly.toml with copy/download + the one-line command.
 export default function DeployPanel({ onClose }: { onClose: () => void }) {
-  const [artifacts, setArtifacts] = useState<Record<string, any> | null>(null)
+  const [artifacts, setArtifacts] = useState<DeployArtifacts | null>(null)
   const [tab, setTab] = useState('Dockerfile')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    axios.get('/api/deploy/artifacts').then((r) => setArtifacts(r.data)).finally(() => setLoading(false))
+    axios.get<DeployArtifacts>('/api/deploy/artifacts').then((r) => setArtifacts(r.data)).finally(() => setLoading(false))
   }, [])
 
   const files = artifacts ? Object.keys(artifacts).filter((k) => k !== 'commands') : []
-  const content = artifacts?.[tab] ?? ''
-  const commands: Record<string, string> = artifacts?.commands ?? {}
+  const rawContent = artifacts?.[tab]
+  const content = typeof rawContent === 'string' ? rawContent : ''
+  const rawCommands = artifacts?.commands
+  const commands: DeployCommands = typeof rawCommands === 'object' && rawCommands ? rawCommands : {}
   const cmdFor =
     tab === 'Dockerfile' || tab === 'docker-compose.yml' ? commands.docker
     : tab === 'k8s.yaml' ? commands.kubernetes
