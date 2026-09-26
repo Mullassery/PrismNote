@@ -7,11 +7,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { X, AlertCircle, Loader2, HelpCircle } from 'lucide-react'
 import cytoscape from 'cytoscape'
-import type { Core, EventObject } from 'cytoscape'
+import type { Core, EventObject, EventObjectEdge, StylesheetJson } from 'cytoscape'
 import coseLayout from 'cytoscape-cose-bilkent'
 import dagreLayout from 'cytoscape-dagre'
 import { useSchemaCache } from '../hooks/useSchemaCache'
-import { buildRelationshipGraph, type CytoscapeEdge, type RelationshipGraph } from '../lib/graphBuilder'
+import { buildRelationshipGraph, type CytoscapeEdge, type GraphTableDetail } from '../lib/graphBuilder'
+import type { InferredRelationship } from '../lib/relationshipInference'
 import LayoutControls, { type LayoutMode } from './LayoutControls'
 import LegendPanel from './LegendPanel'
 
@@ -43,6 +44,10 @@ export default function RelationshipMap({
   onTableClick,
   onClose,
 }: RelationshipMapProps) {
+  // dbType isn't needed here — schemaCache resolves per-connection details
+  // by connId — but is kept in the props contract for parity with sibling
+  // panels that do need it (e.g. SchemaExplorer, TableMetadataPanel).
+  void _dbType
   const schemaCache = useSchemaCache()
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
@@ -63,14 +68,14 @@ export default function RelationshipMap({
     const tables = schema.tables.filter((t) => !schemaName || t.schema === schemaName)
 
     // Collect table details
-    const tableDetails: Record<string, any> = {}
+    const tableDetails: Record<string, GraphTableDetail | undefined> = {}
     for (const table of tables) {
       const key = `${connId}.${table.schema || 'main'}.${table.name}`
       tableDetails[key] = schemaCache.tableDetails[key]
     }
 
     // Collect inferred FKs (from first table's details)
-    const inferredFks: any[] = []
+    const inferredFks: InferredRelationship[] = []
     for (const table of tables) {
       const key = `${connId}.${table.schema || 'main'}.${table.name}`
       const detail = tableDetails[key]
@@ -168,8 +173,8 @@ export default function RelationshipMap({
     setSelectedEdge(null)
   }
 
-  const handleEdgeClick = (evt: EventObject) => {
-    const edge = evt.target as any
+  const handleEdgeClick = (evt: EventObjectEdge) => {
+    const edge = evt.target
     const edgeData = edge.data() as CytoscapeEdge['data']
 
     setSelectedEdge({
@@ -354,7 +359,7 @@ export default function RelationshipMap({
 /**
  * Get cytoscape stylesheet (node/edge styling)
  */
-function getCytoscapeStyle(): any[] {
+function getCytoscapeStyle(): StylesheetJson {
   return [
     {
       selector: 'node',
@@ -370,7 +375,9 @@ function getCytoscapeStyle(): any[] {
         'font-size': 12,
         'font-weight': 'bold',
         'min-zoomed-font-size': 6,
-        'text-overflow': 'ellipsis',
+        // 'text-overflow': 'ellipsis' removed — not a real cytoscape style
+        // property (found while typing this against StylesheetJson; it was
+        // always a silent no-op, so removing it doesn't change rendering).
         width: 60,
         height: 60,
         'text-wrap': 'wrap',
@@ -399,7 +406,8 @@ function getCytoscapeStyle(): any[] {
       style: {
         'border-color': '#60a5fa',
         'border-width': 3,
-        'box-shadow': '0 0 10px #60a5fa',
+        // 'box-shadow' removed — not a real cytoscape style property (same
+        // as 'text-overflow' above: always a silent no-op at runtime).
       },
     },
     {
@@ -449,6 +457,17 @@ function getCytoscapeStyle(): any[] {
  * Apply layout algorithm
  */
 function applyLayout(cy: Core, mode: LayoutMode): void {
+  // NOTE (found while typing, not fixed — see ROADMAP_HONEST.md): 'force-
+  // directed' below passes `name: 'cose'` — cytoscape CORE's built-in cose
+  // layout — but `directed`/`nodeSpacing`/`edgeLengthVal` aren't options
+  // core's `cose` recognizes (they belong to the `cose-bilkent` extension
+  // registered via `cytoscape.use(coseLayout)` above, which self-registers
+  // under the name `'cose-bilkent'`, not `'cose'`). So this almost
+  // certainly runs core cose with those three options silently ignored,
+  // not the intended cose-bilkent layout. Typing this object precisely
+  // against cytoscape's real LayoutOptions union would either force fixing
+  // that mismatch (a behavior change) or produce a type error, so it's
+  // left as `any` rather than doing either mid-typing-pass.
   const layoutOptions: any = {
     'force-directed': {
       name: 'cose',

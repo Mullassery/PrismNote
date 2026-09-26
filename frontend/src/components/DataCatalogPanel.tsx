@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, Tag, AlertCircle, Database, Lock, Globe, Eye, EyeOff, Filter, Plus } from 'lucide-react'
+import { Search, Tag, AlertCircle, Database, Lock, Eye } from 'lucide-react'
 
 interface CatalogEntry {
   catalog_id: string
