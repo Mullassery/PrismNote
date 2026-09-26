@@ -25,7 +25,7 @@ export default function LanguageSelector({
   const languagesByCategory = useMemo(() => {
     let categories = getLanguagesSorted().filter(({ languages }) =>
       onlyExecutable
-        ? languages.some(([_, config]) => config.features.execution)
+        ? languages.some(([, config]) => config.features.execution)
         : languages.length > 0
     )
 
@@ -36,7 +36,7 @@ export default function LanguageSelector({
         .map(({ category, languages }) => ({
           category,
           languages: languages.filter(
-            ([_, config]) =>
+            ([, config]) =>
               config.name.toLowerCase().includes(query) ||
               config.description?.toLowerCase().includes(query) ||
               config.runtimes.some(r => r.toLowerCase().includes(query))

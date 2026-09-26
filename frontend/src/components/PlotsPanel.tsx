@@ -1,4 +1,4 @@
-import { X, Minus, Plus } from 'lucide-react'
+import { X, Minus } from 'lucide-react'
 import VizPane from './VizPane'
 import { useFontSize } from '../hooks/useFontSize'
 

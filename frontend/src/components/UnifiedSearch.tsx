@@ -67,7 +67,7 @@ export default function UnifiedSearch({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({
           query: searchQuery,
           filters: Object.entries(filters)
-            .filter(([_, enabled]) => enabled)
+            .filter(([, enabled]) => enabled)
             .map(([category]) => category),
         }),
       })

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Share2, Download, Settings, Loader, AlertCircle } from 'lucide-react'
+import { Plus, Share2, Download, Loader, AlertCircle } from 'lucide-react'
 
 interface RillProject {
   project_id: string

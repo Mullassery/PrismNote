@@ -3,7 +3,7 @@
  * Layout selection, zoom controls, export
  */
 
-import { ZoomIn, ZoomOut, Maximize2, Download, Minimize2 } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2, Download } from 'lucide-react'
 
 export type LayoutMode = 'force-directed' | 'hierarchical' | 'circular' | 'grid'
 

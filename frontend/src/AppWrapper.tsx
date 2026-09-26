@@ -1,5 +1,4 @@
 import { useAuth } from './hooks/useAuth'
-import Login from './pages/Login'
 import App from './App'
 
 /**
@@ -8,7 +7,7 @@ import App from './App'
  * Unauthenticated users see homepage + can click to login
  */
 export default function AppWrapper() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isLoading } = useAuth()
 
   if (isLoading) {
     return (

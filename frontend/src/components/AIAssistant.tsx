@@ -44,6 +44,9 @@ export default function AIAssistant({
   const [isLoading, setIsLoading] = useState(false)
   const [provider, setProvider] = useState<AIProvider>('claude')
   const [selectedAction, setSelectedAction] = useState<AIAction>('explain')
+  // Tracked (handleAction sets it) but not yet surfaced in the UI (e.g. to
+  // highlight the active action button) — kept for that future use.
+  void selectedAction
   const [showSettings, setShowSettings] = useState(false)
   const [copied, setCopied] = useState(false)
 

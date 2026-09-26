@@ -4,7 +4,7 @@
  */
 
 import { useRef, useEffect, useState } from 'react'
-import { Plus, Trash2, Split } from 'lucide-react'
+import { Trash2, Split } from 'lucide-react'
 
 interface TerminalPaneProps {
   id: string

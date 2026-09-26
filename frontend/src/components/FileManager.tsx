@@ -26,6 +26,10 @@ export default function FileManager({ notebookId }: { notebookId: string }) {
   const [showMountForm, setShowMountForm] = useState(false)
   void setCloudMounts // Mark as used
   void setIsUploading // Mark as used
+  // Tracked (handleFileSelect toggles it) but not yet surfaced in the UI
+  // (e.g. a spinner/disabled state on the upload button) — kept for that
+  // future use.
+  void isUploading
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {

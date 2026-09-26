@@ -655,7 +655,7 @@ function App() {
             connId={selectedTableMeta.connId}
             schemaName={selectedTableMeta.schemaName}
             dbType={selectedTableMeta.dbType}
-            onTableClick={(_tableName) => {
+            onTableClick={() => {
               setTableMetaOpen(true)
             }}
             onClose={() => setRelationshipMapOpen(false)}
