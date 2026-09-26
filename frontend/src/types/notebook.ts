@@ -17,6 +17,16 @@ export type MimeValue = string | string[] | Record<string, unknown> | number | b
 
 export type MimeBundle = Record<string, MimeValue>
 
+/** MIME-bundle text values arrive as either a single string or an array of
+ * chunks to be joined (the streamed-text convention nbformat uses). Shared
+ * across the few components that read raw MIME bundle text values directly
+ * (Output.tsx/usePlots.ts define their own copies predating this export). */
+export function mimeText(v: MimeValue | undefined): string {
+  if (Array.isArray(v)) return v.join('')
+  if (typeof v === 'string') return v
+  return v == null ? '' : String(v)
+}
+
 export interface CellOutput {
   output_type: 'stream' | 'execute_result' | 'display_data' | 'error' | string
   // stream

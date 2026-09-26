@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { TerminalSquare, ListChecks, ChevronDown, X, Minus, SquareTerminal, Plus, Variable, RefreshCw, Table2, List, GitBranch, Sparkles } from 'lucide-react'
+import {
+  TerminalSquare, ListChecks, ChevronDown, X, Minus, Plus, Variable, RefreshCw, Table2, List, GitBranch, Sparkles,
+  type LucideIcon,
+} from 'lucide-react'
 import { useNotebookStore } from '../hooks/useNotebookRedux'
 import { useFontSize } from '../hooks/useFontSize'
 import TableOfContents from './TableOfContents'
@@ -7,6 +10,8 @@ import LineageViewer from './LineageViewer'
 import AgentPanel from './AgentPanel'
 import TerminalSplitContainer, { type TerminalConfig } from './TerminalSplitContainer'
 import type { ExplorerTarget } from './DataExplorer'
+import { mimeText, type CellOutput } from '../types/notebook'
+import type { KernelVariable } from '../api/kernel'
 
 export type BottomPanelTab = 'terminal' | 'output' | 'lineage' | 'variables' | 'contents' | 'ai'
 
@@ -104,7 +109,7 @@ export default function BottomPanel({
   }, [terminalConfig, onTerminalHistoryChange])
 
   // ---- variable explorer (introspects the live kernel namespace) ----
-  const [variables, setVariables] = useState<any[]>([])
+  const [variables, setVariables] = useState<KernelVariable[]>([])
   const [varsLoading, setVarsLoading] = useState(false)
   const loadVariables = async () => {
     setVarsLoading(true)
@@ -127,17 +132,17 @@ export default function BottomPanel({
     if (tab === 'variables' && !collapsed) loadVariables()
     // refresh when the active notebook's outputs change while the tab is open
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, collapsed, currentNotebook?.cells.map((c: any) => c.execution_count).join(',')])
+  }, [tab, collapsed, currentNotebook?.cells.map((c) => c.execution_count).join(',')])
 
   // ---- derive results & plots from notebook cell outputs ----
   const outputs = (currentNotebook?.cells ?? []).flatMap((cell, i) =>
-    (cell.outputs ?? []).map((o: any) => ({ cell: i, o }))
+    (cell.outputs ?? []).map((o: CellOutput) => ({ cell: i, o }))
   )
   const textOutputs = outputs.filter(
     ({ o }) => o.output_type === 'stream' || o.output_type === 'execute_result' || o.output_type === 'error'
   )
 
-  const tabs: { id: BottomPanelTab; label: string; icon: any; badge?: number }[] = [
+  const tabs: { id: BottomPanelTab; label: string; icon: LucideIcon; badge?: number }[] = [
     { id: 'output', label: 'Output', icon: ListChecks, badge: textOutputs.length || undefined },
     { id: 'variables', label: 'Variables', icon: Variable, badge: variables.length || undefined },
     { id: 'lineage', label: 'Lineage', icon: GitBranch },
@@ -212,7 +217,7 @@ export default function BottomPanel({
                   <div className="text-[10px] uppercase pn-faint">Cell [{cell + 1}]</div>
                   <pre className={`whitespace-pre-wrap ${o.output_type === 'error' ? 'text-red-400' : 'pn-text'}`}>
                     {(Array.isArray(o.text) ? o.text.join('') : o.text) ||
-                      o.data?.['text/plain']?.join?.('') ||
+                      mimeText(o.data?.['text/plain']) ||
                       JSON.stringify(o.data ?? o, null, 0)}
                   </pre>
                 </div>

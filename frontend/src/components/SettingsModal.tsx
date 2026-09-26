@@ -33,6 +33,20 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   )
 }
 
+type DefaultCellLanguage = 'python' | 'sql' | 'javascript'
+const DEFAULT_CELL_LANGUAGES: DefaultCellLanguage[] = ['python', 'sql', 'javascript']
+/** Validate a value read back from localStorage (could be stale/corrupted/
+ * from an older app version) against the values this setting actually
+ * supports, falling back to 'python' rather than trusting it blindly. */
+function toDefaultCellLanguage(value: string | null): DefaultCellLanguage {
+  return value != null && (DEFAULT_CELL_LANGUAGES as string[]).includes(value) ? (value as DefaultCellLanguage) : 'python'
+}
+
+type SearchDepth = 'basic' | 'advanced'
+function toSearchDepth(value: string | null): SearchDepth {
+  return value === 'advanced' ? 'advanced' : 'basic'
+}
+
 function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
   return (
     <button
@@ -70,8 +84,8 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
   const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'up' | 'down'>('checking')
 
   // Execution settings
-  const [defaultCellLanguage, setDefaultCellLanguage] = useState<'python' | 'sql' | 'javascript'>(() =>
-    (localStorage.getItem('pn-default-lang') as any) || 'python'
+  const [defaultCellLanguage, setDefaultCellLanguage] = useState<DefaultCellLanguage>(() =>
+    toDefaultCellLanguage(localStorage.getItem('pn-default-lang'))
   )
   const [queryTimeout, setQueryTimeout] = useState<number>(() =>
     parseInt(localStorage.getItem('pn-query-timeout') || '30', 10)
@@ -85,8 +99,8 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
   const [searchResultCount, setSearchResultCount] = useState<number>(() =>
     parseInt(localStorage.getItem('pn-search-results') || '5', 10)
   )
-  const [searchDepth, setSearchDepth] = useState<'basic' | 'advanced'>(() =>
-    (localStorage.getItem('pn-search-depth') as any) || 'basic'
+  const [searchDepth, setSearchDepth] = useState<SearchDepth>(() =>
+    toSearchDepth(localStorage.getItem('pn-search-depth'))
   )
 
   // Live-check the selected provider's connection when switching tabs / editing URL.
@@ -327,7 +341,7 @@ export default function SettingsModal({ onClose, theme, setTheme, panels, toggle
 
           <Section icon={<Columns3 size={13} />} title="Execution">
             <Row label="Default cell language" hint="Language for new cells">
-              <select value={defaultCellLanguage} onChange={(e) => { setDefaultCellLanguage(e.target.value as any); saveExecutionSettings() }}
+              <select value={defaultCellLanguage} onChange={(e) => { setDefaultCellLanguage(toDefaultCellLanguage(e.target.value)); saveExecutionSettings() }}
                 className="w-52 text-[12px] px-2 py-1 rounded-lg pn-solid-bg border pn-bd pn-text outline-none focus:border-blue-500/60">
                 <option value="python">Python</option>
                 <option value="sql">SQL</option>

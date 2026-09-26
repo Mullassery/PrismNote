@@ -58,7 +58,7 @@ export default function SqlResultsView({ result, onExport }: SqlResultsViewProps
 
   const handleExportJson = () => {
     const data = result.rows.map((row) => {
-      const obj: Record<string, any> = {}
+      const obj: Record<string, unknown> = {}
       result.columns.forEach((col, i) => {
         obj[col] = row[i]
       })
@@ -190,7 +190,7 @@ export default function SqlResultsView({ result, onExport }: SqlResultsViewProps
 /**
  * Format cell value for display
  */
-function formatCellValue(val: any): string {
+function formatCellValue(val: unknown): string {
   if (val === null || val === undefined) return '(null)'
   if (typeof val === 'boolean') return val ? 'true' : 'false'
   if (typeof val === 'object') return JSON.stringify(val)
@@ -200,7 +200,7 @@ function formatCellValue(val: any): string {
 /**
  * Render cell value with syntax highlighting
  */
-function renderCellValue(val: any) {
+function renderCellValue(val: unknown) {
   if (val === null || val === undefined) {
     return <span className="pn-muted italic">(null)</span>
   }
