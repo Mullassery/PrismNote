@@ -31,15 +31,15 @@ export const useAIContext = create<AIContextState>((set) => ({
 export function sanitizeForAI(text: string): string {
   return text
     // Hide API keys: "key=...", "KEY: ...", "XXXXXXXXXXXXXXXX" patterns
-    .replace(/(['"]?(?:api[_-]?)?key['"]?\s*[:=]\s*)([a-zA-Z0-9_\-\.]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
+    .replace(/(['"]?(?:api[_-]?)?key['"]?\s*[:=]\s*)([a-zA-Z0-9_\-.]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
     // Hide common credential patterns: passwords, tokens, secrets
     .replace(/(['"]?(?:password|passwd|pwd|token|secret|api[_-]?secret)['"]?\s*[:=]\s*)([^\s,;}\]]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
     // Hide OAuth/Bearer tokens: "Bearer XXXXX"
-    .replace(/bearer\s+[a-zA-Z0-9_\-\.]+/gi, 'bearer [REDACTED]')
+    .replace(/bearer\s+[a-zA-Z0-9_\-.]+/gi, 'bearer [REDACTED]')
     // Hide connection strings with passwords: postgresql://user:pass@host
     .replace(/([a-z]+:\/\/[^:]+:)[^@]+(@)/gi, '$1[REDACTED]$2')
     // Hide email+password combos
-    .replace(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+)[\"'\s]*[:=,]\s*[^\s,;}\]"']+/g, '$1:[REDACTED]')
+    .replace(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+)["'\s]*[:=,]\s*[^\s,;}\]"']+/g, '$1:[REDACTED]')
 }
 
 /** Render the environment block injected into the AI agent's system prompt. */

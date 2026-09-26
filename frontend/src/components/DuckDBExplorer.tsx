@@ -11,7 +11,7 @@ interface Table {
 
 interface QueryResult {
   columns: string[]
-  rows: Array<any[]>
+  rows: Array<unknown[]>
   rowCount: number
   executionTimeMs: number
 }
@@ -23,7 +23,11 @@ export default function DuckDBExplorer() {
   const [isExecuting, setIsExecuting] = useState(false)
   const [selectedTable, setSelectedTable] = useState<string | null>(null)
   const [extensions, setExtensions] = useState<string[]>([])
-  void setSelectedTable // Mark as used
+  // Tracked (queryTable sets it) but not yet surfaced in the UI (e.g. to
+  // highlight the active table in the list) — kept for that future use
+  // rather than removed.
+  void selectedTable
+  void setSelectedTable
 
   useEffect(() => {
     loadTables()

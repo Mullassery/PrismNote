@@ -4,10 +4,12 @@ import {
   Folder, FileCode, FileText, ChevronUp, RefreshCw, Loader2,
   FilePlus, FolderPlus, Upload, Eye, EyeOff, Pencil, Trash2, Scissors, Copy, ClipboardPaste,
 } from 'lucide-react'
-import { useNotebookStore, getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
+import { getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
 import { setNotebooks } from '../store/notebookSlice'
 import { useExplorerRequest, isDataFile } from '../hooks/useExplorerRequest'
 import { useAIContext } from '../hooks/useAIContext'
+import { apiErrorMessage } from '../lib/errors'
+import { isIpynbRaw, type Cell, type Notebook } from '../types/notebook'
 
 interface Entry { name: string; path: string; is_dir: boolean }
 interface Listing { path: string; parent: string | null; entries: Entry[] }
@@ -54,8 +56,8 @@ export default function ServerExplorer({ initialPath }: { initialPath?: string }
         }
         setGit(map)
       } catch { setGit({}) }
-    } catch (e: any) {
-      setError(e?.response?.data?.error || e?.message || 'Could not list folder')
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, 'Could not list folder'))
     } finally { setLoading(false) }
   }
 
@@ -73,19 +75,20 @@ export default function ServerExplorer({ initialPath }: { initialPath?: string }
   const openNotebook = async (entry: Entry) => {
     try {
       const res = await axios.get<{ content: string }>('/api/fs/read', { params: { path: entry.path } })
-      const data = JSON.parse(res.data.content)
-      const cells = (data.cells ?? []).map((c: any, i: number) => ({
+      const data: unknown = JSON.parse(res.data.content)
+      if (!isIpynbRaw(data)) throw new Error('Not a valid notebook')
+      const cells: Cell[] = (data.cells ?? []).map((c, i) => ({
         id: `${entry.name}-${i}`, cell_type: c.cell_type ?? 'code', source: c.source ?? [],
         outputs: c.outputs ?? [], execution_count: c.execution_count ?? null, metadata: c.metadata ?? {},
       }))
-      const nb = { id: `local-${entry.path}`, name: entry.name.replace(/\.ipynb$/, ''), cells, metadata: data.metadata ?? {} }
+      const nb: Notebook = { id: `local-${entry.path}`, name: entry.name.replace(/\.ipynb$/, ''), cells, metadata: data.metadata ?? {} }
       const dispatch = getReduxDispatch()
       const state = getNotebookState()
       dispatch(setNotebooks({
-        notebooks: [...state.notebooks.filter((n: any) => n.id !== nb.id), nb],
+        notebooks: [...state.notebooks.filter((n) => n.id !== nb.id), nb],
         currentNotebookId: nb.id, currentNotebook: nb,
       }))
-    } catch (e: any) { setError(e?.response?.data?.error || 'Could not open notebook') }
+    } catch (e: unknown) { setError(apiErrorMessage(e, 'Could not open notebook')) }
   }
 
   const shown = (listing?.entries ?? []).filter((e) => !filter || e.name.toLowerCase().includes(filter.toLowerCase()))

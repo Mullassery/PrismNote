@@ -93,6 +93,7 @@ export interface IpynbCellRaw {
   cell_type?: 'code' | 'markdown'
   source?: string[] | string
   outputs?: CellOutput[]
+  execution_count?: number | null
   metadata?: Record<string, unknown>
 }
 

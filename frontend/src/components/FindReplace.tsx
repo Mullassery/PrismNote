@@ -1,22 +1,23 @@
 import { useMemo, useState } from 'react'
 import { X, Replace } from 'lucide-react'
 import { useNotebookStore } from '../hooks/useNotebookRedux'
+import { cellSourceText, type Cell } from '../types/notebook'
 
 // Notebook-wide find & replace (per-cell find is already built into Monaco via ⌘F).
 export default function FindReplace({ onClose }: { onClose: () => void }) {
-      
+
   const { currentNotebook, updateCell } = useNotebookStore()
 const [find, setFind] = useState('')
   const [replace, setReplace] = useState('')
   const [caseSensitive, setCaseSensitive] = useState(false)
 
   const cells = currentNotebook?.cells ?? []
-  const srcOf = (c: any) => (Array.isArray(c.source) ? c.source.join('') : c.source || '')
+  const srcOf = (c: Cell) => cellSourceText(c.source)
 
   const matches = useMemo(() => {
     if (!find) return 0
     const f = caseSensitive ? find : find.toLowerCase()
-    return cells.reduce((n: number, c: any) => {
+    return cells.reduce((n: number, c: Cell) => {
       const s = caseSensitive ? srcOf(c) : srcOf(c).toLowerCase()
       let i = 0, count = 0
       while ((i = s.indexOf(f, i)) !== -1) { count++; i += f.length }
@@ -27,7 +28,7 @@ const [find, setFind] = useState('')
 
   const replaceAll = () => {
     if (!find) return
-    cells.forEach((c: any, i: number) => {
+    cells.forEach((c: Cell, i: number) => {
       const s = srcOf(c)
       let out: string
       if (caseSensitive) {
