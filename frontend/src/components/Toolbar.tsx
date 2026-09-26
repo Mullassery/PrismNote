@@ -33,7 +33,7 @@ const [isDark, setIsDark] = useState(true)
       notebooks: state.notebooks.map((n) => (n.id === currentNotebook.id ? { ...n, name } : n)),
     }))
     // Save after rename
-    setTimeout(() => { const hook = useNotebookStore(); hook.saveNotebook() }, 0)
+    setTimeout(() => { saveNotebook() }, 0)
   }
 
   const handleExport = () => {
