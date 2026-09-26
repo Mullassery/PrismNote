@@ -49,8 +49,6 @@ export function inferRelationships(
 
   // Iterate through all tables and their columns
   for (const table of tables) {
-    const tableKey = table.name.toLowerCase()
-    const tableSingular = singularize(tableKey)
     const columns = allColumns.get(table.name) || []
     const existingFks = (existingConstraints.get(table.name) || []).filter((c) => c.type === 'FOREIGN_KEY')
     const existingFkColumns = new Set(existingFks.map((fk) => fk.column.toLowerCase()))
