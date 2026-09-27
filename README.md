@@ -128,6 +128,54 @@ no-op that always reports success. A user who configures real S3
 credentials through this API is not actually getting their notebooks
 backed up to S3. See `ROADMAP_HONEST.md` for the full verification.
 
+## vs Jupyter
+
+Real Jupyter (via `nbclient`) is the direct comparison the "Jupyter-compatible"
+claim above invites. Tested both against the same real notebook (3 cells:
+define a DataFrame + variable, use them in the next cell with no re-import,
+then a cell that deliberately divides by zero), driven through PrismNote's
+real HTTP API (register → login → create notebook → execute) and through
+`nbclient` against a real `ipykernel`.
+
+| | PrismNote (real API) | Jupyter (`nbclient` + `ipykernel`) |
+|---|---|---|
+| Kernel/first-cell time | ~4ms once a kernel is warm (see bug below) | 0.57s kernel startup + ~0.17s first cell |
+| Cross-cell state (cell 2 uses cell 1's `x`/`df`, no re-import) | Correct: `43`, `6` | Correct: `43`, `6` |
+| Real exception (cell 3, `1/0`) | Correct: real `ZeroDivisionError` traceback, not swallowed | Correct: real `ZeroDivisionError` traceback |
+| "Integrated intelligence" (`/api/ai/explain`) | **Real** — verified against a real local Ollama model (`qwen2.5:7b-instruct`), returned a real, coherent, non-canned explanation in 5.3s | N/A (not a Jupyter feature) |
+| `.ipynb` format compatibility | Real, genuine `from_ipynb`/`to_ipynb` conversion exists (`crates/server/src/files.rs`) | N/A (native format) |
+
+**Two real bugs found while running this benchmark, one fixed, one critical
+and documented but not fixed:**
+
+1. **Fixed:** the kernel process spawn hardcoded `Command::new("python")`,
+   which doesn't exist on this (or many modern) machines — only `python3`
+   does. This meant **every cell execution failed** with the
+   misleading `"Kernel not available. Install ipykernel"` error, even with
+   `ipykernel` correctly installed under `python3`. Fixed with a
+   `python3`-first resolution helper used consistently across all 3 call
+   sites that previously hardcoded `"python"`
+   (`crates/server/src/kernel.rs`). Regression test added.
+2. **Critical, not fixed — needs a dedicated session:** the Python kernel
+   is a **single global process shared by every notebook on the server**,
+   not one kernel per notebook. Reproduced live: defined `x = 42` in one
+   notebook, then read `x` from a brand-new, unrelated notebook that never
+   defined it — it printed `42`. Any two notebooks (including two
+   different logged-in users', given the real JWT auth system) currently
+   share one Python namespace. This is a real data-isolation/security
+   issue, not just a quirk. Real Jupyter, by contrast, gives every notebook
+   its own isolated kernel process — this is the one place where
+   "Jupyter-compatible" doesn't hold up under a real test. Full detail,
+   including the exact 6 call sites and why this is an architectural fix
+   rather than a one-liner, in `ROADMAP_HONEST.md`.
+
+**Bottom line:** the core notebook semantics (cross-cell state, real error
+handling) genuinely work and match real Jupyter behavior once a kernel can
+actually start — plus real, working local-LLM-backed AI assistance Jupyter
+itself doesn't provide out of the box. But the per-notebook isolation gap
+above is a real, serious issue worth fixing before treating this as a
+safe multi-notebook or multi-user deployment.
+
 ## Building
 
 ```bash
