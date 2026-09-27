@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
 use std::process::Stdio;
 use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
@@ -766,10 +766,34 @@ pub struct KernelManager {
     pid: Arc<AtomicI32>,
 }
 
+/// Resolves once to whichever interpreter actually exists on this machine's
+/// PATH. Modern systems (a fresh macOS install, many current Linux distros,
+/// minimal container images) commonly ship only `python3`, not a bare
+/// `python` alias -- hardcoding `Command::new("python")` meant the kernel
+/// could never start on any such machine, always surfacing the misleading
+/// "Kernel not available. Install ipykernel" message even when ipykernel was
+/// installed and importable under `python3`. Checked python3 before python
+/// since that's the modern, unambiguous name.
+fn python_binary() -> &'static str {
+    static RESOLVED: OnceLock<&'static str> = OnceLock::new();
+    *RESOLVED.get_or_init(|| {
+        for candidate in ["python3", "python"] {
+            if std::process::Command::new(candidate)
+                .arg("--version")
+                .output()
+                .is_ok_and(|o| o.status.success())
+            {
+                return candidate;
+            }
+        }
+        "python3"
+    })
+}
+
 impl KernelManager {
     pub fn new() -> Result<Self> {
         // Verify python is available before we commit to a long-lived process.
-        let check = std::process::Command::new("python")
+        let check = std::process::Command::new(python_binary())
             .arg("-c")
             .arg("print('ok')")
             .output();
@@ -796,7 +820,7 @@ impl KernelManager {
     }
 
     fn spawn_process() -> Result<(Child, ChildStdin, BufReader<ChildStdout>)> {
-        let mut child = Command::new("python")
+        let mut child = Command::new(python_binary())
             .arg("-u") // unbuffered, so we see the result line immediately
             .arg("-c")
             .arg(DRIVER)
@@ -927,7 +951,7 @@ impl KernelManager {
             .replace("!pip install", "pip install")
             .replace("!pip", "pip");
 
-        let output = Command::new("python")
+        let output = Command::new(python_binary())
             .arg("-m")
             .arg("pip")
             .arg("install")
@@ -1037,5 +1061,25 @@ impl Drop for KernelManager {
         if let Some(mut child) = self.child.take() {
             let _ = child.start_kill();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn python_binary_resolves_to_a_real_runnable_interpreter() {
+        // Regression test found via real-world benchmarking: this used to
+        // hardcode Command::new("python"), which doesn't exist on this
+        // machine (only python3 does) -- the kernel could never start,
+        // always surfacing "Kernel not available. Install ipykernel" even
+        // with ipykernel installed under python3.
+        let bin = python_binary();
+        let output = std::process::Command::new(bin)
+            .arg("--version")
+            .output()
+            .unwrap_or_else(|e| panic!("resolved python binary '{bin}' is not runnable: {e}"));
+        assert!(output.status.success(), "'{bin} --version' exited non-zero");
     }
 }
