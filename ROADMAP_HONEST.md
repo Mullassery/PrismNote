@@ -1,563 +1,264 @@
 # ROADMAP_HONEST
 
-Honest status tracking for PrismNote (v1.11.0 as of 2026-09-20). Every item
-below was personally verified during this pass by reading the code and/or
-running the command shown — nothing here is inferred or assumed. Where a
-command wasn't run, that's stated explicitly.
+Honest status tracking for PrismNote (v1.11.1 as of 2026-09-27). Every item
+below was personally verified during the 2026-09-19 through 2026-09-27 audit
+passes by reading the code and/or running the command shown — nothing here
+is inferred or assumed. Where a command wasn't run, that's stated
+explicitly.
 
-This supersedes `docs/reference/ROADMAP.md` (archived to
-`docs/archive/ROADMAP_REFERENCE_PRE_CONSOLIDATION_2026-09.md`), which had
-two genuinely useful dated status-check entries (2026-08-24, 2026-08-07)
-whose still-relevant findings are folded in below, and a large stale v1.3
-→ v2.0 phased plan that is not folded in (superseded, aspirational, and
-mostly about a version of the product that no longer matches reality).
+**This file lists open issues only, sorted by severity** (security >
+data-loss/correctness bugs > CI-integrity problems > missing/inert features
+> tech debt). Items already fixed during the audit passes have been removed
+from here — see `CHANGELOG.md`'s `[Unreleased]` and `[1.11.1]` sections, or
+`git log`, for what was fixed and when. This supersedes
+`docs/reference/ROADMAP.md` (archived to
+`docs/archive/ROADMAP_REFERENCE_PRE_CONSOLIDATION_2026-09.md`), which had a
+large stale v1.3 → v2.0 phased plan describing a version of the product that
+no longer matches reality.
 
 ---
 
-## 1. Built, not (fully) tested
+## 1. Security
 
-- **Redshift / Azure Synapse cloud warehouse connectors.** Real native
-  wire-protocol implementations (Postgres wire via `sqlx`, TDS via
-  `tiberius`), but never verified against a live server in any environment
-  this maintainer has run them in — no Docker/Postgres/Synapse instance was
-  available. Each has an `#[ignore]`-gated integration test
-  (`REDSHIFT_TEST_DSN`, `SYNAPSE_TEST_HOST`/`_USER`/`_PASSWORD`) that has
-  apparently never been run against a real instance.
-- **Fixed 2026-09-21: `docker_executor::tests::sandbox_enforces_wall_clock_timeout_and_kills_container`
-  flakiness.** Root cause confirmed: `docker kill` returns as soon as the
-  daemon sends the signal, but the `--rm` container's actual removal
-  happens asynchronously once the daemon observes the process exit — the
-  test's single immediate `docker ps -a` check (`docker_executor.rs:910-925`)
-  could race real cleanup under concurrent test-suite load. Replaced the
-  single check with a bounded poll (up to 10s, 200ms interval). Verified:
-  `cargo test --release --all-features` — 171 passed, 0 failed, 2 ignored
-  (both default parallel and `--test-threads=1`); the specific test run in
-  isolation also passes.
-- **SQL execution parameterization end-to-end.** `query_validator.rs`'s
-  defense-in-depth validation is real and tested (8 passing unit tests),
-  but nobody has audited whether every one of the SQLite/DuckDB/Postgres/
-  MySQL/8-cloud-warehouse execution paths uses real parameterized queries
-  versus string interpolation for the actual SQL execution (as opposed to
-  the pre-execution validation layer). Not audited in this pass.
-- **Cloud storage (`CloudStorageManager`) — Verified 2026-09-22: it's
-  genuinely dead code, and the README's "not placeholders" claim was false
-  for the actual exposed API.** There are *two* separate `CloudStorageManager`
-  structs, both triggering the "never constructed" warning:
-  `crates/server/src/cloud_storage.rs:1078` (real S3 SigV4 / GCS
-  service-account JWT / Azure Blob Shared Key HMAC / Google Drive OAuth
-  HTTP clients, with real mockito-backed unit tests) and
-  `crates/server/src/file_manager.rs:194` (a separate mount-registry that
-  persists `CloudStorageMount` records to disk). Neither is referenced from
-  `AppState`, `main.rs`, or anywhere in `api.rs` (confirmed via
-  `grep -rn "CloudStorageManager" crates/server/src` — zero hits outside
-  each struct's own file). The actual HTTP routes a user would call —
-  `api::add_cloud_storage` (`api.rs:2898`), `api::list_cloud_storage`
-  (`api.rs:2913`), `api::remove_cloud_storage` (`api.rs:2928`) — are
-  standalone stub handlers that touch neither struct:
-  `add_cloud_storage` returns a hardcoded `"status": "mounted"` JSON blob
-  without validating the provider, storing credentials, or calling any
-  client code; `list_cloud_storage` always returns four hardcoded
-  `"Example S3"/"Example GCS"/"Example Azure"/"Example Google Drive"`
-  entries regardless of what was ever "added"; `remove_cloud_storage`
-  unconditionally returns `204 unmounted`. Separately, the real file
-  upload/download routes (`api::upload_file`/`download_file`, `api.rs:2793`)
-  go through `file_manager::FileManager` — plain local-disk storage,
-  unrelated to either `CloudStorageManager`. Net effect: a user who submits
-  real S3/GCS/Azure/Google Drive credentials via `POST /cloud-storage`
-  receives a success response but nothing is stored or validated, and no
-  cloud upload/download path exists anywhere in the routed API. This is not
-  a rough edge — it's the same shape as the already-documented
-  `versioning.rs` dead-code case, except the README explicitly claimed
-  "All real API calls, not placeholders" for this integration, which was
-  inaccurate. **Not wired up in this pass** — doing so safely (credential
-  storage/persistence design, `AppState` wiring, request schema, which of
-  the two structs to keep vs. delete) is a real feature-completion task,
-  not a bounded fix; forcing it through risked introducing credential-
-  handling bugs in a security-relevant subsystem. README's "Other
-  integrations" table and "Not yet a good fit for" list corrected to state
-  this accurately instead of claiming it works.
+- **SQL execution parameterization end-to-end — not audited.**
+  `query_validator.rs`'s defense-in-depth validation is real and tested (8
+  passing unit tests), but nobody has audited whether every one of the
+  SQLite/DuckDB/Postgres/MySQL/8-cloud-warehouse execution paths uses real
+  parameterized queries versus string interpolation for the actual SQL
+  execution (as opposed to the pre-execution validation layer). Not audited
+  in any pass so far — the validation layer being solid doesn't guarantee
+  the execution layer is.
+- **`cargo audit` has never successfully run — Rust dependency
+  vulnerability status is unverified, not clean.** Its advisory-database
+  git fetch to GitHub has timed out in every sandbox this has been tried
+  from. Needs to be run from an environment with real network access before
+  anyone can say the Rust dependency tree has no known CVEs.
+- **`npm audit`: 2 known vulnerabilities remain unfixed** (1 low, 1
+  moderate; both `dompurify`, transitively via `monaco-editor`), down from
+  10 after a `npm audit fix` pass (no `--force`, no `package.json` changes).
+  No fix is available without an upstream `monaco-editor` version bump. See
+  `SECURITY.md`.
+- **`PerClientRateLimiter` permanently locks out clients configured with a
+  low rate limit — a self-inflicted denial-of-service bug.**
+  `rate_limit.py:46` caps `tokens` at `min(self.burst_size, ...)` every
+  call. `burst_size = (requests_per_minute / 60) * 10`, which is < 1.0 for
+  any `requests_per_minute < 6`. Once `burst_size` itself is below 1.0, the
+  bucket can never accumulate a full token no matter how much wall-clock
+  time passes (verified with a simulated 3-year gap) — the client is
+  rate-limited to permanent zero throughput. Documented via
+  `test_low_rpm_permanently_locks_out_the_client_known_bug` in
+  `tests/test_rate_limit.py`. Needs a design decision (e.g.
+  `burst_size = max(1.0, rps * 10)`) rather than a one-line fix.
+- **16 open Dependabot branches exist locally, unmerged** (5 cargo, 3
+  github-actions, 5 npm, 5 pip — per `git branch -a`). Dependency updates,
+  some of which may carry security fixes, are piling up unreviewed. Each
+  needs its own review/merge.
 
-## 2. Not built
+## 2. Data-loss / correctness bugs (feature silently doesn't do what it claims)
 
-- **MongoDB connector.** Confirmed not implemented; connecting returns an
-  explicit error (already accurately documented in README).
-- **AAD / LDAP / generic-OAuth enterprise login.**
-  `crates/server/src/enterprise_auth.rs:220,238,255` — `authenticate_aad`,
-  `authenticate_ldap`, `authenticate_oauth` all explicitly return "not
-  implemented" errors rather than fabricating a session. This directly
-  contradicts the now-archived `docs/development/FEATURES_STATUS.md`,
-  which claimed "OAuth2/SSO (cloud deployments) ✅ PRODUCTION-READY" — that
-  claim was false and the file has been archived.
-- **Notebook version control (`versioning.rs`).** Fully implemented
-  (`VersionManager::create_version`, `rollback_to_version`,
-  `get_version_diff`, `list_versions`, `create_branch`, `switch_branch`)
-  but completely disconnected — `mod versioning;` is declared in
-  `main.rs:44` and nothing else in the codebase references
-  `VersionManager` or calls into this module (confirmed via
-  `grep -rn "VersionManager" crates/server/src`, zero hits outside
-  `versioning.rs` itself; confirmed via 5 "never constructed"/"never used"
-  compiler warnings for this module). From a user's perspective this
-  feature does not exist — there is no API route or UI wired to it.
-- **Cloud-warehouse schema/database browsing** (`get_databases()` /
-  `get_tables()`) — returns hardcoded placeholder data, separate from the
-  real connection/query execution (per the 2026-08-07 status-check entry
-  preserved from the archived roadmap).
-- **Data-quality scoring** (`api::get_quality_score`,
-  `lineage::data_quality_score`) — `lineage.rs:82` hardcodes
-  `data_quality_score: 0.95` with a `// TODO: calculate from quality
-  checks` comment; `api.rs:5971` has `// TODO: Fetch actual quality
-  assertions and run them`. Already accurately flagged in README; confirmed
-  by reading the code.
-- **Small UI TODOs (not implemented):**
-  `frontend/src/components/GitHubSync.tsx:287` (auto-sync toggle),
-  `frontend/src/components/UnifiedSearch.tsx:114` (result-type navigation),
-  `frontend/src/components/DataCatalogPanel.tsx:75` (detailed column info
-  fetch).
-- **Linux / Windows prebuilt binaries.** README already says macOS
-  Apple-Silicon-only. Root cause found in this pass: a real, working
-  multi-platform release workflow (`release-binaries.yml`, builds macOS
-  arm64/Intel, Linux x86_64/arm64, Windows x86_64) has been sitting
-  disabled since 2026-06-20 (commit `1e50b10`, "temp: stage workflow
-  removal for push" — moved from `.github/workflows/` to a `.github.bak/`
-  directory, apparently because the push token in use at the time lacked
-  the `workflow` OAuth scope needed to push workflow-file changes) and was
-  never reactivated. Moved in this pass to
-  `docs/archive/disabled-workflows/release-binaries.yml.disabled` for
-  visibility; **not reactivated** — that needs a token/PAT with the
-  `workflow` scope and a fresh verification run (the Windows/cross-compile
-  targets in particular have never been confirmed working) before being
-  restored to `.github/workflows/`.
+- **Cloud storage (`CloudStorageManager`) is dead code behind a fake-success
+  API.** There are *two* separate `CloudStorageManager` structs — one with
+  real S3 SigV4 / GCS service-account JWT / Azure Blob Shared Key HMAC /
+  Google Drive OAuth clients and real mockito-backed unit tests
+  (`crates/server/src/cloud_storage.rs:1078`), one a mount-registry
+  (`crates/server/src/file_manager.rs:194`) — and neither is referenced
+  from `AppState`, `main.rs`, or `api.rs` (confirmed via
+  `grep -rn "CloudStorageManager" crates/server/src`, zero hits outside
+  each struct's own file). The actual routed handlers
+  (`api::add_cloud_storage`, `list_cloud_storage`, `remove_cloud_storage` —
+  `api.rs:2898,2913,2928`) are standalone stubs: `add_cloud_storage`
+  returns a hardcoded `"status": "mounted"` without validating the
+  provider, storing credentials, or calling any client code;
+  `list_cloud_storage` always returns four hardcoded example entries
+  regardless of what was "added"; `remove_cloud_storage` unconditionally
+  returns `204`. **A user who submits real S3/GCS/Azure/Google Drive
+  credentials gets a success response and nothing is stored, validated, or
+  usable.** Wiring this up safely (credential storage/persistence design,
+  `AppState` wiring, request schema, which of the two structs to keep) is a
+  real feature-completion task, not a bounded fix.
+- **"Insert as Cell" / "Copy as code" throws immediately in the Data
+  Explorer, Data Querying panel, and Chart Builder.** `insertAsCell()` in
+  `DataExplorer.tsx` and `DataPanel.tsx` (2 call sites each), and
+  `insertAltair()` in `VizPane.tsx`, all call `.createNotebook()`/
+  `.addCell()`/`.updateCell()` on `getNotebookState()`'s return value — but
+  that function returns the plain Redux state slice (data only), not the
+  action dispatchers `useNotebookStore()` provides. None of those methods
+  exist on the real return type, so clicking these buttons throws
+  `TypeError: store.createNotebook is not a function` the first time
+  they're reached. (None of these three files even call
+  `useNotebookStore()`, which is also why it shows up as an unused import.)
+  The fix — call `useNotebookStore()` at each component's top level and use
+  its actions — is a behavior change, not attempted yet.
+  `ServerExplorer.tsx`'s equivalent `openNotebook()`, by contrast, is
+  already correct.
+- **Cloud-warehouse schema/database browsing returns hardcoded placeholder
+  data.** `get_databases()` / `get_tables()` don't reflect a live
+  connection's real schema — separate from the real connection/query
+  execution path, which does work.
+- **AI Agent panel's "Act" mode is unreachable — it's permanently stuck in
+  "Plan" mode.** `AgentPanel.tsx`: `const [mode, setMode] =
+  useState<Mode>('plan')` — `mode` is read in several places (system
+  prompt selection, `<action>`-tag parsing, the "Planning"/"Thinking"
+  label) but `setMode` is never called anywhere in the file (confirmed via
+  `grep -n setMode AgentPanel.tsx`). There is no UI toggle between Plan/Act
+  mode, so the action-taking system prompt and `<action>`-parsing path are
+  dead code today. Building the missing toggle is a real feature gap.
+- **`RelationshipMap.tsx`'s "force-directed" layout likely silently runs
+  the wrong algorithm.** `applyLayout()`'s `'force-directed'` option passes
+  `name: 'cose'` (cytoscape core's built-in layout) but options
+  (`nodeSpacing`, `edgeLengthVal`, `directed`) that only the `cose-bilkent`
+  extension recognizes — registered above via `cytoscape.use(coseLayout)`
+  under the name `'cose-bilkent'`, not `'cose'`. This almost certainly runs
+  plain `cose` with those three options silently ignored, not the intended
+  `cose-bilkent` layout.
 
-## 3. CI errors / broken
+## 3. CI integrity (the safety net doesn't actually catch failures)
 
-- **`cargo test --workspace --release` — the exact command `ci.yml`'s
-  `rust-build` job runs — failed once locally** on 2026-09-19 (flaky test,
-  fixed 2026-09-21, see "Built, not (fully) tested" above). Could not
-  verify current live GitHub Actions status: `gh run list` / `gh api` to
-  `api.github.com` timed out from this sandbox (network restriction), so
-  whether the badge on `main` is currently green could not be confirmed
-  independently. Treat the existing CI badge with caution until someone
-  checks the Actions tab directly.
-- **`tests.yml` ("Frontend Tests") silently swallows real failures.** Both
-  steps use `|| echo "... completed with warnings"`:
+- **`tests.yml` ("Frontend Tests") cannot fail, regardless of what its
+  steps actually find.** Both the lint and E2E steps swallow real failures:
   ```yaml
   - name: Run linter
     run: cd frontend && npm run lint 2>&1 || echo "Linting completed with warnings"
   - name: Run E2E tests
     run: cd frontend && npm run test:e2e 2>&1 || echo "E2E tests completed with warnings"
   ```
-  This means the job reports green **no matter what** these commands
-  actually do. Verified today they are not just theoretically broken but
-  **actually failing**:
-  - `npm run lint`: **435 errors, 22 warnings** (348 errors/22 warnings in
-    `frontend/src` alone, excluding test files — this isn't just messy test
-    code). Overwhelmingly `@typescript-eslint/no-explicit-any`, plus a real
-    `react-hooks/exhaustive-deps` warning in `src/pages/Login.tsx:38`
-    (`handleGoogleResponse` missing from the Google Sign-In `useEffect`
-    dependency array — genuine stale-closure risk in the login flow, not
-    just a lint nag). **Fixed 2026-09-21**: the script-load effect now
-    calls through a ref that's kept up to date every render, so it no
-    longer depends on (or needs to re-run for) a function recreated every
-    render. `npm run lint` now reports 435 errors, 21 warnings (was 22).
-    13 `eslint-disable`/`eslint-disable-next-line`
-    comments across 8 files (`App.tsx`×2, `VizPane.tsx`,
-    `DataExplorer.tsx`×5, `FindReplace.tsx`, `BottomPanel.tsx`,
-    `ServerExplorer.tsx`×2, `DataPanel.tsx`) all suppress
-    `react-hooks/exhaustive-deps` — worth auditing for real bugs, not
-    assuming they're all safe.
-  - **Fixed (partial) 2026-09-27: `frontend/src`'s 348 real
-    `@typescript-eslint/no-explicit-any` errors reduced to 74 (348 → 74
-    errors in `frontend/src`; file-wide `npm run lint`: 435 → 161 errors,
-    21 warnings unchanged since these are unrelated `react-hooks/*`
-    warnings, not touched this pass).** Every `any` replaced with a real
-    type, or `unknown` + a type guard/coercion where the value is
-    genuinely dynamic (parsed JSON from an API response, a raw DB driver
-    row, a third-party callback payload) — no blanket `eslint-disable` and
-    no `as any`/`as unknown as X` casts used to silence the linter without
-    real typing. ~35 production files touched across `src/components`,
-    `src/lib`, `src/hooks`, `src/api`, `src/store`, `src/pages`, plus a new
-    `src/types/notebook.ts` (shared `Cell`/`Notebook`/`CellOutput`/
-    `MimeBundle` types + `cellSourceText`/`isDataFrame`/`isIpynbRaw`/
-    `mimeText` helpers) and `src/lib/errors.ts` (shared `apiErrorMessage()`
-    for the `catch (e: any) { e?.response?.data?.error }` pattern that was
-    duplicated across ~8 files) and `src/types/file-system-access.d.ts`
-    (ambient types for `window.showDirectoryPicker`/`showOpenFilePicker`/
-    `showSaveFilePicker`/`FileSystemHandle.move()`, which TS's bundled
-    `lib.dom.d.ts` still doesn't ship). `npm test` stayed at 114/114 and
-    `npm run build`/`tsc -b` stayed clean throughout, verified after every
-    batch of files, not just at the end.
-
-    Of the 74 remaining `frontend/src` errors:
-    - **13 in `src/lib/codeExecutor.ts`, deliberately skipped, not typed.**
-      This module is entirely dead code (zero imports anywhere in `src` or
-      `tests`) that also fakes real behavior: its `executeQuery()` always
-      returns hardcoded mock rows (`{ id: 1, name: 'Sample', value: 100 }`)
-      regardless of the query, and its Python/R/etc. executors hit
-      `http://localhost:8888` (raw Jupyter REST API) directly, bypassing
-      this app's actual backend entirely. Typing a fake stub would dress
-      it up as reviewed/real; per this org's no-fake-stubs convention, it
-      should be deleted, not typed — that's a call for a follow-up pass,
-      not something to fold into a typing-only pass.
-    - **7 intentionally left as `any`, each with an inline comment
-      explaining why, because typing them accurately would either force a
-      behavior change or require inventing a type that lies about what
-      exists:**
-      - `DataExplorer.tsx`'s and `DataPanel.tsx`'s `insertAsCell()` (2
-        `any` each) and `VizPane.tsx`'s `insertAltair()` (2 `any`) all
-        call `.createNotebook()`/`.addCell()`/`.updateCell()` on
-        `getNotebookState()`'s return value — but that function returns
-        the plain Redux state slice (data only), not the action
-        dispatchers `useNotebookStore()` provides. **This is a real,
-        previously-undiscovered bug**: none of those methods exist on the
-        real return type, so clicking "Insert as Cell" / "Copy as code" in
-        the Data Explorer, Data Querying panel, or Chart Builder throws
-        `TypeError: store.createNotebook is not a function` the first
-        time it's reached today (none of these three files even call
-        `useNotebookStore()`, which is also why it shows up as an unused
-        import in each). Not fixed here — the real fix (call
-        `useNotebookStore()` at each component's top level and use its
-        actions) is a behavior change, out of scope for a typing-only
-        pass. `ServerExplorer.tsx`'s equivalent `openNotebook()`, by
-        contrast, was already correct (dispatches the real `setNotebooks`
-        action) and is now fully typed with no `any`.
-      - `RelationshipMap.tsx`'s `applyLayout()` (1 `any`): the
-        `'force-directed'` layout option passes `name: 'cose'` (cytoscape
-        core's built-in layout) but options (`nodeSpacing`, `edgeLengthVal`,
-        `directed`) that only the `cose-bilkent` extension recognizes —
-        the same extension is registered via `cytoscape.use(coseLayout)`
-        above, but under the name `'cose-bilkent'`, not `'cose'`. So this
-        almost certainly runs plain `cose` with those three options
-        silently ignored, not the intended `cose-bilkent` layout. Typing
-        this against cytoscape's real `LayoutOptions` union would force
-        fixing that mismatch or produce a type error either way.
-    - **The remaining ~54 are pre-existing `react-hooks/*` (set-state-in-
-      effect, exhaustive-deps, immutability/temporal-dead-zone ordering,
-      rules-of-hooks, static-components, incompatible-library),
-      `no-unused-expressions`, and `no-useless-assignment` errors —
-      unrelated to `no-explicit-any`, predate this pass, and require
-      behavior/control-flow changes, not typing. Out of scope here.**
-
-    Also found and fixed as trivial, verified-behavior-preserving cleanup
-    while typing (not the main goal, but cheap once a file was already
-    open): dead `Record<string, any>`/`any[]` fields on otherwise-unused-
-    but-real components (`api/client.ts`, `lib/mcpClient.ts`,
-    `components/DuckDBExplorer.tsx` — all confirmed unreferenced elsewhere
-    in the app, unlike `codeExecutor.ts` these don't fake data so were
-    typed rather than skipped); ~25 dead imports/unused destructures
-    across small components; 4 `no-useless-escape` regex fixes in
-    `lib/codeTemplates.ts` and 3 more in `hooks/useAIContext.ts` (verified
-    byte-identical regex behavior before/after); a real latent crash in
-    `components/FileExplorer.tsx`'s `openFile()` (called `.getFile()`
-    without checking the entry was a file, not a directory, before typing
-    made the union visible) and two silently-no-op cytoscape style
-    properties (`text-overflow`, `box-shadow` — not real cytoscape style
-    keys) in `RelationshipMap.tsx`; a real type-consistency gap where
-    `types/notebook.ts` had its own narrower `CellLanguage` (4 values)
-    shadowing `lib/languages.ts`'s broader one (14 values) that
-    `Cell.tsx`'s language picker already used at runtime — unified to the
-    one real definition. See `CHANGELOG.md` under `[Unreleased]` and the
-    commit history for the full file-by-file breakdown (11 commits,
-    `ef12268`..`fcc1049`).
-  - **Second pass, 2026-09-27: `frontend/src` errors reduced 74 → 63
-    (warnings 21 → 18); confirmed the remaining 13 `no-explicit-any`
-    errors are exactly the two already-documented cases above (the 7
-    intentional bug-marker `any`s and `codeExecutor.ts`'s 6) — there is
-    no further `no-explicit-any` work available in `frontend/src` without
-    either a behavior change or touching the flagged dead code.** This
-    pass instead cleared every remaining lint error that was safely
-    fixable without a behavior change (dead vars/imports, a
-    ternary-used-as-a-statement, a useless initializer, stale
-    `eslint-disable` comments no longer suppressing anything) plus one
-    real bug whose fix was trivial and obviously correct per this
-    project's typing-pass rules:
-    - **Fixed: `Toolbar.tsx`'s rename-then-save flow called a React hook
-      outside render.** `commitName()` did
-      `setTimeout(() => { const hook = useNotebookStore(); hook.saveNotebook() }, 0)`.
-      `useNotebookStore()` calls `useDispatch`/`useSelector` internally, so
-      invoking it inside a `setTimeout` callback — outside any component
-      render — violates the rules of hooks and throws `Invalid hook call`
-      when the timeout fires, silently breaking save-after-rename every
-      time a notebook is renamed. Fixed by using the `saveNotebook`
-      reference already destructured at the top of the component instead
-      of re-invoking the hook — same function, same timing, no other
-      behavior change. Caught by the new `react-hooks/rules-of-hooks`
-      lint rule.
-    - **Found, not fixed — `AgentPanel.tsx`'s "act" mode is unreachable.**
-      `const [mode, setMode] = useState<Mode>('plan')` — `mode` is read in
-      several places (which system prompt to use, whether to parse
-      `<action>` tags, the "Planning"/"Thinking" label) but `setMode` was
-      never called anywhere in the file, confirmed by
-      `grep -n setMode AgentPanel.tsx`. There is no UI toggle between
-      Plan/Act mode in this component, so the AI panel is permanently
-      stuck in "plan" mode; the "act" (code-writing/action-taking) system
-      prompt and `<action>` parsing path are dead code today. Building the
-      missing toggle is a real feature gap, not a typing fix, so only the
-      now-provably-dead `setMode` setter was removed (`const [mode] =
-      useState(...)`) to clear the `no-unused-vars` error; the underlying
-      gap is left for a follow-up.
-    - **Found, not fixed — `AgentPanel.tsx` is missing the font
-      zoom controls every other panel using `useFontSize` has.** `inc`/
-      `dec` were destructured from `useFontSize('pn-ai-font', 13)` but
-      never wired to a button — confirmed by comparison with
-      `Toolbar.tsx`, `DataExplorer.tsx`, `PlotsPanel.tsx`, `Notebook.tsx`,
-      `FileExplorer.tsx`, `BottomPanel.tsx`, and `DataPanel.tsx`, all of
-      which use the same hook and do wire `inc`/`dec` to +/- buttons.
-      Removed the unused destructure (`const { size: fontSize } =
-      useFontSize(...)`) rather than add new UI, which would be a feature
-      change out of scope for a lint pass.
-    - Also removed as genuinely dead (no observable behavior change):
-      `AgentPanel.tsx`'s `contextOpen`/`setContextOpen` state (read
-      nowhere) and `sessionIdRef` (read nowhere); `DataExplorer.tsx`'s
-      unused `useNotebookStore` import — the other half of the
-      already-documented `insertAsCell()`/`getNotebookState()` bug above
-      (this file never calls the hook, which is why the import was dead);
-      two stale `eslint-disable-next-line react-hooks/exhaustive-deps`
-      comments in `App.tsx` and one stray/misplaced
-      `eslint-disable-next-line` in `ServerExplorer.tsx`, all three now
-      reported as "unused eslint-disable directive" because the
-      underlying warning they once suppressed no longer fires.
-    - Mechanical, zero-behavior-change rewrites: `ServerExplorer.tsx`'s
-      `n.has(e.path) ? n.delete(e.path) : n.add(e.path)` ternary-used-as-
-      a-statement (`no-unused-expressions`) rewritten as an equivalent
-      `if`/`else`; `TerminalPane.tsx`'s `let out = ''` (`no-useless-
-      assignment`, since both branches of the following `try`/`catch`
-      always assign it before use) changed to `let out: string`; `main.tsx`
-      (the app entry point, which has no exports of its own) had its
-      inline `AppErrorFallback` component extracted verbatim to
-      `src/components/AppErrorFallback.tsx`, since
-      `react-refresh/only-export-components` requires component
-      definitions to live in a file that has exports.
-    - **Remaining 63 `frontend/src` errors, confirmed by rule breakdown
-      (`react-hooks/set-state-in-effect`: 21, `react-hooks/immutability`:
-      17 — mostly functions/state referenced before their `const`
-      declaration relative to an effect, a temporal-dead-zone-adjacent
-      pattern — `@typescript-eslint/no-explicit-any`: 13 (documented
-      above), `@typescript-eslint/no-unused-vars`: 7 (all in
-      `codeExecutor.ts`), `react-hooks/static-components`: 2 (e.g.
-      `Notebook.tsx` defines an `Inserter` component inside the component
-      body, recreating it every render), `react-hooks/refs`: 2 (reading a
-      ref's `.current` during render, e.g. `Notebook.tsx`'s
-      `cellRefsMap.current` DOM-ref map passed to `ExecutionMinimap`),
-      `react-hooks/preserve-manual-memoization`: 1) — every non-`any`/
-      non-`unused-vars` error here requires an actual behavior or
-      control-flow restructuring (lazy `useState` initializers instead of
-      set-state-in-effect, reordering function declarations relative to
-      the effects/callbacks that reference them, hoisting components out
-      of render bodies, redesigning how DOM ref maps are read) to fix
-      correctly, not a type annotation. Consistent with the "~54 out of
-      scope" assessment above (that figure covered the same errors before
-      this pass's other fixes reduced the total); left for a dedicated
-      React-hooks-correctness pass, not attempted here.** `npm run build`
-      and `npm test` (114/114) verified after every batch. Commits
-      `e06128c`, `9aa0940`, `4d3ce2f`.
-  - `npm run test:e2e` (`--project=chromium` only, single browser): **28
-    passed, 57 failed** out of 85 tests (67% failure rate), run took 39
-    minutes. Failures are concentrated in
+  What it's currently hiding:
+  - `npm run lint`: **161 errors, 18 warnings** file-wide (63 of the errors
+    are in `frontend/src` production code, not test scaffolding — down from
+    348/435 after two typing-cleanup passes; see breakdown below).
+  - `npm run test:e2e` (`--project=chromium` only): **28 passed, 57 failed**
+    out of 85 (67% failure rate, 39 min runtime). Failures concentrate in
     `tests/e2e/relationship-map.spec.ts` (all 17 tests) and the
     `v1.4.0-phase-2-keyboard-stress/*` suite (most of ~40 tests) — timeouts
-    waiting for `[data-testid="notebook-container"]` and similar selectors,
-    suggesting either the app's real DOM structure has drifted from what
-    these tests expect, or the dev server / app doesn't reach a ready state
-    the tests assume. Not root-caused in this pass — this needs a dedicated
-    debugging session, not a quick fix.
-  - **This means the "Playwright E2E tests wired into CI" claim in this
-    org's usual conventions is technically true (the workflow exists and
-    runs) but practically misleading (the workflow cannot currently fail,
-    regardless of these results).** Not fixed in this pass: removing the
-    `|| echo` swallow would immediately turn this workflow permanently red
-    until the 435 lint errors and 57 failing E2E tests are separately
-    fixed — a large, non-trivial body of work that shouldn't be forced
-    through a doc-standardization pass. Recommendation: fix incrementally
-    (start with `frontend/src`'s 348 real lint errors, since those are
-    production code, not test scaffolding) and only then remove the
-    swallow. **Update 2026-09-27: `frontend/src`'s lint errors are down to
-    63 (see below) — still not zero, so the swallow should stay in place
-    until the remaining `codeExecutor.ts` dead-code call, the 7 documented
-    `insertAsCell`/layout bugs, and the pre-existing `react-hooks/*`
-    errors are resolved, then separately re-evaluated alongside the 57
-    failing E2E tests.**
-- **Fixed 2026-09-21: `.pre-commit-config.yaml` bandit hook referenced a
-  nonexistent `.bandit` config file.** The `bandit` hook had
-  `args: ["-c", ".bandit"]` pointing at a file that doesn't exist anywhere
-  in the repo. Removed the arg so bandit runs with its defaults. Verified:
-  `pre-commit run bandit --all-files` now runs to completion (finds
-  legitimate low/medium findings in existing code, unrelated to this fix
-  and out of scope here) instead of failing on the missing config file.
-- **Fixed 2026-09-21: `.pre-commit-config.yaml` mypy hook depended on
-  `types-all`**, a metapackage PyPI has removed. Removed the
-  `additional_dependencies: [types-all]` line — the third-party libraries
-  actually imported (`fastapi`, `pydantic`, `starlette`) ship their own
-  inline types, and the hook's existing `--ignore-missing-imports` arg
-  covers anything else. Verified: `pre-commit run mypy --all-files` now
-  runs to completion (surfaces 5 pre-existing real type errors, unrelated
-  to this fix and out of scope here) instead of failing to install
-  `types-all`.
-- **16 open Dependabot branches exist locally and appear unmerged**
-  (5 cargo, 3 github-actions, 5 npm, 5 pip — `git branch -a` at the start
-  of this pass). Dependency updates are piling up unaddressed; not
-  something this pass could fix (each needs its own review/merge).
-- **Missing npm ecosystem in Dependabot.** Fixed in this pass —
-  `.github/dependabot.yml` had `cargo`, `pip`, and `github-actions` entries
-  but no `npm` entry for `frontend/`, meaning frontend dependencies got no
-  automated update PRs at all. Added a `directory: "/frontend"` npm entry.
+    waiting for `[data-testid="notebook-container"]` and similar selectors.
+    Not root-caused; suggests either DOM drift from what the tests expect,
+    or the dev server/app not reaching the ready state the tests assume.
+    Firefox/WebKit projects have never been run (chromium only, given the
+    39-minute cost for one browser already incurred).
 
-## 4. Features not yet functional (built but effectively inert, or missing verification of the sandbox that matters)
+  Removing the `|| echo` swallow would immediately turn this workflow
+  permanently red until the remaining lint errors and failing E2E tests are
+  fixed — recommend fixing incrementally (production-code lint errors
+  first, since those aren't test scaffolding) and only then removing the
+  swallow.
 
-- **Notebook version control** — see "Not built" above; code exists,
-  nothing calls it, so functionally this feature does not exist for a user
-  today.
-- **Redux Toolkit migration is genuinely incomplete, not just "not yet
-  finished."** Confirmed by re-checking (originally found 2026-08-24, still
-  true): only the `notebook` slice is on Redux
-  (`frontend/src/hooks/useNotebookRedux.ts`, using selectors in
+  Of the 63 remaining `frontend/src` lint errors: 13 are deliberately
+  unfixed `no-explicit-any` (7 mark real bugs already listed above — the
+  `insertAsCell`/layout issues — plus 6 in `lib/codeExecutor.ts`, see tech
+  debt below); the remaining ~50 are pre-existing `react-hooks/*` rules
+  (`set-state-in-effect`: 21, `immutability`: 17, `static-components`: 2,
+  `refs`: 2, `preserve-manual-memoization`: 1) and `no-unused-vars`: 7 (all
+  in `codeExecutor.ts`) — each requires an actual behavior/control-flow
+  restructuring, not a type annotation. Left for a dedicated
+  React-hooks-correctness pass.
+- **Live GitHub Actions status on `main` is unverified from this
+  environment.** `gh run list` / `gh api api.github.com` has timed out in
+  every sandbox pass so far (network restriction). Treat the CI badge with
+  caution until someone checks the Actions tab directly.
+
+## 4. Missing / inert features
+
+- **Notebook version control is fully built but completely disconnected.**
+  `versioning.rs` fully implements `VersionManager::create_version`,
+  `rollback_to_version`, `get_version_diff`, `list_versions`,
+  `create_branch`, `switch_branch` — but `mod versioning;` in `main.rs:44`
+  is the only reference to it anywhere in the codebase (confirmed via
+  `grep -rn "VersionManager" crates/server/src`, zero hits outside the
+  module itself; 5 "never constructed"/"never used" compiler warnings).
+  There is no API route or UI wired to it — from a user's perspective this
+  feature does not exist.
+- **Linux / Windows prebuilt binaries don't exist**, despite a real, working
+  multi-platform release workflow (`release-binaries.yml`: macOS
+  arm64/Intel, Linux x86_64/arm64, Windows x86_64) sitting disabled since
+  2026-06-20 (commit `1e50b10`, moved to `.github.bak/` — apparently
+  because the push token in use at the time lacked the `workflow` OAuth
+  scope needed to push workflow-file changes) and never reactivated. Now at
+  `docs/archive/disabled-workflows/release-binaries.yml.disabled` for
+  visibility. Needs a token/PAT with the `workflow` scope and a fresh
+  verification run (Windows/cross-compile targets have never been
+  confirmed working) before restoring to `.github/workflows/`. README
+  already discloses macOS-Apple-Silicon-only.
+- **Redshift / Azure Synapse cloud warehouse connectors have never been
+  verified against a live server.** Real native wire-protocol
+  implementations exist (Postgres wire via `sqlx`, TDS via `tiberius`), and
+  each has an `#[ignore]`-gated integration test
+  (`REDSHIFT_TEST_DSN`, `SYNAPSE_TEST_HOST`/`_USER`/`_PASSWORD`) that has
+  apparently never actually been run against a real instance — no
+  Docker/Postgres/Synapse instance has been available in any environment
+  this has been tried from.
+- **Redux Toolkit migration is genuinely incomplete — two state-management
+  systems coexist in production.** Only the `notebook` slice is on Redux
+  (`frontend/src/hooks/useNotebookRedux.ts` /
   `frontend/src/store/notebookSelectors.ts`). `DataExplorer.tsx`,
   `FileExplorer.tsx`, `SchemaExplorer.tsx`, `DuckDBExplorer.tsx`, and 6
   hooks (`usePlots.ts`, `useExecutionMinimap.ts`, `useAIContext.ts`,
   `useViz.ts`, `useSchemaCache.ts`, `useWorkspace.ts`) remain on Zustand.
-  Two state-management systems coexist in production; this is real
-  complexity/confusion, not a cosmetic label issue.
-- **Frontend bundle size is large and not code-split.** `npm run build`
-  (verified 2026-09-19): the two largest chunks are
-  `dist/assets/index-*.js` (3.01 MB / 982 KB gzip) and
-  `dist/assets/editor.api2-*.js` (3.63 MB / 927 KB gzip) — both far over
-  Vite's 500 KB warning threshold, mostly Monaco Editor. The bundle
-  analyzer (`ANALYZE=true npm run build`, wired into `tests.yml`) correctly
-  surfaces this (`dist/stats.html` uploaded as a CI artifact), but nobody
-  has acted on what it shows — dynamic `import()` / manual chunking for
-  Monaco would be the fix. Not attempted in this pass.
-- **Fixed 2026-09-21: `JWT_SECRET` no longer silently falls back to a
-  hardcoded, publicly-visible string.** `get_jwt_secret()`
-  (`crates/server/src/middleware/auth.rs`) now panics with a clear message
-  if `JWT_SECRET` is unset, checked once at server startup (`main.rs`) so a
-  misconfigured deployment fails immediately instead of serving forgeable
-  tokens. Also fixed: three JWT-issuing call sites in `api.rs`
-  (`auth_register`, `auth_login`, Google OAuth login) hardcoded
-  `"default-secret"` directly rather than reading `JWT_SECRET` at all —
-  even a deployment that *did* set `JWT_SECRET` would have signed tokens
-  with a different, hardcoded secret than the one used to validate them.
-  All three now call `get_jwt_secret()`. Verified:
-  `cargo test --release --all-features` — 171 passed, 0 failed, 2 ignored
-  (including new `test_jwt_secret_panics_when_unset`). See `SECURITY.md`.
-- **Partially fixed 2026-09-21: `npm audit`.** `npm audit fix` (no
-  `--force`, `package.json` unchanged — only transitive dependency patch/
-  minor bumps within existing semver ranges) took the frontend from 10
-  known vulnerabilities down to 2 (1 low, 1 moderate). Verified: `npm test`
-  still 114/114, `npm run build` still succeeds. The remaining 2
-  (`dompurify`, transitively via `monaco-editor`) have no fix available
-  without an upstream `monaco-editor` bump — not attempted, see
-  `SECURITY.md`. `cargo audit` could not be run in this sandbox (its
-  advisory-database git fetch to GitHub timed out) — Rust dependency
-  vulnerability status is **unverified**, not "clean."
-- **Fixed 2026-09-22: Python security-relevant modules now have real test
-  coverage.** `security.py`, `sql_validator.py`, `rate_limit.py`, and
-  `middleware.py` previously had zero dedicated tests. Added
-  `tests/test_security.py` (32 tests: `NotebookRequest` path-traversal/
-  invalid-character rejection including the absolute-path-escape edge case
-  in `FileAccessValidator.validate_path`), `tests/test_sql_validator.py`
-  (46 tests: forbidden-keyword detection, injection-comment/nested-comment/
-  system-procedure patterns, `sanitize_identifier`, `safe_execute` verifying
-  the cursor is never touched on a rejected query), `tests/test_rate_limit.py`
-  (17 tests: token-bucket burst/replenishment/cap behavior via a
-  monkeypatched clock — no real sleeps — plus hourly-window expiry and
-  concurrency-slot accounting), and `tests/test_middleware.py` (12 tests:
-  real FastAPI `TestClient` requests through `ErrorHandlingMiddleware`,
-  proving `ValueError` messages are surfaced but arbitrary internal
-  exception text/credentials are not, plus `SecurityHeadersMiddleware` and
-  `RequestLoggingMiddleware` header/logging behavior).
+  Real complexity/confusion, not a cosmetic label issue.
+- **AI Agent panel is missing the font zoom controls every other panel
+  has.** `AgentPanel.tsx` destructures `inc`/`dec` from
+  `useFontSize('pn-ai-font', 13)` but never wires them to a button —
+  `Toolbar.tsx`, `DataExplorer.tsx`, `PlotsPanel.tsx`, `Notebook.tsx`,
+  `FileExplorer.tsx`, `BottomPanel.tsx`, and `DataPanel.tsx` all wire the
+  same hook to +/- buttons; this one doesn't.
+- **MongoDB connector not implemented** — connecting returns an explicit
+  error (already accurately documented in README; not a hidden gap).
+- **AAD / LDAP / generic-OAuth enterprise login not implemented.**
+  `crates/server/src/enterprise_auth.rs:220,238,255` — `authenticate_aad`,
+  `authenticate_ldap`, `authenticate_oauth` all explicitly return "not
+  implemented" errors rather than fabricating a session (no hidden
+  failure mode; the now-archived `FEATURES_STATUS.md`'s claim that this was
+  "production-ready" was false and that file has been archived).
+- **Data-quality scoring is hardcoded.** `lineage.rs:82` hardcodes
+  `data_quality_score: 0.95` with a `// TODO: calculate from quality
+  checks` comment; `api.rs:5971` has a matching TODO for fetching real
+  quality assertions. Already accurately flagged in README.
+- **Small UI TODOs (not implemented):**
+  `frontend/src/components/GitHubSync.tsx:287` (auto-sync toggle),
+  `frontend/src/components/UnifiedSearch.tsx:114` (result-type navigation),
+  `frontend/src/components/DataCatalogPanel.tsx:75` (detailed column info
+  fetch).
 
-  **Two real bugs found while writing these tests (using actual malicious
-  inputs, not just happy-path calls):**
-  1. **Fixed:** `sql_validator.py`'s "system procedure call" check
-     (`xp_`/`sp_` detection) could never fire — `sql_normalized` is always
-     upper-cased before the check runs, but the pattern was the lowercase
-     `r"xp_|sp_"`, so `re.search` never matched against an all-uppercase
-     string. Changed to `r"XP_|SP_"`. Regression-tested (including a
-     lowercase-input case, since the bug was specifically about the
-     pattern's case, not the input's).
-  2. **Not fixed, documented via
-     `test_low_rpm_permanently_locks_out_the_client_known_bug` in
-     `tests/test_rate_limit.py`:** `PerClientRateLimiter`'s token bucket
-     caps `tokens` at `min(self.burst_size, ...)` every call
-     (`rate_limit.py:46`). `burst_size = (requests_per_minute / 60) * 10`,
-     which is < 1.0 for any `requests_per_minute < 6`. Once burst_size
-     itself is below 1.0, the bucket can never accumulate a full token no
-     matter how much wall-clock time passes (verified with a simulated
-     3-year gap) — the client is rate-limited to permanent zero throughput,
-     not just "very strict." This is a real availability bug (self-inflicted
-     denial of service against legitimate users configuring a low limit),
-     left unfixed in this pass since it requires a design decision (e.g.
-     `burst_size = max(1.0, rps * 10)`, or reworking the burst-multiplier
-     formula) rather than being a bounded one-line fix.
+## 5. Tech debt
 
-  Verified end-to-end exactly as CI runs it: `pip install -e ".[dev]"` then
-  `pytest tests/ -v --tb=short` → **109 passed** (was: 2 skipped). Also
-  fixed a real CI gap this surfaced: `pyproject.toml`'s `dev` extra only
-  had `pytest`/`pytest-cov` — `fastapi`/`starlette`/`pydantic`/`httpx` were
-  only listed in `requirements-lock.txt`, which CI's `python-tests` job
-  never installs. Without adding them to `dev`, the new
-  `security.py`/`middleware.py` tests (and `middleware.py` itself, which
-  imports `fastapi` at module level) would have failed to import in the
-  real GitHub Actions environment despite passing locally. Verified in a
-  clean venv running the exact CI command
-  (`pip install -e ".[dev]"` then `pytest tests/ -v --tb=short`).
-- **11 `#[allow(dead_code)]` suppressions in Rust**
-  (`sql_executor.rs`×2, `docker_executor.rs`×5, `api.rs`, `db/connections.rs`,
-  `db/executor.rs`, plus one `#[allow(clippy::too_many_arguments)]` in
-  `cloud_warehouse/sigv4.rs`) and **217 compiler warnings** on a clean
-  release build, the large majority "never constructed" / "never used" for
-  entire structs/impls (confirmed: `versioning.rs` in full, plus smaller
-  pieces elsewhere). Not cleaned up in this pass — would need a
-  per-warning judgment call (delete dead code vs. wire it up) that's
-  outside a documentation pass's scope.
-- **Fixed 2026-09-22: `sqlx-postgres` future-incompatibility warning.**
-  `cargo build` used to report `sqlx-postgres v0.7.4` "contains code that
-  will be rejected by a future version of Rust" (never-type-fallback
-  dependency, would become a hard error under Rust 2024). Bumped
-  `sqlx` 0.7 → 0.8.6 (workspace `Cargo.toml`) — one major behind the
-  brand-new 0.9.0, to minimize churn. No code changes were required; all 79
-  `sqlx::`-referencing call sites across
-  `query_manager.rs`/`audit.rs`/`execution.rs`/`main.rs`/
-  `middleware/ownership.rs`/`api.rs`/`session/mod.rs`/`db/init.rs`/
-  `cloud_warehouse/redshift.rs`/`db/executor.rs` compiled unchanged.
-  Verified: `cargo build --release --all-features` (warning gone, still 217
-  unrelated pre-existing warnings, no new ones) and
-  `cargo test --workspace --release` (171 passed, 0 failed, 2 ignored —
-  matches the pre-bump baseline exactly).
+- **`frontend/src/lib/codeExecutor.ts` is dead code that fakes real
+  behavior — should be deleted, not typed or fixed.** Zero imports
+  anywhere in `src` or `tests`. Its `executeQuery()` always returns
+  hardcoded mock rows (`{ id: 1, name: 'Sample', value: 100 }`) regardless
+  of the query, and its Python/R/etc. executors hit
+  `http://localhost:8888` (raw Jupyter REST API) directly, bypassing this
+  app's actual backend entirely. Per this org's no-fake-stubs convention,
+  typing it would dress up a fake stub as reviewed/real — it should be
+  deleted in a follow-up pass instead.
+- **Frontend bundle size is large and not code-split.** The two largest
+  `npm run build` chunks are `dist/assets/index-*.js` (3.01 MB / 982 KB
+  gzip) and `dist/assets/editor.api2-*.js` (3.63 MB / 927 KB gzip) — both
+  far over Vite's 500 KB warning threshold, mostly Monaco Editor. The
+  bundle analyzer (`ANALYZE=true npm run build`, wired into `tests.yml`,
+  uploads `dist/stats.html` as a CI artifact) correctly surfaces this, but
+  nobody has acted on it. Dynamic `import()` / manual chunking for Monaco
+  would be the fix.
+- **11 `#[allow(dead_code)]` suppressions and 217 compiler warnings** on a
+  clean release build (`sql_executor.rs`×2, `docker_executor.rs`×5,
+  `api.rs`, `db/connections.rs`, `db/executor.rs`, plus one
+  `#[allow(clippy::too_many_arguments)]` in `cloud_warehouse/sigv4.rs`) —
+  the large majority "never constructed"/"never used" for entire
+  structs/impls (`versioning.rs` in full, plus smaller pieces elsewhere).
+  Needs a per-warning judgment call (delete dead code vs. wire it up).
 
 ---
 
-## What was validated in this pass (commands + real results)
+## What's been verified (latest numbers, commands + real results)
 
 | Command | Result |
 |---|---|
 | `cargo build --release --all-features` | Builds. 217 warnings. |
-| `cargo test --workspace --release` | 170 passed, 1 failed (flaky, see above), 2 ignored. |
-| `cd frontend && npm run lint` | 435 errors, 22 warnings. |
+| `cargo test --workspace --release` (default parallel and `--test-threads=1`) | 171 passed, 0 failed, 2 ignored. |
+| `cd frontend && npm run lint` | 161 errors, 18 warnings (63 in `frontend/src` production code). |
 | `cd frontend && npm test` (vitest) | 114/114 passed. |
-| `cd frontend && npm run build` | Succeeds; oversized chunks (see above). |
-| `cd frontend && npm run test:e2e -- --project=chromium` | 28 passed, 57 failed (39 min). |
-| `python3 -m pytest tests/ -v` | 2 skipped (package not installed). |
-| `npm audit` (frontend) | 6 vulnerabilities (3 high, 3 moderate), transitive. |
+| `cd frontend && npm run build` | Succeeds; oversized chunks (see Tech debt). |
+| `cd frontend && npm run test:e2e -- --project=chromium` | 28 passed, 57 failed (39 min; Firefox/WebKit never run). |
+| `python3 -m pytest tests/ -v` | 109 passed (was 2 skipped before dev-extra fix). |
+| `cd frontend && npm audit` | 2 vulnerabilities (1 low, 1 moderate), down from 10. |
 | `cargo audit` | Could not run — advisory DB fetch timed out (sandbox network). |
-| `gh run list` / `gh api ...` | Could not run — timed out (sandbox network restriction to `api.github.com`). |
-
-Firefox/WebKit Playwright projects were not run (chromium only, due to the
-39-minute runtime already incurred for one browser).
-
-## Quick-fix pass, 2026-09-21 (commands + real results)
-
-| Command | Result |
-|---|---|
-| `cargo build --release --all-features` | Builds. Still 217 warnings (no new ones). |
-| `cargo test --release --all-features` (default parallel) | 171 passed, 0 failed, 2 ignored. |
-| `cargo test --release --all-features -- --test-threads=1` | 171 passed, 0 failed, 2 ignored. |
-| `cd frontend && npm run lint` | 435 errors, 21 warnings (was 22 — Login.tsx exhaustive-deps fixed). |
-| `cd frontend && npm test` (vitest) | 114/114 passed. |
-| `cd frontend && npm run build` | Succeeds; same oversized chunks as before (unrelated, not attempted). |
-| `cd frontend && npm audit` | 2 vulnerabilities (1 low, 1 moderate), down from 10 (`npm audit fix`, no `--force`). |
-| `pre-commit run bandit --all-files` | Runs to completion (was: failed on missing `.bandit` file). |
-| `pre-commit run mypy --all-files` | Runs to completion (was: failed installing removed `types-all`). |
-
-Items fixed this pass are marked "Fixed 2026-09-21" inline above. Everything
-else in this file is unchanged from the 2026-09-19/20 audit pass and still
-accurate as of this writing.
+| `gh run list` / `gh api ...` | Could not run — timed out (sandbox network restriction). |
+| `pre-commit run bandit --all-files` / `mypy --all-files` | Both run to completion. |
