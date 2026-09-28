@@ -19,6 +19,13 @@ import { useAIContext } from '../hooks/useAIContext'
 import { apiErrorMessage } from '../lib/errors'
 import { cellSourceText, type Cell, type Notebook } from '../types/notebook'
 
+// Every explore op and kernel-variable lookup targets a specific notebook's
+// own kernel now (notebooks used to share one global kernel). This file
+// deliberately doesn't call the useNotebookStore() hook (see below), so read
+// the current notebook id the same non-hook way it already reads everything
+// else about the active notebook.
+const currentNotebookId = () => getNotebookState().currentNotebook?.id ?? ''
+
 export type ExplorerTarget = { var: string } | { source: Source }
 
 const PAGE = 200
@@ -111,7 +118,7 @@ export function ExplorerPicker({
   const [sql, setSql] = useState('')
 
   useEffect(() => {
-    listVariables().then((vs) => setVars(vs.filter((v) => /DataFrame|ndarray|Series/.test(v.type)))).catch(() => {})
+    listVariables(currentNotebookId()).then((vs) => setVars(vs.filter((v) => /DataFrame|ndarray|Series/.test(v.type)))).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -275,7 +282,7 @@ export default function DataExplorer({
     let alive = true
     setLoading(true)
     setError(null)
-    Promise.all([exploreSchema(target), exploreOverview(target)])
+    Promise.all([exploreSchema(currentNotebookId(), target), exploreOverview(currentNotebookId(), target)])
       .then(([sc, ov]) => {
         if (!alive) return
         setSchema(sc)
@@ -284,7 +291,7 @@ export default function DataExplorer({
         useAIContext.getState().setDataset({ title, columns: sc.columns.map((c) => c.name), shape: ov ? [ov.rows, ov.cols] : sc.shape })
         // lazy-load profiles (cap to keep it snappy on very wide frames)
         sc.columns.slice(0, 60).forEach((c) =>
-          exploreProfile(target, c.name)
+          exploreProfile(currentNotebookId(), target, c.name)
             .then((p) => alive && setProfiles((m) => ({ ...m, [c.name]: p })))
             .catch(() => {}),
         )
@@ -301,7 +308,7 @@ export default function DataExplorer({
   const reload = useCallback(() => {
     const id = ++reqId.current
     loadingPages.current = new Set([0])
-    explorePage(target, { offset: 0, limit: PAGE, sort, filters, search })
+    explorePage(currentNotebookId(), target, { offset: 0, limit: PAGE, sort, filters, search })
       .then((r) => {
         if (id !== reqId.current) return
         const arr: (unknown[] | undefined)[] = new Array(r.total)
@@ -325,7 +332,7 @@ export default function DataExplorer({
       if (rows[offset] !== undefined) return
       loadingPages.current.add(page)
       const id = reqId.current
-      explorePage(target, { offset, limit: PAGE, sort, filters, search })
+      explorePage(currentNotebookId(), target, { offset, limit: PAGE, sort, filters, search })
         .then((r) => {
           if (id !== reqId.current) return
           setRows((prev) => {
@@ -420,7 +427,7 @@ export default function DataExplorer({
     const cap = Math.min(total, 50000)
     const parts: unknown[][] = []
     for (let off = 0; off < cap; off += 500) {
-      const r = await explorePage(target, { offset: off, limit: 500, sort, filters, search })
+      const r = await explorePage(currentNotebookId(), target, { offset: off, limit: 500, sort, filters, search })
       parts.push(...r.data)
       if (!r.data.length) break
     }
@@ -724,7 +731,7 @@ function StatsTab({ target, cols, profiles }: { target: ExplorerTarget; cols: Co
     let alive = true
     setStats(null)
     setStatErr(null)
-    exploreDescribe(target)
+    exploreDescribe(currentNotebookId(), target)
       .then((d) => alive && setStats(d.columns))
       .catch((e: unknown) => alive && setStatErr(apiErrorMessage(e, 'failed')))
     return () => { alive = false }
@@ -961,7 +968,7 @@ function LineageTab({ target, title }: { target: ExplorerTarget; title: string }
   useEffect(() => {
     let alive = true
     setLin(null); setErr(null)
-    exploreLineage(target)
+    exploreLineage(currentNotebookId(), target)
       .then((l) => alive && setLin(l))
       .catch((e: unknown) => alive && setErr(apiErrorMessage(e, 'failed')))
     return () => { alive = false }

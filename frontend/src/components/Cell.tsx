@@ -372,7 +372,7 @@ function CellInner({ cell, cellIndex }: CellProps) {
               </button>
               {isExecuting ? (
                 <button
-                  onClick={() => interruptKernel()}
+                  onClick={() => currentNotebook && interruptKernel(currentNotebook.id)}
                   className="p-1 rounded pn-hover text-rose-400"
                   title="Stop (interrupt kernel)"
                 >

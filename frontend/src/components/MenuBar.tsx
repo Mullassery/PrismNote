@@ -117,8 +117,8 @@ const [open, setOpen] = useState<string | null>(null)
   const runBelow = () => sel != null && runRange(sel + 1, currentNotebook?.cells.length ?? 0)
   const runSelected = () => sel != null && executeCell(sel)
   const restartAndRunAll = async () => {
-    if (!confirm('Restart the kernel and run all cells?')) return
-    await restartKernel()
+    if (!currentNotebook || !confirm('Restart the kernel and run all cells?')) return
+    await restartKernel(currentNotebook.id)
     await runAll()
   }
 
@@ -176,9 +176,9 @@ const [open, setOpen] = useState<string | null>(null)
       { label: 'Clear All Outputs', action: clearOutputs, disabled: !currentNotebook },
     ],
     Kernel: [
-      { label: 'Interrupt', action: () => interruptKernel() },
-      { label: 'Restart', action: () => { if (confirm('Restart the kernel? All variables will be cleared.')) restartKernel() } },
-      { label: 'Restart & Clear Outputs', action: async () => { if (confirm('Restart the kernel and clear all outputs?')) { await restartKernel(); clearOutputs() } } },
+      { label: 'Interrupt', action: () => currentNotebook && interruptKernel(currentNotebook.id) },
+      { label: 'Restart', action: () => { if (currentNotebook && confirm('Restart the kernel? All variables will be cleared.')) restartKernel(currentNotebook.id) } },
+      { label: 'Restart & Clear Outputs', action: async () => { if (currentNotebook && confirm('Restart the kernel and clear all outputs?')) { await restartKernel(currentNotebook.id); clearOutputs() } } },
       { label: 'Restart & Run All', action: restartAndRunAll, disabled: !currentNotebook },
     ],
     Jobs: [

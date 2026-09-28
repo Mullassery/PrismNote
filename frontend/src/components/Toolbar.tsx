@@ -98,8 +98,8 @@ const [isDark, setIsDark] = useState(true)
 
         <button
           onClick={async () => {
-            if (confirm('Restart the kernel? All variables will be cleared.')) {
-              await restartKernel()
+            if (currentNotebook && confirm('Restart the kernel? All variables will be cleared.')) {
+              await restartKernel(currentNotebook.id)
             }
           }}
           className="p-2 hover:bg-slate-700 rounded transition text-gray-400 hover:text-white"

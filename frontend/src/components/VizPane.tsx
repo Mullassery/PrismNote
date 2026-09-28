@@ -16,6 +16,13 @@ import { getNotebookState } from '../hooks/useNotebookRedux'
 import { apiErrorMessage } from '../lib/errors'
 import type { ExplorerTarget } from './DataExplorer'
 
+// Every explore op and kernel-variable lookup targets a specific notebook's
+// own kernel now (notebooks used to share one global kernel). This file
+// deliberately doesn't call the useNotebookStore() hook (see below), so read
+// the current notebook id the same non-hook way it already reads everything
+// else about the active notebook.
+const currentNotebookId = () => getNotebookState().currentNotebook?.id ?? ''
+
 type Mode = 'gallery' | 'explore'
 
 export default function VizPane() {
@@ -199,13 +206,13 @@ function Explore() {
   // populate the variable picker (DataFrame-typed only) when no target supplied
   useEffect(() => {
     if (target) return
-    listVariables().then((vs) => setVars(vs.filter((v) => /DataFrame/.test(v.type)))).catch(() => {})
+    listVariables(currentNotebookId()).then((vs) => setVars(vs.filter((v) => /DataFrame/.test(v.type)))).catch(() => {})
   }, [target])
 
   // load schema for the active target
   useEffect(() => {
     if (!localTarget) return
-    exploreSchema(localTarget)
+    exploreSchema(currentNotebookId(), localTarget)
       .then((sc) => {
         setSchema(sc.columns)
         const firstCat = sc.columns.find((c) => c.logical !== 'number')
@@ -225,7 +232,7 @@ function Explore() {
     if (!localTarget || !dim) return
     setLoading(true)
     setErr(null)
-    exploreAggregate(localTarget, { dims, measures, limit: 5000 })
+    exploreAggregate(currentNotebookId(), localTarget, { dims, measures, limit: 5000 })
       .then((r) => {
         const recs = r.data.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])))
         setData(recs)

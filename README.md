@@ -145,8 +145,7 @@ real HTTP API (register → login → create notebook → execute) and through
 | "Integrated intelligence" (`/api/ai/explain`) | **Real** — verified against a real local Ollama model (`qwen2.5:7b-instruct`), returned a real, coherent, non-canned explanation in 5.3s | N/A (not a Jupyter feature) |
 | `.ipynb` format compatibility | Real, genuine `from_ipynb`/`to_ipynb` conversion exists (`crates/server/src/files.rs`) | N/A (native format) |
 
-**Two real bugs found while running this benchmark, one fixed, one critical
-and documented but not fixed:**
+**Two real bugs found while running this benchmark — both now fixed:**
 
 1. **Fixed:** the kernel process spawn hardcoded `Command::new("python")`,
    which doesn't exist on this (or many modern) machines — only `python3`
@@ -156,25 +155,34 @@ and documented but not fixed:**
    `python3`-first resolution helper used consistently across all 3 call
    sites that previously hardcoded `"python"`
    (`crates/server/src/kernel.rs`). Regression test added.
-2. **Critical, not fixed — needs a dedicated session:** the Python kernel
-   is a **single global process shared by every notebook on the server**,
-   not one kernel per notebook. Reproduced live: defined `x = 42` in one
-   notebook, then read `x` from a brand-new, unrelated notebook that never
-   defined it — it printed `42`. Any two notebooks (including two
-   different logged-in users', given the real JWT auth system) currently
-   share one Python namespace. This is a real data-isolation/security
-   issue, not just a quirk. Real Jupyter, by contrast, gives every notebook
-   its own isolated kernel process — this is the one place where
-   "Jupyter-compatible" doesn't hold up under a real test. Full detail,
-   including the exact 6 call sites and why this is an architectural fix
-   rather than a one-liner, in `ROADMAP_HONEST.md`.
+2. **FIXED (was critical):** the Python kernel used to be a **single
+   global process shared by every notebook on the server**, not one kernel
+   per notebook. Reproduced live: defined `x = 42` in one notebook, then
+   read `x` from a brand-new, unrelated notebook that never defined it —
+   it printed `42`. Any two notebooks (including two different logged-in
+   users', given the real JWT auth system) shared one Python namespace — a
+   real data-isolation/security issue, not just a quirk. **Fixed** by
+   replacing the single shared `KernelManager` with a
+   `kernel::KernelRegistry` keyed per-notebook (plus a `job:<id>` slot per
+   saved job and a fixed system slot for one-shot warehouse/database
+   queries), spawned lazily on first use. Required changing the public API
+   shape for 3 endpoints that previously had no notebook-id parameter at
+   all (`kernel/interrupt`, `kernel/restart`, `kernel/variables` — now
+   `/notebooks/:id/kernel/...`) plus updating every frontend caller.
+   **Re-verified live against the real running server** (not just unit
+   tests): the exact reproduction above (`x = 42` in notebook A, read from
+   notebook B) now correctly raises `NameError` in notebook B, while
+   notebook A's own state persists correctly across multiple real calls.
+   New Rust regression test (`kernel::tests::different_keys_get_independent_kernels_with_isolated_namespaces`)
+   spawns two real Python processes and asserts the same isolation. Full
+   detail in `ROADMAP_HONEST.md`.
 
 **Bottom line:** the core notebook semantics (cross-cell state, real error
-handling) genuinely work and match real Jupyter behavior once a kernel can
-actually start — plus real, working local-LLM-backed AI assistance Jupyter
-itself doesn't provide out of the box. But the per-notebook isolation gap
-above is a real, serious issue worth fixing before treating this as a
-safe multi-notebook or multi-user deployment.
+handling, and now real per-notebook kernel isolation) genuinely work and
+match real Jupyter behavior — plus real, working local-LLM-backed AI
+assistance Jupyter doesn't provide out of the box. Idle kernel eviction
+(kernels are never terminated once spawned) is a real, separate
+resource-management improvement, not a correctness gap.
 
 ## Building
 

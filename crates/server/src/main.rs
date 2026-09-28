@@ -101,9 +101,10 @@ pub struct AppState {
     ai_engine: tokio::sync::RwLock<Option<Arc<ai::AIEngine>>>,
     /// Where the AI config is persisted (so it survives restarts).
     ai_config_path: String,
-    kernel: tokio::sync::Mutex<Option<kernel::KernelManager>>,
-    /// Live interpreter PID (0 = none), used to interrupt a running cell.
-    kernel_pid: std::sync::Arc<std::sync::atomic::AtomicI32>,
+    /// One kernel per notebook (plus a job:<id> slot per job and a fixed
+    /// system slot for one-shot connection queries) -- see
+    /// kernel::KernelRegistry for why this replaced a single shared kernel.
+    kernels: kernel::KernelRegistry,
     /// Saved notebooks that run as a unit (optionally scheduled), Airflow-style.
     jobs: tokio::sync::Mutex<Vec<jobs::Job>>,
     /// Live cell output stream (JSON {cell_id, text}) broadcast to WebSocket
@@ -158,22 +159,17 @@ async fn main() -> anyhow::Result<()> {
         None
     };
 
-    // Initialize Jupyter kernel
-    let kernel = match kernel::KernelManager::new() {
-        Ok(k) => {
-            tracing::info!("Jupyter kernel initialized");
-            Some(k)
-        }
-        Err(e) => {
-            tracing::warn!("Failed to initialize kernel: {}", e);
-            None
-        }
-    };
-
-    let kernel_pid = kernel
-        .as_ref()
-        .map(|k| k.pid_handle())
-        .unwrap_or_else(|| std::sync::Arc::new(std::sync::atomic::AtomicI32::new(0)));
+    // Kernels are now spawned lazily, one per notebook (see kernel::KernelRegistry) --
+    // just log an early warning here if Python isn't even on PATH, since every
+    // real cell execution will otherwise fail later with a less obvious error.
+    if std::process::Command::new(kernel::python_binary())
+        .arg("--version")
+        .output()
+        .is_err()
+    {
+        tracing::warn!("python not found on PATH -- cell execution will fail until it is");
+    }
+    let kernels = kernel::KernelRegistry::new();
 
     // Initialize database
     let db_path = format!(
@@ -189,8 +185,7 @@ async fn main() -> anyhow::Result<()> {
         notebooks_dir,
         ai_engine: tokio::sync::RwLock::new(ai_engine),
         ai_config_path,
-        kernel: tokio::sync::Mutex::new(kernel),
-        kernel_pid,
+        kernels,
         jobs: tokio::sync::Mutex::new(jobs::load_jobs()),
         stream_tx: tokio::sync::broadcast::channel(2048).0,
         db_pool,
@@ -220,9 +215,15 @@ async fn main() -> anyhow::Result<()> {
                 .delete(api::delete_notebook),
         )
         .route("/notebooks/:id/execute", post(api::execute_cell))
-        .route("/kernel/interrupt", post(api::kernel_interrupt))
-        .route("/kernel/restart", post(api::kernel_restart))
-        .route("/kernel/variables", get(api::kernel_variables))
+        .route(
+            "/notebooks/:id/kernel/interrupt",
+            post(api::kernel_interrupt),
+        )
+        .route("/notebooks/:id/kernel/restart", post(api::kernel_restart))
+        .route(
+            "/notebooks/:id/kernel/variables",
+            get(api::kernel_variables),
+        )
         .route("/format", post(api::format_code))
         .route("/explore/overview", post(api::explore_overview))
         .route("/explore/schema", post(api::explore_schema))

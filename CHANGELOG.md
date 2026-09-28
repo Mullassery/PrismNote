@@ -13,6 +13,32 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+### Security
+- **Fixed a critical cross-notebook data isolation bug**: the Python kernel
+  was a single global process shared by every notebook on the server, not
+  one kernel per notebook — a variable defined in one notebook was
+  readable from any other notebook, including across different logged-in
+  users. Reproduced live before the fix: `x = 42` in notebook A, then
+  `print(x)` in a brand-new unrelated notebook B (never defined `x`)
+  printed `42`. Fixed by replacing the single shared `KernelManager` with
+  a `kernel::KernelRegistry` keyed per-notebook (plus a `job:<id>` slot per
+  saved job and a fixed system slot for one-shot warehouse/database
+  queries), spawned lazily on first use. **Breaking API change**: 3
+  endpoints that previously had no notebook-id parameter at all now
+  require one — `POST /api/kernel/interrupt` → `POST
+  /api/notebooks/:id/kernel/interrupt`, `POST /api/kernel/restart` →
+  `POST /api/notebooks/:id/kernel/restart`, `GET /api/kernel/variables` →
+  `GET /api/notebooks/:id/kernel/variables`; the 7 `/api/explore/*`
+  endpoints keep their URLs but now require a `notebook_id` field in the
+  JSON body. All frontend callers updated. Re-verified against the real
+  running server (not just unit tests): the exact reproduction above now
+  correctly raises `NameError` in notebook B, while notebook A's own state
+  persists correctly across multiple real calls. New Rust regression test
+  spawns two real Python processes and asserts the isolation
+  (`kernel::tests::different_keys_get_independent_kernels_with_isolated_namespaces`).
+  Idle kernel eviction (kernels are never terminated once spawned) is a
+  real, separate resource-management improvement, not addressed here.
+
 ### Changed
 - **Frontend lint cleanup: `frontend/src`'s `@typescript-eslint/no-explicit-any`
   errors reduced from 348 to 74** (file-wide `npm run lint`: 435 → 161

@@ -774,7 +774,7 @@ pub struct KernelManager {
 /// "Kernel not available. Install ipykernel" message even when ipykernel was
 /// installed and importable under `python3`. Checked python3 before python
 /// since that's the modern, unambiguous name.
-fn python_binary() -> &'static str {
+pub fn python_binary() -> &'static str {
     static RESOLVED: OnceLock<&'static str> = OnceLock::new();
     *RESOLVED.get_or_init(|| {
         for candidate in ["python3", "python"] {
@@ -1064,6 +1064,82 @@ impl Drop for KernelManager {
     }
 }
 
+/// A single notebook's (or job's, or the system utility slot's) kernel,
+/// plus its PID handle exposed separately so `kernel_interrupt` can signal
+/// a running cell without taking the same lock `execute()` holds while it
+/// runs.
+#[derive(Clone)]
+pub struct KernelHandle {
+    pub manager: Arc<tokio::sync::Mutex<KernelManager>>,
+    pub pid: Arc<AtomicI32>,
+}
+
+/// Per-key kernel isolation. Previously a single global `KernelManager` was
+/// shared by every notebook on the server -- a real data-isolation bug: a
+/// variable defined in one notebook was readable from any other notebook,
+/// including across different logged-in users (reproduced live: `x = 42`
+/// in one notebook, then `print(x)` in a brand-new unrelated notebook that
+/// never defined it, printed `42`). Kernels are spawned lazily on first use
+/// and never evicted -- bounded by how many distinct notebooks/jobs are
+/// actually touched in a server's lifetime, which is a real, separate
+/// resource-management improvement (idle eviction), not a correctness
+/// requirement for isolation itself.
+pub struct KernelRegistry {
+    kernels: tokio::sync::RwLock<std::collections::HashMap<String, KernelHandle>>,
+}
+
+impl KernelRegistry {
+    pub fn new() -> Self {
+        Self {
+            kernels: tokio::sync::RwLock::new(std::collections::HashMap::new()),
+        }
+    }
+
+    /// Reserved key for one-shot, stateless database/warehouse queries
+    /// executed "via the kernel" (`db_query_py`/`warehouse_query_py`
+    /// generate fully self-contained snippets -- connect, query, return a
+    /// throwaway `_df` -- with no dependency on any notebook's variables).
+    /// These get their own isolated kernel rather than either sharing a
+    /// real notebook's namespace or paying process-spawn cost per query.
+    pub const SYSTEM_KEY: &'static str = "__system__";
+
+    /// Get this key's kernel, spawning a fresh one on first use.
+    pub async fn get_or_spawn(&self, key: &str) -> Result<KernelHandle> {
+        {
+            let kernels = self.kernels.read().await;
+            if let Some(h) = kernels.get(key) {
+                return Ok(h.clone());
+            }
+        }
+        let mut kernels = self.kernels.write().await;
+        if let Some(h) = kernels.get(key) {
+            return Ok(h.clone());
+        }
+        let manager = KernelManager::new()?;
+        let pid = manager.pid_handle();
+        let handle = KernelHandle {
+            manager: Arc::new(tokio::sync::Mutex::new(manager)),
+            pid,
+        };
+        kernels.insert(key.to_string(), handle.clone());
+        Ok(handle)
+    }
+
+    /// Look up an already-spawned kernel without spawning a new one --
+    /// used by endpoints (interrupt/restart/variables) that should report
+    /// "kernel unavailable" for a notebook that has never executed a cell,
+    /// matching the original single-kernel endpoints' behavior.
+    pub async fn get(&self, key: &str) -> Option<KernelHandle> {
+        self.kernels.read().await.get(key).cloned()
+    }
+}
+
+impl Default for KernelRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1081,5 +1157,47 @@ mod tests {
             .output()
             .unwrap_or_else(|e| panic!("resolved python binary '{bin}' is not runnable: {e}"));
         assert!(output.status.success(), "'{bin} --version' exited non-zero");
+    }
+
+    #[tokio::test]
+    async fn different_keys_get_independent_kernels_with_isolated_namespaces() {
+        // Regression test for a real, previously-shipped data-isolation bug:
+        // every notebook shared ONE global KernelManager, so a variable
+        // defined in one notebook was readable from any other, including
+        // across different logged-in users. Verified here against real,
+        // separately-spawned Python processes (not mocked) -- a variable
+        // defined under one registry key must not exist under another.
+        let registry = KernelRegistry::new();
+
+        let notebook_a = registry.get_or_spawn("notebook-a").await.unwrap();
+        {
+            let mut k = notebook_a.manager.lock().await;
+            k.execute("x = 42").await.unwrap();
+        }
+
+        let notebook_b = registry.get_or_spawn("notebook-b").await.unwrap();
+        let (_, outputs) = {
+            let mut k = notebook_b.manager.lock().await;
+            k.execute("x").await.unwrap()
+        };
+        let rendered = format!("{outputs:?}");
+        assert!(
+            rendered.contains("NameError") || rendered.to_lowercase().contains("not defined"),
+            "expected notebook-b to have its own, independent namespace with no \
+             'x' defined -- got: {rendered}"
+        );
+
+        // Re-fetching the same key returns the SAME kernel (real state
+        // persistence within one notebook, not a fresh process per call).
+        let notebook_a_again = registry.get_or_spawn("notebook-a").await.unwrap();
+        let (_, outputs) = {
+            let mut k = notebook_a_again.manager.lock().await;
+            k.execute("x").await.unwrap()
+        };
+        assert!(
+            format!("{outputs:?}").contains("42"),
+            "expected re-fetching notebook-a's kernel to see its own real, \
+             previously-set x = 42"
+        );
     }
 }

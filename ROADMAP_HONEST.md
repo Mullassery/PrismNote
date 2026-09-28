@@ -20,28 +20,11 @@ no longer matches reality.
 
 ## 1. Security
 
-- **CRITICAL, found 2026-09-27 via real-world benchmarking against real
-  Jupyter: the Python kernel is a single global process shared by every
-  notebook on the server, not one kernel per notebook.**
-  `crates/server/src/main.rs:104` declares
-  `kernel: tokio::sync::Mutex<Option<kernel::KernelManager>>` — a single
-  slot in shared `AppState`, not a map keyed by notebook ID
-  (`crates/server/src/api.rs` has 6 call sites reading `state.kernel`, all
-  the same shared lock; `kernel_pid` is likewise one global atomic).
-  Reproduced live: created notebook A, ran `x = 42` in it; created a brand
-  new, unrelated notebook B that had never defined `x` anywhere; ran
-  `print(x)` in notebook B — it printed `42`, notebook A's variable. Any
-  two notebooks (including two different logged-in users', given the real
-  JWT auth system) share one Python global namespace. This is a real
-  data-isolation/security bug, not just a correctness quirk — one user's
-  notebook can read another user's in-memory variables/data. **Not fixed in
-  this pass**: the real fix (a `HashMap<notebook_id, KernelManager>` with
-  spawn-on-first-use and some idle-eviction policy, updated across all 6
-  call sites plus the pid-atomic) is a genuine multi-file architectural
-  change, not a scoped bug fix — needs a dedicated session. Zero test
-  coverage exists for `execute_cell`/kernel endpoints at all (no
-  `crates/server/tests/` directory), which is presumably why this was never
-  caught.
+- **FIXED (2026-09-27) — see CHANGELOG.md's `[Unreleased]` Security section
+  for the full writeup: the Python kernel used to be a single global
+  process shared by every notebook on the server (a real cross-notebook/
+  cross-user data-isolation bug), replaced with a `kernel::KernelRegistry`
+  keyed per-notebook, re-verified against the real running server.**
 - **FIXED (2026-09-27), same pass: kernel spawn hardcoded `Command::new("python")`,
   which doesn't exist on this (or many modern) machines** — `python3` is
   the interpreter that's actually present, and the only symptom was the

@@ -148,30 +148,35 @@ type Target = { var: string } | { source: Source }
 
 const post = <T,>(url: string, body: unknown) => axios.post<T>(url, body).then((r) => r.data)
 
-export const exploreOverview = (t: Target) =>
-  post<Overview>('/api/explore/overview', t)
+// Every explore op runs against a live variable in a specific notebook's own
+// kernel (notebooks no longer share one global kernel), so each call must
+// say which notebook it means.
+export const exploreOverview = (notebookId: string, t: Target) =>
+  post<Overview>('/api/explore/overview', { notebook_id: notebookId, ...t })
 
-export const exploreSchema = (t: Target) =>
-  post<SchemaResult>('/api/explore/schema', t)
+export const exploreSchema = (notebookId: string, t: Target) =>
+  post<SchemaResult>('/api/explore/schema', { notebook_id: notebookId, ...t })
 
-export const exploreDescribe = (t: Target) =>
-  post<DescribeResult>('/api/explore/describe', t)
+export const exploreDescribe = (notebookId: string, t: Target) =>
+  post<DescribeResult>('/api/explore/describe', { notebook_id: notebookId, ...t })
 
-export const exploreLineage = (t: Target) =>
-  post<Lineage>('/api/explore/lineage', t)
+export const exploreLineage = (notebookId: string, t: Target) =>
+  post<Lineage>('/api/explore/lineage', { notebook_id: notebookId, ...t })
 
 export const explorePage = (
+  notebookId: string,
   t: Target,
   opts: { offset: number; limit: number; sort?: Sort[]; filters?: Filter[]; search?: string },
-) => post<PageResult>('/api/explore/page', { ...t, ...opts })
+) => post<PageResult>('/api/explore/page', { notebook_id: notebookId, ...t, ...opts })
 
-export const exploreProfile = (t: Target, col: string) =>
-  post<ColumnProfile>('/api/explore/profile', { ...t, col })
+export const exploreProfile = (notebookId: string, t: Target, col: string) =>
+  post<ColumnProfile>('/api/explore/profile', { notebook_id: notebookId, ...t, col })
 
 export const exploreAggregate = (
+  notebookId: string,
   t: Target,
   opts: { dims: string[]; measures: Measure[]; filters?: Filter[]; limit?: number },
-) => post<PageResult>('/api/explore/aggregate', { ...t, ...opts })
+) => post<PageResult>('/api/explore/aggregate', { notebook_id: notebookId, ...t, ...opts })
 
 export const exploreExportCode = (
   t: Target,

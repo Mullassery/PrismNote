@@ -126,11 +126,18 @@ pub async fn update_notebook(
     }
 }
 
-/// Interrupt the currently running cell by sending SIGINT to the interpreter
-/// (raises KeyboardInterrupt in the user's code). Doesn't take the kernel lock,
-/// so it works while an execute() is in flight holding that lock.
-pub async fn kernel_interrupt(State(state): State<Arc<AppState>>) -> StatusCode {
-    let pid = state.kernel_pid.load(std::sync::atomic::Ordering::SeqCst);
+/// Interrupt the currently running cell in this notebook's kernel by sending
+/// SIGINT to its interpreter (raises KeyboardInterrupt in the user's code).
+/// Doesn't take the kernel lock, so it works while an execute() is in flight
+/// holding that lock.
+pub async fn kernel_interrupt(
+    State(state): State<Arc<AppState>>,
+    Path(notebook_id): Path<String>,
+) -> StatusCode {
+    let Some(handle) = state.kernels.get(&notebook_id).await else {
+        return StatusCode::SERVICE_UNAVAILABLE;
+    };
+    let pid = handle.pid.load(std::sync::atomic::Ordering::SeqCst);
     if pid <= 0 {
         return StatusCode::SERVICE_UNAVAILABLE;
     }
@@ -149,15 +156,18 @@ pub async fn kernel_interrupt(State(state): State<Arc<AppState>>) -> StatusCode 
     }
 }
 
-/// Restart the kernel, clearing all variables/imports.
-pub async fn kernel_restart(State(state): State<Arc<AppState>>) -> StatusCode {
-    let mut kernel = state.kernel.lock().await;
-    match kernel.as_mut() {
-        Some(k) => match k.restart() {
-            Ok(()) => StatusCode::OK,
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        },
-        None => StatusCode::SERVICE_UNAVAILABLE,
+/// Restart this notebook's kernel, clearing all its variables/imports.
+pub async fn kernel_restart(
+    State(state): State<Arc<AppState>>,
+    Path(notebook_id): Path<String>,
+) -> StatusCode {
+    let Some(handle) = state.kernels.get(&notebook_id).await else {
+        return StatusCode::SERVICE_UNAVAILABLE;
+    };
+    let mut kernel = handle.manager.lock().await;
+    match kernel.restart() {
+        Ok(()) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
 
@@ -330,11 +340,32 @@ pub async fn execute_cell(
         );
     }
 
-    // Execute
-    let mut kernel = state.kernel.lock().await;
-    match kernel.as_mut() {
-        Some(k) => {
-            // Route the cell by its leading magic (Zeppelin-style interpreters).
+    // Execute, in THIS notebook's own kernel (spawned on first use) -- not a
+    // kernel shared with every other notebook on the server.
+    let handle = match state.kernels.get_or_spawn(&id).await {
+        Ok(h) => h,
+        Err(_) => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ExecuteCellResponse {
+                    execution_count: 0,
+                    outputs: vec![Output {
+                        output_type: "error".to_string(),
+                        data: None,
+                        text: Some(vec![
+                            "Kernel not available. Install ipykernel: pip install ipykernel"
+                                .to_string(),
+                        ]),
+                        metadata: None,
+                    }],
+                }),
+            )
+        }
+    };
+    let mut kernel = handle.manager.lock().await;
+    let k = &mut *kernel;
+    {
+        // Route the cell by its leading magic (Zeppelin-style interpreters).
             let (magic, body) = parse_magic(&code);
 
             // Live-output streaming: forward stdout chunks to WS clients tagged
@@ -411,23 +442,7 @@ pub async fn execute_cell(
                 ),
             }
         }
-        None => (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(ExecuteCellResponse {
-                execution_count: 0,
-                outputs: vec![Output {
-                    output_type: "error".to_string(),
-                    data: None,
-                    text: Some(vec![
-                        "Kernel not available. Install ipykernel: pip install ipykernel"
-                            .to_string(),
-                    ]),
-                    metadata: None,
-                }],
-            }),
-        ),
     }
-}
 
 #[derive(serde::Deserialize)]
 pub struct TerminalRequest {
@@ -1162,17 +1177,20 @@ pub struct CreateJobRequest {
     pub schedule: Option<Schedule>,
 }
 
-/// Execute a job's code cells in order against the shared kernel, returning a
-/// run summary. Each cell that emits an `error` output counts as failed.
-async fn execute_job_cells(state: &Arc<AppState>, cells: &[String]) -> JobRun {
+/// Execute a job's code cells in order against the job's OWN kernel (keyed
+/// by job id, isolated from every notebook's kernel and every other job's),
+/// returning a run summary. Each cell that emits an `error` output counts
+/// as failed.
+async fn execute_job_cells(state: &Arc<AppState>, job_id: &str, cells: &[String]) -> JobRun {
     let started = chrono::Local::now().to_rfc3339();
     let mut ok = 0usize;
     let mut failed = 0usize;
     let mut log = String::new();
 
-    let mut kernel = state.kernel.lock().await;
-    match kernel.as_mut() {
-        Some(k) => {
+    let kernel_key = format!("job:{job_id}");
+    match state.kernels.get_or_spawn(&kernel_key).await {
+        Ok(handle) => {
+            let mut k = handle.manager.lock().await;
             for (i, code) in cells.iter().enumerate() {
                 if code.trim().is_empty() {
                     continue;
@@ -1197,7 +1215,7 @@ async fn execute_job_cells(state: &Arc<AppState>, cells: &[String]) -> JobRun {
                 }
             }
         }
-        None => {
+        Err(_) => {
             log.push_str("kernel unavailable\n");
             failed += 1;
         }
@@ -1223,7 +1241,7 @@ async fn run_job(state: &Arc<AppState>, id: &str) -> Option<JobRun> {
         let jobs = state.jobs.lock().await;
         jobs.iter().find(|j| j.id == id)?.cells.clone()
     };
-    let run = execute_job_cells(state, &cells).await;
+    let run = execute_job_cells(state, id, &cells).await;
     let mut jobs = state.jobs.lock().await;
     if let Some(job) = jobs.iter_mut().find(|j| j.id == id) {
         job.last_run = Some(run.finished_at.clone());
@@ -1467,19 +1485,20 @@ with DAG(
 // ── Variable explorer ────────────────────────────────────────────────────────
 pub async fn kernel_variables(
     State(state): State<Arc<AppState>>,
+    Path(notebook_id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let mut kernel = state.kernel.lock().await;
-    match kernel.as_mut() {
-        Some(k) => match k.inspect().await {
-            Ok(v) => (StatusCode::OK, Json(json!({ "variables": v }))),
-            Err(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": e.to_string(), "variables": [] })),
-            ),
-        },
-        None => (
+    let Some(handle) = state.kernels.get(&notebook_id).await else {
+        return (
             StatusCode::SERVICE_UNAVAILABLE,
             Json(json!({ "variables": [] })),
+        );
+    };
+    let mut kernel = handle.manager.lock().await;
+    match kernel.inspect().await {
+        Ok(v) => (StatusCode::OK, Json(json!({ "variables": v }))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": e.to_string(), "variables": [] })),
         ),
     }
 }
@@ -1605,27 +1624,41 @@ async fn explore_dispatch(
     mut req: serde_json::Value,
     op: &str,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    // Exploring a variable only makes sense against the SAME kernel/notebook
+    // that actually created it -- a global "notebook_id" field on the
+    // request body (not a URL path param, since this handler serves 7 thin
+    // wrappers sharing one untyped JSON body shape).
+    let notebook_id = req
+        .as_object_mut()
+        .and_then(|map| map.remove("notebook_id"))
+        .and_then(|v| v.as_str().map(str::to_string));
+    let Some(notebook_id) = notebook_id else {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "missing notebook_id" })),
+        );
+    };
     if let Some(map) = req.as_object_mut() {
         map.insert("op".to_string(), json!(op));
     }
-    let mut kernel = state.kernel.lock().await;
-    match kernel.as_mut() {
-        Some(k) => match k.explore(req).await {
-            Ok(v) => {
-                if v.get("error").is_some() {
-                    (StatusCode::BAD_REQUEST, Json(v))
-                } else {
-                    (StatusCode::OK, Json(v))
-                }
-            }
-            Err(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": e.to_string() })),
-            ),
-        },
-        None => (
+    let Some(handle) = state.kernels.get(&notebook_id).await else {
+        return (
             StatusCode::SERVICE_UNAVAILABLE,
             Json(json!({ "error": "kernel unavailable" })),
+        );
+    };
+    let mut kernel = handle.manager.lock().await;
+    match kernel.explore(req).await {
+        Ok(v) => {
+            if v.get("error").is_some() {
+                (StatusCode::BAD_REQUEST, Json(v))
+            } else {
+                (StatusCode::OK, Json(v))
+            }
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": e.to_string() })),
         ),
     }
 }
@@ -1770,19 +1803,24 @@ fn build_explore_code(req: &serde_json::Value) -> String {
 }
 
 // ── Real SQL execution via the kernel (OSS connectors, no bundled drivers) ────
-// We generate Python that ends in a pandas DataFrame and run it in the shared
-// kernel; the DataFrame's `application/vnd.prismnote.df+json` bundle is reshaped
-// into {columns, rows}. This keeps the core MIT and lets users bring whichever
-// permissively-licensed connector they need (pg8000/PyMySQL/duckdb/…); nothing
-// proprietary is vendored.
+// We generate Python that ends in a pandas DataFrame and run it in a
+// dedicated system kernel (KernelRegistry::SYSTEM_KEY) reserved for these
+// one-shot, fully self-contained snippets -- connect, query, return a
+// throwaway DataFrame, with no dependency on (or leakage into) any real
+// notebook's variables. The DataFrame's `application/vnd.prismnote.df+json`
+// bundle is reshaped into {columns, rows}. This keeps the core MIT and lets
+// users bring whichever permissively-licensed connector they need
+// (pg8000/PyMySQL/duckdb/…); nothing proprietary is vendored.
 async fn query_via_kernel(
     state: &Arc<AppState>,
     py: &str,
 ) -> Result<(Vec<serde_json::Value>, Vec<serde_json::Value>), String> {
-    let mut kernel = state.kernel.lock().await;
-    let k = kernel
-        .as_mut()
-        .ok_or_else(|| "kernel unavailable".to_string())?;
+    let handle = state
+        .kernels
+        .get_or_spawn(crate::kernel::KernelRegistry::SYSTEM_KEY)
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut k = handle.manager.lock().await;
     let outputs = match k.execute(py).await {
         Ok((_s, o)) => o,
         Err(e) => return Err(e.to_string()),

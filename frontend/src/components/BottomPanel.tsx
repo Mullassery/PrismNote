@@ -112,9 +112,13 @@ export default function BottomPanel({
   const [variables, setVariables] = useState<KernelVariable[]>([])
   const [varsLoading, setVarsLoading] = useState(false)
   const loadVariables = async () => {
+    if (!currentNotebook) {
+      setVariables([])
+      return
+    }
     setVarsLoading(true)
     try {
-      const r = await fetch('/api/kernel/variables')
+      const r = await fetch(`/api/notebooks/${currentNotebook.id}/kernel/variables`)
       const d = await r.json()
       setVariables(d.variables ?? [])
     } catch {
