@@ -20,7 +20,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 async-trait = "0.1"
-zeromq = "0.4"
+zeromq = "0.6"
 tempfile = "3"
 anyhow = "1"
 thiserror = "1"
