@@ -146,3 +146,5 @@ build/
 # Database
 *.db
 *.sqlite
+
+graphify-out/
