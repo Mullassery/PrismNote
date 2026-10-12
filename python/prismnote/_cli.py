@@ -135,6 +135,29 @@ class PlatformDetector:
         return binary_map.get((os_type, arch), "prismnote")
 
     @staticmethod
+    def get_binary_candidates():
+        """Release asset names to try, most-specific first.
+
+        `get_binary_name()` returns a chip-specific name (e.g.
+        `prismnote-macos-m2`), but releases since v1.11.0 ship a single
+        generic `prismnote-macos-arm64` asset for every Apple Silicon chip.
+        Return the chip-specific name first, then the generic aliases that
+        releases actually upload, so the download succeeds regardless of
+        which naming scheme a given release used.
+        """
+        primary = PlatformDetector.get_binary_name()
+        candidates = [primary]
+        os_type = PlatformDetector.get_os()
+        arch = PlatformDetector.get_arch()
+        macos_apple_silicon = {
+            "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "arm64",
+        }
+        if os_type == "macos" and arch in macos_apple_silicon:
+            candidates.append("prismnote-macos-arm64")
+            candidates.append("prismnote-macos-m1")
+        return list(dict.fromkeys(candidates))
+
+    @staticmethod
     def print_info():
         """Print detection info"""
         os_type = PlatformDetector.get_os()
@@ -149,10 +172,15 @@ def get_binary_name():
     return PlatformDetector.get_binary_name()
 
 
+def get_binary_candidates():
+    """Get the candidate release asset names for the current platform."""
+    return PlatformDetector.get_binary_candidates()
+
+
 def download_binary(version: str = __version__):
     """Download the pre-built binary from GitHub Releases."""
-    binary_name = get_binary_name()
-    url = f"https://github.com/{GITHUB_REPO}/releases/download/v{version}/{binary_name}"
+    candidates = get_binary_candidates()
+    binary_name = candidates[0]
 
     print(f"Downloading PrismNote {version}...")
     PlatformDetector.print_info()
@@ -164,20 +192,26 @@ def download_binary(version: str = __version__):
         print(f"Using cached binary: {binary_path}")
         return binary_path
 
-    try:
-        print(f"Downloading from: {url}")
-        urllib.request.urlretrieve(url, binary_path)
-        os.chmod(binary_path, 0o755)
-        print(f"Downloaded to {binary_path}")
-        return binary_path
-    except Exception as e:
-        print(f"Error downloading binary: {e}")
-        print("\nSupported platforms:")
-        print("  macOS: M1, M2, M3, M4, M5, M6, M7, M8, Intel x86_64")
-        print("  Linux: x86_64, ARM64, ARMv7")
-        print("  Windows: x86_64, ARM64")
-        print(f"\nYou can manually download from: {url}")
-        sys.exit(1)
+    last_error = None
+    for name in candidates:
+        url = f"https://github.com/{GITHUB_REPO}/releases/download/v{version}/{name}"
+        try:
+            print(f"Downloading from: {url}")
+            urllib.request.urlretrieve(url, binary_path)
+            os.chmod(binary_path, 0o755)
+            print(f"Downloaded to {binary_path}")
+            return binary_path
+        except Exception as e:  # try the next candidate asset name
+            last_error = e
+
+    url = f"https://github.com/{GITHUB_REPO}/releases/download/v{version}/{binary_name}"
+    print(f"Error downloading binary: {last_error}")
+    print("\nSupported platforms:")
+    print("  macOS: M1, M2, M3, M4, M5, M6, M7, M8, Intel x86_64")
+    print("  Linux: x86_64, ARM64, ARMv7")
+    print("  Windows: x86_64, ARM64")
+    print(f"\nYou can manually download from: {url}")
+    sys.exit(1)
 
 
 def main():

@@ -30,6 +30,13 @@ accuracy in this pass).
   old fake `github_sync.rs` and `duckdb_engine.rs` modules were removed. 173
   Rust tests pass. Automatic notebook-backup *scheduling* on top of the storage
   clients remains unbuilt.
+- **The `prismnote` launcher (`python/prismnote/_cli.py`) could not download
+  its server binary on Apple Silicon.** It requested a chip-specific release
+  asset (e.g. `prismnote-macos-m1`) but releases since v1.11.0 ship only the
+  generic `prismnote-macos-arm64`, so `download_binary()` always 404'd and
+  exited. It now tries the chip-specific name first and falls back to the
+  generic `prismnote-macos-arm64` (and `prismnote-macos-m1`) asset names that
+  releases actually upload.
 
 ### Security
 - **Fixed a critical cross-notebook data isolation bug**: the Python kernel
