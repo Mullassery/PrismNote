@@ -1,5 +1,7 @@
 # PrismNote
 
+[![Grapify](https://img.shields.io/badge/Grapify-Code%20Scan-purple)](https://grapify.ai)
+
 ## Problem
 
 Most notebook tools force a choice: a lightweight local notebook with no
