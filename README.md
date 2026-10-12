@@ -27,9 +27,7 @@ and connectors for cloud data warehouses.
   etc.) from a notebook** without switching to a separate BI tool.
 - **Not yet a good fit for:** MongoDB access (not implemented, returns an
   explicit error rather than faking success); data-quality scoring (the one
-  area still not wired to real execution — see [Other integrations](#other-integrations)); cloud storage backup (S3/GCS/Azure Blob/Google Drive client code
-  is real and unit-tested, but the `/cloud-storage` HTTP API is not wired to
-  it — see [Other integrations](#other-integrations)); Linux/Windows without building from source (prebuilt binary is macOS Apple Silicon only today).
+  area still not wired to real execution — see [Other integrations](#other-integrations)); Linux/Windows without building from source (prebuilt binary is macOS Apple Silicon only today).
 
 ## What this is
 
@@ -113,20 +111,18 @@ Two data-quality-scoring code paths (`api::get_quality_score`,
 execution — they'd need an assertion-storage and table-to-queryable-data
 layer that doesn't exist yet, rather than something fakeable in isolation.
 
-**Cloud storage (S3/GCS/Azure Blob/Google Drive) is implemented but not
-wired to the API.** `crates/server/src/cloud_storage.rs` has real,
-unit-tested HTTP clients — S3 (SigV4-signed), GCS (service-account JWT
-OAuth), Azure Blob (Shared Key HMAC-SHA256), Google Drive (OAuth
-refresh-token) — with real upload/download/list/delete methods on each
-client. However, the actual `/cloud-storage` HTTP endpoints
-(`api::add_cloud_storage`, `api::list_cloud_storage`,
-`api::remove_cloud_storage`) never call this code: `add_cloud_storage`
-returns a hardcoded "mounted" success response without validating or
-storing anything, `list_cloud_storage` returns four hardcoded example
-entries regardless of what was "added," and `remove_cloud_storage` is a
-no-op that always reports success. A user who configures real S3
-credentials through this API is not actually getting their notebooks
-backed up to S3. See `ROADMAP_HONEST.md` for the full verification.
+**Cloud storage (S3/GCS/Azure Blob/Google Drive) is wired to the API.**
+`crates/server/src/cloud_storage.rs` has real, unit-tested HTTP clients —
+S3 (SigV4-signed), GCS (service-account JWT OAuth), Azure Blob (Shared Key
+HMAC-SHA256), Google Drive (OAuth refresh-token) — with real
+upload/download/list/delete methods on each client. The `/cloud-storage`
+HTTP endpoints (`api::add_cloud_storage`, `api::list_cloud_storage`,
+`api::remove_cloud_storage`) call this code: `add_cloud_storage` parses the
+provider credentials and registers a real client, `list_cloud_storage`
+returns the configured clients, and `remove_cloud_storage` drops one. A user
+who configures real S3 credentials through this API gets a real client
+backed by the same code the unit tests exercise. (What is *not* yet built is
+automatic notebook backup scheduling on top of these clients.)
 
 ## vs Jupyter
 

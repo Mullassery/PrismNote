@@ -1,4 +1,6 @@
 use crate::ai::AIRequest;
+use crate::cloud_storage::{CloudStorageConfig, CloudStorageCredentials, CloudStorageProvider};
+use crate::github_integration;
 use crate::models::{ExecuteCellRequest, ExecuteCellResponse, Notebook, Output};
 use crate::AppState;
 use axum::{
@@ -2934,105 +2936,354 @@ pub struct AddCloudStorageRequest {
 }
 
 pub async fn add_cloud_storage(
+    State(state): State<Arc<AppState>>,
     Json(req): Json<AddCloudStorageRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::CREATED,
-        Json(json!({
-            "status": "mounted",
-            "name": req.name,
-            "provider": req.provider,
-            "mount_path": format!("/mnt/{}", req.name),
-            "feature_status": "Cloud storage mounting ready for v0.4 (S3, GCS, Azure Blob, Google Drive)"
-        })),
-    )
+    let cfg = &req.config;
+    let s = |k: &str| {
+        cfg.get(k)
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string()
+    };
+
+    let config = match req.provider.to_lowercase().as_str() {
+        "s3" => CloudStorageConfig {
+            provider: CloudStorageProvider::S3,
+            mount_path: format!("/mnt/{}", req.name),
+            credentials: CloudStorageCredentials::S3 {
+                access_key_id: s("access_key_id"),
+                secret_access_key: s("secret_access_key"),
+                bucket: s("bucket"),
+                region: cfg
+                    .get("region")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("us-east-1")
+                    .to_string(),
+            },
+        },
+        "gcs" => CloudStorageConfig {
+            provider: CloudStorageProvider::GCS,
+            mount_path: format!("/mnt/{}", req.name),
+            credentials: CloudStorageCredentials::GCS {
+                project_id: s("project_id"),
+                private_key: s("private_key"),
+                client_email: s("client_email"),
+                bucket: s("bucket"),
+            },
+        },
+        "azure" | "azure_blob" | "azureblob" => CloudStorageConfig {
+            provider: CloudStorageProvider::AzureBlob,
+            mount_path: format!("/mnt/{}", req.name),
+            credentials: CloudStorageCredentials::AzureBlob {
+                connection_string: s("connection_string"),
+                container: s("container"),
+                storage_account: s("storage_account"),
+            },
+        },
+        "gdrive" | "google_drive" | "googledrive" => CloudStorageConfig {
+            provider: CloudStorageProvider::GoogleDrive,
+            mount_path: format!("/mnt/{}", req.name),
+            credentials: CloudStorageCredentials::GoogleDrive {
+                client_id: s("client_id"),
+                client_secret: s("client_secret"),
+                refresh_token: s("refresh_token"),
+            },
+        },
+        other => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "error": format!("unsupported provider '{other}' (expected s3, gcs, azure, or gdrive)")
+                })),
+            )
+        }
+    };
+
+    let mut mgr = state.cloud_storage.write().await;
+    match mgr.add_storage(&req.name, config).await {
+        Ok(()) => (
+            StatusCode::CREATED,
+            Json(json!({
+                "status": "mounted",
+                "name": req.name,
+                "provider": req.provider,
+                "mount_path": format!("/mnt/{}", req.name),
+            })),
+        ),
+        Err(e) => (StatusCode::BAD_REQUEST, Json(json!({"error": e}))),
+    }
 }
 
-pub async fn list_cloud_storage() -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::OK,
-        Json(json!({
-            "storages": [
-                {"name": "Example S3", "provider": "s3", "status": "available"},
-                {"name": "Example GCS", "provider": "gcs", "status": "available"},
-                {"name": "Example Azure", "provider": "azure", "status": "available"},
-                {"name": "Example Google Drive", "provider": "google_drive", "status": "available"}
-            ],
-            "feature_note": "Configure cloud storage in Settings → Cloud Storage (v0.4)"
-        })),
-    )
+pub async fn list_cloud_storage(
+    State(state): State<Arc<AppState>>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let mgr = state.cloud_storage.read().await;
+    let mut storages: Vec<(String, &str)> = Vec::new();
+    storages.extend(mgr.s3_clients.keys().map(|n| (n.clone(), "s3")));
+    storages.extend(mgr.gcs_clients.keys().map(|n| (n.clone(), "gcs")));
+    storages.extend(mgr.azure_clients.keys().map(|n| (n.clone(), "azure")));
+    storages.extend(mgr.gdrive_clients.keys().map(|n| (n.clone(), "gdrive")));
+    storages.sort();
+
+    let items: Vec<serde_json::Value> = storages
+        .iter()
+        .map(|(name, provider)| {
+            json!({
+                "name": name,
+                "provider": provider,
+                "status": "available",
+                "mount_path": format!("/mnt/{name}"),
+            })
+        })
+        .collect();
+
+    (StatusCode::OK, Json(json!({ "storages": items })))
 }
 
 pub async fn remove_cloud_storage(
+    State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::NO_CONTENT,
-        Json(json!({"status": "unmounted", "name": name})),
-    )
+    let mut mgr = state.cloud_storage.write().await;
+    match mgr.remove_storage(&name) {
+        Ok(()) => (
+            StatusCode::NO_CONTENT,
+            Json(json!({"status": "unmounted", "name": name})),
+        ),
+        Err(e) => (StatusCode::NOT_FOUND, Json(json!({"error": e}))),
+    }
 }
 
 // GitHub integration endpoints
 #[derive(Deserialize)]
 pub struct GitHubAuthRequest {
     pub token: String,
-    pub username: String,
+    #[serde(default)]
+    pub username: Option<String>,
+    #[serde(default)]
+    pub owner: Option<String>,
+    #[serde(default)]
+    pub repo: Option<String>,
+    #[serde(default = "default_github_branch")]
+    pub branch: String,
+    #[serde(default)]
+    pub path: Option<String>,
 }
 
+fn default_github_branch() -> String {
+    "main".to_string()
+}
+
+/// Configure the GitHub backup/sync manager with a token and (optionally) a
+/// target repository. Real Contents API calls, no mocked responses.
 pub async fn configure_github(
+    State(state): State<Arc<AppState>>,
     Json(req): Json<GitHubAuthRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    let mut mgr = state.github.write().await;
+    *mgr = github_integration::GitHubManager::new(Some(req.token.clone()));
+
+    let (owner, repo) = match (req.owner.clone(), req.repo.clone()) {
+        (Some(o), Some(r)) if !o.is_empty() && !r.is_empty() => (o, r),
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "status": "error",
+                    "error": "both 'owner' and 'repo' are required to configure a backup repository"
+                })),
+            )
+        }
+    };
+
+    if let Err(e) = mgr
+        .add_repository(
+            owner.clone(),
+            repo.clone(),
+            req.branch.clone(),
+            req.path.clone().unwrap_or_default(),
+        )
+        .await
+    {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": e})));
+    }
+
     (
         StatusCode::OK,
         Json(json!({
             "status": "configured",
+            "owner": owner,
+            "repo": repo,
+            "branch": req.branch,
             "username": req.username,
-            "auto_backup": false,
-            "feature_status": "GitHub integration ready for v0.5 (push/pull/sync notebooks)"
+            "syncEnabled": true,
+            "autoSync": false,
         })),
     )
+}
+
+/// Read a notebook's `.ipynb` content, or a `NOT_FOUND` JSON error.
+async fn read_notebook_or_error(
+    state: &Arc<AppState>,
+    notebook_id: &str,
+) -> Result<String, (StatusCode, Json<serde_json::Value>)> {
+    let path = format!("{}/{}.ipynb", state.notebooks_dir, notebook_id);
+    tokio::fs::read_to_string(&path).await.map_err(|e| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": format!("notebook '{notebook_id}' not found: {e}")})),
+        )
+    })
+}
+
+fn first_github_repo(
+    mgr: &github_integration::GitHubManager,
+) -> Result<github_integration::GitHubRepository, (StatusCode, Json<serde_json::Value>)> {
+    mgr.repositories.first().cloned().ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "no GitHub repository configured; POST /api/github/configure first"})),
+        )
+    })
 }
 
 pub async fn sync_with_github(
+    State(state): State<Arc<AppState>>,
     Path(notebook_id): Path<String>,
-    Json(req): Json<serde_json::Value>,
+    Json(_req): Json<serde_json::Value>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::OK,
-        Json(json!({
-            "status": "synced",
-            "notebook_id": notebook_id,
-            "repository": req.get("repository"),
-            "branch": "main",
-            "message": "GitHub sync ready for v0.5 (bidirectional sync)"
-        })),
-    )
+    let content = match read_notebook_or_error(&state, &notebook_id).await {
+        Ok(c) => c,
+        Err(e) => return e,
+    };
+    let mgr = state.github.read().await;
+    let repo = match first_github_repo(&mgr) {
+        Ok(r) => r,
+        Err(e) => return e,
+    };
+    match mgr
+        .sync_notebook(&repo, format!("{notebook_id}.ipynb"), content)
+        .await
+    {
+        Ok(message) => (
+            StatusCode::OK,
+            Json(json!({
+                "status": "synced",
+                "notebook_id": notebook_id,
+                "repository": format!("{}/{}", repo.owner, repo.repo),
+                "branch": repo.branch,
+                "message": message,
+            })),
+        ),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            Json(json!({"status": "error", "notebook_id": notebook_id, "error": e})),
+        ),
+    }
 }
 
 pub async fn push_to_github(
+    State(state): State<Arc<AppState>>,
     Path(notebook_id): Path<String>,
     Json(req): Json<serde_json::Value>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::OK,
-        Json(json!({
-            "status": "pushed",
-            "notebook_id": notebook_id,
-            "message": req.get("message").unwrap_or(&json!("Update notebook")),
-            "feature_status": "Push to GitHub ready for v0.5"
-        })),
-    )
+    let content = match read_notebook_or_error(&state, &notebook_id).await {
+        Ok(c) => c,
+        Err(e) => return e,
+    };
+    let mgr = state.github.read().await;
+    let repo = match first_github_repo(&mgr) {
+        Ok(r) => r,
+        Err(e) => return e,
+    };
+    match mgr
+        .push_notebook(&repo, format!("{notebook_id}.ipynb"), content)
+        .await
+    {
+        Ok(url) => (
+            StatusCode::OK,
+            Json(json!({
+                "status": "pushed",
+                "notebook_id": notebook_id,
+                "message": req.get("commitMessage").and_then(|m| m.as_str()).unwrap_or("Update notebook"),
+                "url": url,
+            })),
+        ),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            Json(json!({"status": "error", "notebook_id": notebook_id, "error": e})),
+        ),
+    }
 }
 
 pub async fn pull_from_github(
+    State(state): State<Arc<AppState>>,
     Path(notebook_id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    let (repo, content) = {
+        let mgr = state.github.read().await;
+        let repo = match first_github_repo(&mgr) {
+            Ok(r) => r,
+            Err(e) => return e,
+        };
+        let content = match mgr
+            .pull_notebook(&repo, format!("{notebook_id}.ipynb"))
+            .await
+        {
+            Ok(c) => c,
+            Err(e) => {
+                return (
+                    StatusCode::BAD_GATEWAY,
+                    Json(json!({"status": "error", "notebook_id": notebook_id, "error": e})),
+                )
+            }
+        };
+        (repo, content)
+    };
+
+    let path = format!("{}/{}.ipynb", state.notebooks_dir, notebook_id);
+    if let Err(e) = tokio::fs::write(&path, content).await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"status": "error", "error": format!("failed to write notebook: {e}")})),
+        );
+    }
+
     (
         StatusCode::OK,
         Json(json!({
             "status": "pulled",
             "notebook_id": notebook_id,
-            "feature_status": "Pull from GitHub ready for v0.5"
+            "repository": format!("{}/{}", repo.owner, repo.repo),
+            "branch": repo.branch,
+        })),
+    )
+}
+
+pub async fn github_status(
+    State(state): State<Arc<AppState>>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let mgr = state.github.read().await;
+    let configured = mgr.token.is_some();
+    let repositories: Vec<serde_json::Value> = mgr
+        .repositories
+        .iter()
+        .map(|r| {
+            json!({
+                "owner": r.owner,
+                "repo": r.repo,
+                "branch": r.branch,
+                "path": r.path,
+            })
+        })
+        .collect();
+    (
+        StatusCode::OK,
+        Json(json!({
+            "configured": configured,
+            "status": if configured { "configured" } else { "unconfigured" },
+            "repositories": repositories,
         })),
     )
 }

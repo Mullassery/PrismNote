@@ -114,6 +114,10 @@ pub struct AppState {
     pub db_pool: SqlitePool,
     /// Query result cache (v1.2.1)
     pub query_cache: cache::QueryCache,
+    /// Real GitHub notebook backup/sync via the Contents API.
+    pub github: tokio::sync::RwLock<github_integration::GitHubManager>,
+    /// Real cloud-storage clients (S3/GCS/Azure Blob/Google Drive).
+    pub cloud_storage: tokio::sync::RwLock<cloud_storage::CloudStorageManager>,
 }
 
 #[tokio::main]
@@ -190,6 +194,8 @@ async fn main() -> anyhow::Result<()> {
         stream_tx: tokio::sync::broadcast::channel(2048).0,
         db_pool,
         query_cache,
+        github: tokio::sync::RwLock::new(github_integration::GitHubManager::new(None)),
+        cloud_storage: tokio::sync::RwLock::new(cloud_storage::CloudStorageManager::new()),
     });
 
     // Background scheduler: every 60s, run any jobs whose schedule is due.
@@ -376,7 +382,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/github/configure", post(api::configure_github))
         .route("/notebooks/:id/github/sync", post(api::sync_with_github))
         .route("/notebooks/:id/github/push", post(api::push_to_github))
-        .route("/notebooks/:id/github/pull", get(api::pull_from_github))
+        .route("/notebooks/:id/github/pull", post(api::pull_from_github))
+        .route("/notebooks/:id/github/status", get(api::github_status))
         // Output zoom and fullscreen
         .route("/outputs/:output_id/zoom", put(api::set_output_zoom))
         .route(

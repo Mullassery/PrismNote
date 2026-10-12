@@ -13,6 +13,24 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-10-12
+
+### Fixed
+- **Cloud storage and GitHub backup are now wired to real implementations
+  instead of fake-success stubs.** `AppState` (`main.rs`) now holds a real
+  `github_integration::GitHubManager` and `cloud_storage::CloudStorageManager`,
+  and the routed handlers in `api.rs` call them: `add_cloud_storage` parses the
+  provider + credentials and registers a real client (S3 SigV4 / GCS
+  service-account JWT / Azure Blob Shared Key HMAC-SHA256 / Google Drive OAuth
+  refresh-token), returning `400` for an unknown provider; `list_cloud_storage`
+  returns the actually-configured clients; `remove_cloud_storage` drops one.
+  GitHub configure/sync/push/pull now use the real Contents API via
+  `github_integration.rs` (a new `GET /notebooks/:id/github/status` route was
+  added, and `pull` is now `POST` to match the other mutating sync routes); the
+  old fake `github_sync.rs` and `duckdb_engine.rs` modules were removed. 173
+  Rust tests pass. Automatic notebook-backup *scheduling* on top of the storage
+  clients remains unbuilt.
+
 ### Security
 - **Fixed a critical cross-notebook data isolation bug**: the Python kernel
   was a single global process shared by every notebook on the server, not
@@ -130,10 +148,8 @@ accuracy in this pass).
   hardcoded stub handlers never wired to it or to the separate
   `file_manager::CloudStorageManager` mount registry — a user submitting
   real cloud credentials through this API gets a fake success response and
-  no actual storage integration. Not wired up in this pass (a real
-  feature-completion task, not a bounded fix); README and
-  `ROADMAP_HONEST.md` corrected instead of leaving the inaccurate claim in
-  place.
+  no actual storage integration. **Subsequently wired in 1.12.0 — see the
+  1.12.0 entry above**; README and `ROADMAP_HONEST.md` updated accordingly.
 
 ## [1.11.1] - 2026-09-22
 

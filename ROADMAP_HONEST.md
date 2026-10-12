@@ -75,26 +75,20 @@ no longer matches reality.
 
 ## 2. Data-loss / correctness bugs (feature silently doesn't do what it claims)
 
-- **Cloud storage (`CloudStorageManager`) is dead code behind a fake-success
-  API.** There are *two* separate `CloudStorageManager` structs — one with
-  real S3 SigV4 / GCS service-account JWT / Azure Blob Shared Key HMAC /
-  Google Drive OAuth clients and real mockito-backed unit tests
-  (`crates/server/src/cloud_storage.rs:1078`), one a mount-registry
-  (`crates/server/src/file_manager.rs:194`) — and neither is referenced
-  from `AppState`, `main.rs`, or `api.rs` (confirmed via
-  `grep -rn "CloudStorageManager" crates/server/src`, zero hits outside
-  each struct's own file). The actual routed handlers
-  (`api::add_cloud_storage`, `list_cloud_storage`, `remove_cloud_storage` —
-  `api.rs:2898,2913,2928`) are standalone stubs: `add_cloud_storage`
-  returns a hardcoded `"status": "mounted"` without validating the
-  provider, storing credentials, or calling any client code;
-  `list_cloud_storage` always returns four hardcoded example entries
-  regardless of what was "added"; `remove_cloud_storage` unconditionally
-  returns `204`. **A user who submits real S3/GCS/Azure/Google Drive
-  credentials gets a success response and nothing is stored, validated, or
-  usable.** Wiring this up safely (credential storage/persistence design,
-  `AppState` wiring, request schema, which of the two structs to keep) is a
-  real feature-completion task, not a bounded fix.
+- **[RESOLVED 2026-10-11] Cloud storage (`CloudStorageManager`) is now wired.**
+  Historically there were *two* separate `CloudStorageManager` structs — the
+  real one with S3 SigV4 / GCS service-account JWT / Azure Blob Shared Key
+  HMAC / Google Drive OAuth clients and mockito-backed unit tests
+  (`crates/server/src/cloud_storage.rs:1078`), plus a mount-registry
+  (`crates/server/src/file_manager.rs:194`) — and the routed handlers were
+  standalone stubs. The real manager is now held in `AppState`
+  (`main.rs`, `AppState.cloud_storage`) and the routes
+  (`api::add_cloud_storage` / `list_cloud_storage` / `remove_cloud_storage`)
+  call it: `add_cloud_storage` parses the provider credentials and registers
+  a real client (returning `400` for an unknown provider), `list_cloud_storage`
+  returns the actually-configured clients, and `remove_cloud_storage` drops
+  one. The remaining gap is *scheduling* automatic notebook backups on top of
+  these clients, which is not yet built.
 - **"Insert as Cell" / "Copy as code" throws immediately in the Data
   Explorer, Data Querying panel, and Chart Builder.** `insertAsCell()` in
   `DataExplorer.tsx` and `DataPanel.tsx` (2 call sites each), and
