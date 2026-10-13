@@ -1,260 +1,102 @@
 # PrismNote
 
-[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
+A fast, local-first, Jupyter-compatible data-science notebook with built-in AI.
 
-## Problem
+[![CI](https://github.com/Mullassery/prismnote/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/prismnote/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![prismnote on PyPI](https://img.shields.io/pypi/v/prismnote.svg?label=prismnote)](https://pypi.org/project/prismnote/)
 
-Most notebook tools force a choice: a lightweight local notebook with no
-real data-warehouse connectivity, or a heavyweight cloud platform for
-warehouse access with no simple local-first story — and running untrusted
-notebook code safely usually means bolting on your own sandboxing.
+## What it is
 
-## Solution
+PrismNote is a data-science notebook served by a single executable: a Rust (Axum) backend, a React + TypeScript (Vite) frontend embedded in the release binary, and a thin Python launcher on PyPI that downloads the matching prebuilt server binary on first run. It executes code in 15+ languages, runs SQL against local engines and 9+ databases, sandboxes untrusted/AI-generated code in disposable Docker containers, and provides integrated code assistance via Claude, OpenAI, or a local Ollama model. The core notebook semantics (cross-cell state, real error handling, per-notebook kernel isolation, `.ipynb` import/export) are verified to match real Jupyter behavior.
 
-A Jupyter-compatible data-science notebook with a Rust backend and a React
-frontend: real local SQL execution, a real sandboxed code-execution engine,
-and connectors for cloud data warehouses.
+## Features / Highlights
 
-[![CI](https://github.com/Mullassery/PrismNote/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PrismNote/actions/workflows/ci.yml)
+- **Jupyter-compatible kernel semantics** — cross-cell state, real tracebacks, and per-notebook kernel isolation (a regression that used to share one global Python namespace across notebooks is fixed and re-verified live).
+- **SQL cells against real backends** — SQLite and DuckDB (embedded, no server), PostgreSQL and MySQL via real servers; all covered by integration tests with genuine `CREATE TABLE`/`INSERT`/`SELECT` round trips.
+- **Cloud warehouse connectors** — real connection + query execution for Snowflake, BigQuery, Redshift, Azure Synapse, Databricks, Athena (real SigV4), Presto, and Trino.
+- **Sandboxed code execution** — each run spawns a brand-new disposable Docker container: no network by default, memory/CPU/process limits, a wall-clock timeout, and real stdout/stderr/exit-code capture.
+- **Integrated AI, privacy-friendly** — code explain/fix/complete, NL-to-SQL, and RunPod fine-tuning, all disabled until you configure a provider (including local Ollama).
+- **Key integrations** — dbt (real CLI + manifest/run-result parsing), GitHub (Contents API backup/sync), Airflow REST, Kubernetes (`kubectl`), RunPod GraphQL, and real cloud-storage clients for S3/GCS/Azure Blob/Google Drive.
+- **Single-binary distribution** — the release build embeds the frontend; `pip install prismnote` gives you one command to run.
 
-## Use cases
+## Who it's for / Use cases
 
-- **Querying local SQLite/DuckDB files or a Postgres/MySQL server from the
-  same notebook**, with real integration-tested execution, not a mocked
-  query path.
-- **Running untrusted or AI-generated code safely** — the Docker sandbox
-  gives no network access by default, enforced memory/CPU/process limits,
-  and a wall-clock timeout, rather than executing code in-process.
-- **Querying a cloud warehouse (Snowflake, BigQuery, Redshift, Databricks,
-  etc.) from a notebook** without switching to a separate BI tool.
-- **Not yet a good fit for:** MongoDB access (not implemented, returns an
-  explicit error rather than faking success); data-quality scoring (the one
-  area still not wired to real execution — see [Other integrations](#other-integrations)); Linux/Windows without building from source (prebuilt binary is macOS Apple Silicon only today).
+- Data scientists and analysts who want the Jupyter experience **plus** real SQL and warehouse access from the same notebook — no separate BI tool.
+- People running **untrusted or AI-generated code** who want real container sandboxing (no network, enforced limits, timeout) rather than in-process execution.
+- Local-first users who don't want a heavyweight hosted notebook platform; everything runs on your machine by default.
 
-## What this is
+## What it is not
 
-- **Backend:** Rust (Axum). Serves the API, runs SQL against local and
-  remote databases, and launches Docker containers for sandboxed code
-  execution.
-- **Frontend:** React + TypeScript (Vite). Notebook UI, SQL cells, schema
-  explorer, results grid.
-- The release binary embeds the built frontend, so `prismnote` is a single
-  executable that serves the whole app.
+- **No prebuilt binary for Windows/Linux yet.** The published release binary is macOS Apple Silicon only; other platforms must build from source.
+- **MongoDB is not implemented** (an explicit error, not fake success).
+- **Data-quality scoring is not wired to real execution** — the two scoring code paths are the one integration still without a working implementation.
+- **Idle kernels are never evicted** (resource management improvement, not a correctness gap).
+- **Not without known gaps.** Backend tests pass (170, plus 114 frontend/backend vitest), but frontend lint (435 errors) and Playwright e2e (57/85) currently fail in CI without failing the build — tracked in `ROADMAP_HONEST.md`.
+- The PyPI metadata says `Development Status :: 5 - Production/Stable`; the repo's own docs are more honest — this is actively developed single-maintainer software, and `ROADMAP_HONEST.md` is the source of truth for what's broken or unverified.
 
-## Install
+## Project status
+
+`v1.12.0` (PyPI). Active and CI-green for build/tests; the honest, current set of bugs and gaps is maintained in [ROADMAP_HONEST.md](ROADMAP_HONEST.md). Release history: [CHANGELOG.md](CHANGELOG.md) and GitHub Releases.
+
+## Installation
 
 ```bash
 pip install prismnote
 prismnote
 ```
 
-`pip install` installs a thin Python launcher (`python/`) — on first run it
-downloads the matching prebuilt server binary from
-[GitHub Releases](https://github.com/Mullassery/PrismNote/releases) and
-execs it. As of this version, a prebuilt binary is published for **macOS
-(Apple Silicon) only**; other platforms need to build from source (see
-[Building](#building) below) until more platform binaries are uploaded.
-
-## SQL execution
-
-SQL cells run against real databases — there is no mocked or placeholder
-query path:
-
-| Backend | Status |
-|---|---|
-| SQLite | Real, embedded (via `sqlx`), no server required |
-| DuckDB | Real, embedded (bundled DuckDB, compiled from source), no server required |
-| PostgreSQL | Real, via `sqlx`; requires a reachable Postgres server |
-| MySQL | Real, via `sqlx`; requires a reachable MySQL server |
-
-All four are covered by integration tests that run genuine
-`CREATE TABLE` / `INSERT` / `SELECT` round trips
-(`crates/server/src/db/executor.rs`). SQLite and DuckDB tests always run.
-The Postgres/MySQL tests connect to a real server and skip (rather than
-fail) when one isn't reachable — point them at a running server with
-`PRISMNOTE_TEST_PG_PORT` / `PRISMNOTE_TEST_MYSQL_PORT`.
-
-MongoDB is not implemented; connecting to it returns an explicit error
-rather than a fake success.
-
-## Sandboxed code execution
-
-`docker_executor.rs` runs untrusted code in a brand-new, disposable Docker
-container per execution (`docker run --rm`):
-
-- No network access by default (`--network=none`)
-- Memory, CPU, and process-count limits enforced per run
-- A wall-clock timeout that force-kills and cleans up the container
-- Real stdout/stderr/exit-code capture
-
-Requires a working Docker installation. Supported languages: Python,
-Bash/shell, JavaScript (Node), Ruby.
-
-## Cloud warehouse connectors
-
-Real connection + query execution for Snowflake, BigQuery, Redshift, Azure
-Synapse, Databricks, Athena, Presto, and Trino (`crates/server/src/cloud_warehouse/`).
-AWS-signed requests (Athena, Redshift) use a real SigV4 implementation.
-
-## Other integrations
-
-All real API calls, not placeholders:
-
-| Integration | What's real |
-|---|---|
-| dbt | Shells out to the real `dbt` CLI; parses its `manifest.json`/`run_results.json` |
-| GitHub | Real Contents API for notebook backup/sync |
-| Airflow | Real REST API v1 (list/trigger DAGs, run status, tasks). DAG *creation* writes a file to a configured local DAGs folder, since Airflow's API has no DAG-creation endpoint |
-| Kubernetes | Real `kubectl apply`/`get pods`/`scale` |
-| RunPod | Real GraphQL API for training-instance lifecycle and serverless endpoint deployment |
-
-Two data-quality-scoring code paths (`api::get_quality_score`,
-`lineage::data_quality_score`) are the one area still not wired to real
-execution — they'd need an assertion-storage and table-to-queryable-data
-layer that doesn't exist yet, rather than something fakeable in isolation.
-
-**Cloud storage (S3/GCS/Azure Blob/Google Drive) is wired to the API.**
-`crates/server/src/cloud_storage.rs` has real, unit-tested HTTP clients —
-S3 (SigV4-signed), GCS (service-account JWT OAuth), Azure Blob (Shared Key
-HMAC-SHA256), Google Drive (OAuth refresh-token) — with real
-upload/download/list/delete methods on each client. The `/cloud-storage`
-HTTP endpoints (`api::add_cloud_storage`, `api::list_cloud_storage`,
-`api::remove_cloud_storage`) call this code: `add_cloud_storage` parses the
-provider credentials and registers a real client, `list_cloud_storage`
-returns the configured clients, and `remove_cloud_storage` drops one. A user
-who configures real S3 credentials through this API gets a real client
-backed by the same code the unit tests exercise. (What is *not* yet built is
-automatic notebook backup scheduling on top of these clients.)
-
-## vs Jupyter
-
-Real Jupyter (via `nbclient`) is the direct comparison the "Jupyter-compatible"
-claim above invites. Tested both against the same real notebook (3 cells:
-define a DataFrame + variable, use them in the next cell with no re-import,
-then a cell that deliberately divides by zero), driven through PrismNote's
-real HTTP API (register → login → create notebook → execute) and through
-`nbclient` against a real `ipykernel`.
-
-| | PrismNote (real API) | Jupyter (`nbclient` + `ipykernel`) |
-|---|---|---|
-| Kernel/first-cell time | ~4ms once a kernel is warm (see bug below) | 0.57s kernel startup + ~0.17s first cell |
-| Cross-cell state (cell 2 uses cell 1's `x`/`df`, no re-import) | Correct: `43`, `6` | Correct: `43`, `6` |
-| Real exception (cell 3, `1/0`) | Correct: real `ZeroDivisionError` traceback, not swallowed | Correct: real `ZeroDivisionError` traceback |
-| "Integrated intelligence" (`/api/ai/explain`) | **Real** — verified against a real local Ollama model (`qwen2.5:7b-instruct`), returned a real, coherent, non-canned explanation in 5.3s | N/A (not a Jupyter feature) |
-| `.ipynb` format compatibility | Real, genuine `from_ipynb`/`to_ipynb` conversion exists (`crates/server/src/files.rs`) | N/A (native format) |
-
-**Two real bugs found while running this benchmark — both now fixed:**
-
-1. **Fixed:** the kernel process spawn hardcoded `Command::new("python")`,
-   which doesn't exist on this (or many modern) machines — only `python3`
-   does. This meant **every cell execution failed** with the
-   misleading `"Kernel not available. Install ipykernel"` error, even with
-   `ipykernel` correctly installed under `python3`. Fixed with a
-   `python3`-first resolution helper used consistently across all 3 call
-   sites that previously hardcoded `"python"`
-   (`crates/server/src/kernel.rs`). Regression test added.
-2. **FIXED (was critical):** the Python kernel used to be a **single
-   global process shared by every notebook on the server**, not one kernel
-   per notebook. Reproduced live: defined `x = 42` in one notebook, then
-   read `x` from a brand-new, unrelated notebook that never defined it —
-   it printed `42`. Any two notebooks (including two different logged-in
-   users', given the real JWT auth system) shared one Python namespace — a
-   real data-isolation/security issue, not just a quirk. **Fixed** by
-   replacing the single shared `KernelManager` with a
-   `kernel::KernelRegistry` keyed per-notebook (plus a `job:<id>` slot per
-   saved job and a fixed system slot for one-shot warehouse/database
-   queries), spawned lazily on first use. Required changing the public API
-   shape for 3 endpoints that previously had no notebook-id parameter at
-   all (`kernel/interrupt`, `kernel/restart`, `kernel/variables` — now
-   `/notebooks/:id/kernel/...`) plus updating every frontend caller.
-   **Re-verified live against the real running server** (not just unit
-   tests): the exact reproduction above (`x = 42` in notebook A, read from
-   notebook B) now correctly raises `NameError` in notebook B, while
-   notebook A's own state persists correctly across multiple real calls.
-   New Rust regression test (`kernel::tests::different_keys_get_independent_kernels_with_isolated_namespaces`)
-   spawns two real Python processes and asserts the same isolation. Full
-   detail in `ROADMAP_HONEST.md`.
-
-**Bottom line:** the core notebook semantics (cross-cell state, real error
-handling, and now real per-notebook kernel isolation) genuinely work and
-match real Jupyter behavior — plus real, working local-LLM-backed AI
-assistance Jupyter doesn't provide out of the box. Idle kernel eviction
-(kernels are never terminated once spawned) is a real, separate
-resource-management improvement, not a correctness gap.
-
-## Building
+On first run, the thin Python launcher (`python/prismnote/_cli.py`) downloads the matching prebuilt server binary from [GitHub Releases](https://github.com/Mullassery/PrismNote/releases) and execs it. As of this version the prebuilt binary is published for **macOS (Apple Silicon) only**; other platforms build from source:
 
 ```bash
 git clone https://github.com/Mullassery/PrismNote.git
 cd PrismNote
-make build
+make build          # builds the frontend first and embeds it into the binary
 ```
 
-`make build` builds the frontend first and embeds it into the release
-binary — this is the only build path that produces a binary that actually
-serves the UI. Running `cargo build --release` directly will build a
-backend with no frontend assets. The binary is written to
-`target/release/prismnote`.
+`make build` is the only path that produces a binary that serves the UI (`target/release/prismnote`). A bare `cargo build --release` builds a backend with no frontend assets.
 
-Requirements: Rust (stable), Node 20.19+ (required by Vite 8), and Docker if
-you want sandboxed code execution or want to test the container-management
-endpoints.
+Requirements: Rust (stable), Node 20.19+ (Vite 8), and Docker for sandboxed code execution.
 
-### Development
+## Quick start
 
 ```bash
-# Terminal 1: backend on http://localhost:8000
-cargo run
-
-# Terminal 2: frontend dev server on http://localhost:5173
-cd frontend && npm install && npm run dev
+pip install prismnote
+prismnote             # serves the app; printed URL, default http://localhost:8000
 ```
 
-### Tests
+Create a notebook, add a SQL cell, and query, e.g., a local DuckDB file — or a Python cell and run it. Enable AI/config by copying [`.env.example`](.env.example) to `.env` (Google Sign-In and AI features are disabled until configured).
 
-```bash
-cargo test --workspace --release   # backend
-cd frontend && npm test            # frontend (vitest)
-```
+## Usage
 
-Real results as of 2026-09-19: backend 170 passed / 1 flaky failure (a
-Docker-sandbox timeout-cleanup test that's timing-sensitive under
-concurrent test load); frontend vitest 114/114 passed. `npm run lint` and
-`npm run test:e2e` currently fail in this repo (435 lint errors; 57/85
-Playwright tests) — CI's frontend workflow does not currently fail the
-build on either, which is a known gap. See
-[ROADMAP_HONEST.md](ROADMAP_HONEST.md) for the full, unfiltered list of
-bugs and gaps found in the most recent audit, including this one.
+- **SQL backends:** SQLite and DuckDB run embedded with no server required; PostgreSQL/MySQL need a reachable server. MongoDB returns an explicit not-implemented error.
+- **Sandboxed languages:** Python, Bash/shell, JavaScript (Node), Ruby — each run in a fresh, limited, disposable Docker container (requires Docker).
+- **Warehouse queries:** Snowflake, BigQuery, Redshift, Azure Synapse, Databricks, Athena, Presto, Trino via `crates/server/src/cloud_warehouse/`.
+- **Cloud storage:** S3, GCS, Azure Blob, Google Drive clients wired to the `/cloud-storage` API (unit-tested HTTP clients; automatic notebook-backup scheduling on top is not yet built).
+- **AI/MCP:** see [docs/guides/AI_MCP_INTEGRATION.md](docs/guides/AI_MCP_INTEGRATION.md) and the MCP examples in [`examples/`](examples/).
+- **Development:** backend on `http://localhost:8000` (`cargo run`); frontend dev server on `http://localhost:5173` (`cd frontend && npm install && npm run dev`).
 
-### Configuration
+## Documentation
 
-Everything runs with no environment variables set — Google Sign-In and AI
-features (code explain/fix/complete, NL-to-SQL, RunPod fine-tuning) are
-just disabled until configured. Copy [`.env.example`](.env.example) to
-`.env` and fill in what you need; see the comments in that file for which
-variables are required together (e.g. `PRISMNOTE_AI_PROVIDER=claude` needs
-`ANTHROPIC_API_KEY`) and which are backend-only vs. frontend (`VITE_`-prefixed).
+- [docs/README.md](docs/README.md) — documentation index
+- [Getting Started](docs/guides/GETTING_STARTED.md) · [Multi-Language Support](docs/guides/MULTI_LANGUAGE_SUPPORT.md) · [Multi-Terminal](docs/guides/MULTI_TERMINAL_GUIDE.md) · [Execution Backends](docs/guides/EXECUTION_BACKENDS.md)
+- [API Reference](docs/reference/API_REFERENCE.md) · [Settings](docs/reference/SETTINGS_REFERENCE.md) · [Security](docs/reference/SECURITY.md)
+- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — verified list of what's broken, untested, or not built
 
-## Project layout
+## Contributing
 
-```
-crates/server/   Rust backend: API, SQL executors, Docker sandbox, cloud warehouse connectors
-frontend/        React app (components, hooks, API clients)
-python/          PyPI launcher package
-docs/            architecture notes and screenshots
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) (dev setup, real test/lint commands) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Security issues: report via [SECURITY.md](SECURITY.md), not public issues.
 
-## Contributing, security, status
+## Related projects
 
-- [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, real test/lint commands
-- [SECURITY.md](SECURITY.md) — reporting vulnerabilities, known
-  security-relevant facts
-- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — verified list of what's broken,
-  untested, not built, or not wired up
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-- [CHANGELOG.md](CHANGELOG.md)
+- [MudFish](https://github.com/Mullassery/MudFish) — Rust-native web crawling and intelligence engine; feed crawl results into notebooks and RAG pipelines
+- [ClusterAudienceKit](https://github.com/Mullassery/ClusterAudienceKit) — RFM analysis, K-Means clustering, CLV, churn detection, and lookalikes for data science work
+- [PyReverseETL](https://github.com/Mullassery/PyReverseETL) — quality-validated data activation with audit trail and lineage, a natural step after analysis
+- [PyInferenceManager](https://github.com/Mullassery/PyInferenceManager) — multi-provider LLM inference executor, complements PrismNote's AI integration
+- [MessageBirds](https://github.com/Mullassery/MessageBirds) — open-source, event-driven Customer Data & Engagement Platform (Rust + TypeScript)
+
+[Browse all projects →](https://github.com/Mullassery?tab=repositories)
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE)
-for the full terms.
+Apache License 2.0. See [LICENSE](LICENSE) for the full terms.
