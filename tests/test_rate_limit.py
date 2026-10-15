@@ -132,21 +132,17 @@ class TestPerClientRateLimiter:
         # A different client is a fresh, independent bucket.
         assert limiter.is_allowed("user-b") is True
 
-    def test_low_rpm_permanently_locks_out_the_client_known_bug(self, clock):
-        # KNOWN BUG (found while writing this test, not fixed -- out of
-        # scope for a "write tests" pass; flagged in ROADMAP_HONEST.md):
-        # requests_per_minute=1 -> rps=1/60, burst_size=rps*10 ~= 0.167.
-        # RateLimiter.is_allowed() caps tokens at `min(self.burst_size, ...)`
-        # every call, so once burst_size itself is < 1.0 the bucket can
-        # NEVER accumulate a full token -- not after 61 seconds, not after
-        # a year. Any requests_per_minute < 6 permanently rate-limits the
-        # client to zero throughput forever, which is a denial-of-service
-        # against your own legitimate users, not just "very strict."
+    def test_low_rpm_allows_periodic_requests(self, clock):
+        # With burst_size >= 1.0, low RPM clients (e.g. 1 req/min) are not
+        # permanently locked out. The initial request succeeds, immediate
+        # follow-ups are throttled, and subsequent requests succeed once
+        # enough time (e.g. 60s) has elapsed.
         limiter = PerClientRateLimiter(requests_per_minute=1)
+        assert limiter.is_allowed("throttled-client") is True
         assert limiter.is_allowed("throttled-client") is False
 
-        clock.advance(100_000_000)  # ~3 years later -- still permanently stuck
-        assert limiter.is_allowed("throttled-client") is False
+        clock.advance(60)  # 1 minute later -> 1 token replenished
+        assert limiter.is_allowed("throttled-client") is True
 
     def test_cleanup_removes_stale_clients(self, clock):
         limiter = PerClientRateLimiter(requests_per_minute=60)

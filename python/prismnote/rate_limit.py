@@ -20,8 +20,8 @@ class RateLimiter:
             burst_size: Allow burst up to this many requests
         """
         self.rate = requests_per_second
-        self.burst_size = burst_size
-        self.tokens: Dict[str, float] = defaultdict(lambda: burst_size)
+        self.burst_size = max(1.0, float(burst_size))
+        self.tokens: Dict[str, float] = defaultdict(lambda: self.burst_size)
         self.last_update: Dict[str, float] = {}
     
     def is_allowed(self, client_id: str) -> bool:
@@ -81,7 +81,7 @@ class PerClientRateLimiter:
         if client_id not in self.limiters:
             self.limiters[client_id] = RateLimiter(
                 requests_per_second=self.rps,
-                burst_size=self.rps * 10
+                burst_size=max(1.0, self.rps * 10)
             )
         
         allowed = self.limiters[client_id].is_allowed("request")

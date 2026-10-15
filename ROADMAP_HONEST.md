@@ -57,17 +57,7 @@ no longer matches reality.
   10 after a `npm audit fix` pass (no `--force`, no `package.json` changes).
   No fix is available without an upstream `monaco-editor` version bump. See
   `SECURITY.md`.
-- **`PerClientRateLimiter` permanently locks out clients configured with a
-  low rate limit — a self-inflicted denial-of-service bug.**
-  `rate_limit.py:46` caps `tokens` at `min(self.burst_size, ...)` every
-  call. `burst_size = (requests_per_minute / 60) * 10`, which is < 1.0 for
-  any `requests_per_minute < 6`. Once `burst_size` itself is below 1.0, the
-  bucket can never accumulate a full token no matter how much wall-clock
-  time passes (verified with a simulated 3-year gap) — the client is
-  rate-limited to permanent zero throughput. Documented via
-  `test_low_rpm_permanently_locks_out_the_client_known_bug` in
-  `tests/test_rate_limit.py`. Needs a design decision (e.g.
-  `burst_size = max(1.0, rps * 10)`) rather than a one-line fix.
+- ~~**`PerClientRateLimiter` permanently locks out clients configured with a low rate limit**~~ — **FIXED.** `rate_limit.py` now guarantees `self.burst_size = max(1.0, ...)` across `RateLimiter` and `PerClientRateLimiter`. Clients configured with `< 6 RPM` accumulate tokens normally and are no longer permanently locked out. Verified with updated test `test_low_rpm_allows_periodic_requests`.
 - **16 open Dependabot branches exist locally, unmerged** (5 cargo, 3
   github-actions, 5 npm, 5 pip — per `git branch -a`). Dependency updates,
   some of which may carry security fixes, are piling up unreviewed. Each
