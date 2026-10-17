@@ -9,9 +9,9 @@ Supports:
 """
 
 import os
-import sys
-import subprocess
 import platform
+import subprocess
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -223,16 +223,17 @@ def main():
         print("🌐 Opening http://localhost:8000 in your browser...\n")
 
         # Fork a process to open browser after server starts
-        import webbrowser
         import threading
+        import webbrowser
 
         def open_browser_later():
+            import contextlib
             import time
+
             time.sleep(2)  # Wait for server to be ready
-            try:
+            # Silent fail if browser can't open
+            with contextlib.suppress(Exception):
                 webbrowser.open("http://localhost:8000")
-            except Exception:
-                pass  # Silent fail if browser can't open
 
         thread = threading.Thread(target=open_browser_later, daemon=True)
         thread.start()

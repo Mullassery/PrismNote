@@ -1,6 +1,6 @@
 """REST API server for PrismNote - notebook workflow integration."""
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 
 class PrismNoteServer:
@@ -141,11 +141,11 @@ class PrismNoteServer:
 def create_flask_app(server: Optional[PrismNoteServer] = None):
     """Create Flask app for REST API."""
     try:
-        from flask import Flask, request, jsonify
+        from flask import Flask, jsonify, request
     except ImportError:
         raise ImportError(
             "Flask is required for REST API. Install with: pip install flask"
-        )
+        ) from None
 
     app = Flask(__name__)
     srv = server or PrismNoteServer()

@@ -47,8 +47,11 @@ jobs:
         run: |
           pip install -e ".[dev]" 2>&1
 
+      # Full lint gate using the curated ruleset in pyproject.toml
+      # ([tool.ruff.lint]); the old `--select E9,F63,F7,F82` only caught
+      # import/syntax breakage. PRISMNOTE-005.
       - name: Lint (ruff)
-        run: ruff check --select E9,F63,F7,F82 python/
+        run: ruff check python/
 
       - name: Run pytest
         run: |

@@ -1,23 +1,23 @@
 """User-friendly error messages for notebook operations."""
+from typing import Optional
 
 
 class NotebookError:
     """Notebook operation error with resolution."""
-    
-    def __init__(self, title: str, message: str, resolution: list = None):
+
+    def __init__(self, title: str, message: str, resolution: Optional[list] = None):
         self.title = title
         self.message = message
         self.resolution = resolution or []
-    
+
     def format(self) -> str:
         """Format error."""
         lines = [f"\n❌ {self.title}\n", f"   {self.message}\n"]
         if self.resolution:
             lines.append("   ✓ Resolution:")
-            for r in self.resolution:
-                lines.append(f"      • {r}")
+            lines.extend(f"      • {r}" for r in self.resolution)
         return "\n".join(lines)
-    
+
     def __str__(self) -> str:
         return self.format()
 

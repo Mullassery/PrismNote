@@ -2,7 +2,6 @@
 
 import json
 import sys
-from typing import Optional
 
 
 class NotebookCLI:
