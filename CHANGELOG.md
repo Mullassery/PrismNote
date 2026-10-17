@@ -13,6 +13,11 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+## [1.12.1] - 2026-10-17
+
+### Fixed
+- Audit remediation: security hardening, correctness fixes, and lint/CI gates.
+
 ## [1.12.0] - 2026-10-12
 
 ### Fixed
