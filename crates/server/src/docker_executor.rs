@@ -301,6 +301,20 @@ impl DockerExecutor {
             format!("{}", opts.cpus),
             "--pids-limit".to_string(),
             format!("{}", opts.pids_limit),
+            // Hardening: run as an unprivileged user with no Linux capabilities,
+            // a read-only root filesystem, and a writable tmpfs for scratch space.
+            // A container escape from untrusted notebook code must not yield host
+            // root, and untrusted code must not be able to persist changes to the
+            // image filesystem.
+            "--user".to_string(),
+            "65534:65534".to_string(),
+            "--cap-drop".to_string(),
+            "ALL".to_string(),
+            "--security-opt".to_string(),
+            "no-new-privileges".to_string(),
+            "--read-only".to_string(),
+            "--tmpfs".to_string(),
+            "/tmp:rw,mode=1777,size=64m".to_string(),
         ];
         if !opts.allow_network {
             args.push("--network".to_string());
