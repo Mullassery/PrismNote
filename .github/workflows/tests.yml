@@ -30,7 +30,7 @@ jobs:
       - name: Run linter
         run: |
           cd frontend
-          npm run lint 2>&1 || echo "Linting completed with warnings"
+          npm run lint
 
       - name: Build frontend
         run: |
@@ -47,4 +47,4 @@ jobs:
       - name: Run E2E tests
         run: |
           cd frontend
-          npm run test:e2e 2>&1 || echo "E2E tests completed with warnings"
+          npm run test:e2e

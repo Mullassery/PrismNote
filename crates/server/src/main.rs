@@ -581,6 +581,7 @@ async fn main() -> anyhow::Result<()> {
         .fallback(static_handler)
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024))
         .layer(middleware::cors_layer())
+        .layer(axum::middleware::from_fn(middleware::origin_guard))
         .layer(TraceLayer::new_for_http());
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
