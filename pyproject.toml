@@ -65,6 +65,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Embedded architecture/knowledge-graph engine behind tools/codeatlas.
+architecture = ["codeatlas-rs>=0.3.0"]
 # Development and testing.
 #
 # fastapi/starlette/pydantic/httpx are required here (not just in

@@ -147,4 +147,4 @@ build/
 *.db
 *.sqlite
 
-graphify-out/
+codeatlas-out/
