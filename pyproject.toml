@@ -91,8 +91,8 @@ dev = [
 preview = ["mudfish>=0.2.3"]
 
 # Database support — permissively-licensed (OSS) drivers only. See CONNECTORS.md.
-sql = ["duckdb==0.9", "pg8000==1.30", "pymysql==1.0"]   # MIT / BSD / MIT
-postgres = ["pg8000==1.30"]                              # BSD (pure-Python)
+sql = ["duckdb==0.9", "pg8000==1.31.5", "pymysql==1.0"]   # MIT / BSD / MIT
+postgres = ["pg8000==1.31.5"]                              # BSD (pure-Python)
 mysql = ["pymysql==1.0"]                                 # MIT
 duckdb = ["duckdb==0.9"]                                 # MIT
 
