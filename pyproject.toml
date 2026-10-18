@@ -98,7 +98,7 @@ duckdb = ["duckdb==0.9"]                                 # MIT
 
 # Cloud warehouses — official open-source clients (Apache-2.0 / MIT)
 cloud = [
-    "snowflake-connector-python[pandas]==3.0",  # Apache-2.0
+    "snowflake-connector-python[pandas]==4.7.3",  # Apache-2.0
     "google-cloud-bigquery==3.0",               # Apache-2.0
     "db-dtypes==1.0",                            # Apache-2.0 (BigQuery -> pandas)
     "redshift_connector==2.0",                  # Apache-2.0
