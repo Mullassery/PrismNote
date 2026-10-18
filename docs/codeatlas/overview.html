@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CodeAtlas</title>
+<script src="https://unpkg.com/cytoscape@3.23.0/dist/cytoscape.min.js"></script>
+<script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+<script src="https://unpkg.com/cytoscape-dagre@2.4.0/cytoscape-dagre.js"></script>
+<style>
+  body { margin: 0; font-family: -apple-system, sans-serif; }
+  #cy { width: 100vw; height: 100vh; }
+  header { padding: 12px 16px; border-bottom: 1px solid #eee; }
+</style>
+</head>
+<body>
+<header>
+  <strong>CodeAtlas</strong>
+  <p>Architecture map of PrismNote.</p>
+</header>
+<div id="cy"></div>
+<script>
+const data = {"nodes": [{"data": {"id": "assets", "label": "assets", "description": "Owns 0 symbols across 1 file(s).", "linkUrl": "./assets.html"}}, {"data": {"id": "crates", "label": "crates", "description": "Owns 0 symbols across 0 file(s).", "linkUrl": "./crates.html"}}, {"data": {"id": "docs", "label": "docs", "description": "Owns 0 symbols across 1 file(s).", "linkUrl": "./docs.html"}}, {"data": {"id": "examples", "label": "examples", "description": "Owns 2 symbols across 3 file(s)."}}, {"data": {"id": "frontend", "label": "frontend", "description": "Owns 0 symbols across 14 file(s).", "linkUrl": "./frontend.html"}}, {"data": {"id": "python", "label": "python", "description": "Owns 0 symbols across 2 file(s).", "linkUrl": "./python.html"}}, {"data": {"id": "release_assets", "label": "release-assets", "description": "Owns 0 symbols across 14 file(s)."}}, {"data": {"id": "scripts", "label": "scripts", "description": "Owns 1 symbols across 8 file(s).", "linkUrl": "./scripts.html"}}, {"data": {"id": "tests", "label": "tests", "description": "Owns 134 symbols across 7 file(s)."}}, {"data": {"id": "tools", "label": "tools", "description": "Owns 0 symbols across 0 file(s).", "linkUrl": "./tools.html"}}, {"data": {"id": "PrismNote", "label": "PrismNote", "description": "Owns 0 symbols across 15 file(s)."}}], "edges": [{"data": {"id": "edge_0", "source": "tools", "target": "frontend", "label": "calls"}}, {"data": {"id": "edge_1", "source": "tools", "target": "python", "label": "calls"}}, {"data": {"id": "edge_2", "source": "crates", "target": "tools", "label": "calls"}}, {"data": {"id": "edge_3", "source": "crates", "target": "frontend", "label": "calls"}}, {"data": {"id": "edge_4", "source": "crates", "target": "tests", "label": "calls"}}, {"data": {"id": "edge_5", "source": "examples", "target": "crates", "label": "calls"}}, {"data": {"id": "edge_6", "source": "frontend", "target": "crates", "label": "calls"}}, {"data": {"id": "edge_7", "source": "python", "target": "crates", "label": "calls"}}, {"data": {"id": "edge_8", "source": "python", "target": "frontend", "label": "calls"}}, {"data": {"id": "edge_9", "source": "python", "target": "tests", "label": "calls"}}, {"data": {"id": "edge_10", "source": "tests", "target": "frontend", "label": "calls"}}, {"data": {"id": "edge_11", "source": "tests", "target": "python", "label": "calls"}}]};
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  elements: data,
+  style: [
+    { selector: 'node', style: {
+      'label': 'data(label)',
+      'shape': 'round-rectangle',
+      'background-color': '#eef2ff',
+      'border-color': '#6366f1',
+      'border-width': 1,
+      'width': 'label',
+      'padding': '10px',
+      'text-valign': 'center',
+      'text-halign': 'center',
+      'font-size': '12px',
+    }},
+    { selector: 'edge', style: {
+      'label': 'data(label)',
+      'curve-style': 'bezier',
+      'target-arrow-shape': 'triangle',
+      'font-size': '10px',
+      'text-rotation': 'autorotate',
+    }}
+  ],
+  layout: { name: 'dagre', rankDir: 'LR' }
+});
+cy.on('tap', 'node', evt => {
+  const node = evt.target;
+  if (node.data('linkUrl')) { window.location.href = node.data('linkUrl'); }
+});
+</script>
+</body>
+</html>

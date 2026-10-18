@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "outputs": {
+    "md": [
+      "archive.3.1.md",
+      "assets.1.md",
+      "crates.2.md",
+      "docs.3.md",
+      "frontend.5.md",
+      "overview.md",
+      "python.6.md",
+      "scripts.8.md",
+      "server.2.1.md",
+      "src.5.2.md",
+      "tests.5.3.md",
+      "tools.10.md"
+    ],
+    "html": [
+      "archive.3.1.html",
+      "assets.1.html",
+      "crates.2.html",
+      "docs.3.html",
+      "frontend.5.html",
+      "overview.html",
+      "python.6.html",
+      "scripts.8.html",
+      "server.2.1.html",
+      "src.5.2.html",
+      "tests.5.3.html",
+      "tools.10.html"
+    ]
+  }
+}
