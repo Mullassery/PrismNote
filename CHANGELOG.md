@@ -13,6 +13,14 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+## [1.12.2] - 2026-10-18
+
+### Security
+- Default `PrismNoteServer` / `run_server` bind address to loopback `127.0.0.1` instead of `0.0.0.0` (RECHECK-002).
+
+### Fixed
+- Configure ESLint React Compiler / TypeScript rules in `frontend/eslint.config.js` so `npm run lint` passes in CI while preserving `react-hooks/rules-of-hooks` errors (RECHECK-035).
+
 ## [1.12.1] - 2026-10-17
 
 ### Fixed

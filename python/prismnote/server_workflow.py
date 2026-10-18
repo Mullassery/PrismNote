@@ -6,8 +6,8 @@ from typing import Any, Dict, Optional
 class PrismNoteServer:
     """REST API server for notebook workflows."""
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 8007):
-        """Initialize server."""
+    def __init__(self, host: str = "127.0.0.1", port: int = 8007):
+        """Initialize server (defaults to loopback 127.0.0.1)."""
         self.host = host
         self.port = port
         self.notebooks: Dict[str, Dict[str, Any]] = {}
@@ -219,8 +219,8 @@ def create_flask_app(server: Optional[PrismNoteServer] = None):
     return app
 
 
-def run_server(host: str = "0.0.0.0", port: int = 8007):
-    """Run the REST API server."""
+def run_server(host: str = "127.0.0.1", port: int = 8007):
+    """Run the REST API server (defaults to loopback 127.0.0.1)."""
     app = create_flask_app()
     app.run(host=host, port=port, debug=False)
 
