@@ -18,6 +18,7 @@ PrismNote is a data-science notebook served by a single executable: a Rust (Axum
 - **Sandboxed code execution** — each run spawns a brand-new disposable Docker container: no network by default, memory/CPU/process limits, a wall-clock timeout, and real stdout/stderr/exit-code capture.
 - **Integrated AI, privacy-friendly** — code explain/fix/complete, NL-to-SQL, and RunPod fine-tuning, all disabled until you configure a provider (including local Ollama).
 - **Key integrations** — dbt (real CLI + manifest/run-result parsing), GitHub (Contents API backup/sync), Airflow REST, Kubernetes (`kubectl`), RunPod GraphQL, and real cloud-storage clients for S3/GCS/Azure Blob/Google Drive.
+- **SSRF-safe link previews** — unfurl user-dropped URLs into link cards via MudFish (`prismnote[preview]`); private/loopback/link-local targets (including the cloud metadata endpoint) and non-`http(s)` schemes are rejected before any request is made.
 - **Single-binary distribution** — the release build embeds the frontend; `pip install prismnote` gives you one command to run.
 
 ## Who it's for / Use cases
@@ -37,7 +38,7 @@ PrismNote is a data-science notebook served by a single executable: a Rust (Axum
 
 ## Project status
 
-`v1.12.0` (PyPI). Active and CI-green for build/tests; the honest, current set of bugs and gaps is maintained in [ROADMAP_HONEST.md](ROADMAP_HONEST.md). Release history: [CHANGELOG.md](CHANGELOG.md) and GitHub Releases.
+`v1.12.3` (PyPI). Active and CI-green for build/tests; the honest, current set of bugs and gaps is maintained in [ROADMAP_HONEST.md](ROADMAP_HONEST.md). Release history: [CHANGELOG.md](CHANGELOG.md) and GitHub Releases.
 
 ## Installation
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prismnote"
-version = "1.12.2"
+version = "1.12.3"
 description = "Data science notebook with support for 15+ programming languages, SQL execution across 9+ databases, multi-terminal splits, and intelligent code assistance."
 readme = "README.md"
 license = "Apache-2.0"
@@ -83,6 +83,12 @@ dev = [
     "httpx>=0.24.0,<1.0",
     "ruff>=0.5.0",
 ]
+
+# SSRF-safe link previews (notebook link cards). MudFish fetches the URL with
+# scheme allow-listing, private/loopback address blocking and size/timeout caps,
+# so unfurling an untrusted URL cannot reach localhost or the cloud metadata
+# service. Optional: prismnote.link_preview raises a clear error if it's absent.
+preview = ["mudfish>=0.2.3"]
 
 # Database support — permissively-licensed (OSS) drivers only. See CONNECTORS.md.
 sql = ["duckdb==0.9", "pg8000==1.30", "pymysql==1.0"]   # MIT / BSD / MIT

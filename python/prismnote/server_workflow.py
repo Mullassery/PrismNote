@@ -216,6 +216,33 @@ def create_flask_app(server: Optional[PrismNoteServer] = None):
 
         return jsonify(srv.export_notebook(notebook_id, output_path, format))
 
+    @app.route("/preview", methods=["POST"])
+    def link_preview():
+        """Return an SSRF-safe link preview for a user-supplied URL.
+
+        The fetch is delegated to MudFish (optional ``prismnote[preview]``
+        extra), which blocks private/loopback/link-local targets -- so a
+        notebook link card cannot be used to probe localhost or the cloud
+        metadata service.
+        """
+        data = request.get_json() or {}
+        url = data.get("url")
+
+        if not url:
+            return (
+                jsonify({"status": "error", "message": "url required"}),
+                400,
+            )
+
+        from .link_preview import LinkPreviewError, fetch_link_preview
+
+        try:
+            preview = fetch_link_preview(url, render_js=bool(data.get("render_js", False)))
+        except LinkPreviewError as exc:
+            return jsonify({"status": "error", "message": str(exc)}), 400
+
+        return jsonify({"status": "ok", "preview": preview.to_dict()})
+
     return app
 
 

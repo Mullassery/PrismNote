@@ -1,3 +1,3 @@
 """PrismNote - A modern data science notebook."""
 
-__version__ = "1.12.2"
+__version__ = "1.12.3"

@@ -13,6 +13,18 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+## [1.12.3] - 2026-10-18
+
+### Added
+- **SSRF-safe link previews.** New `prismnote.link_preview.fetch_link_preview()`
+  and a `POST /preview` route on the REST server unfurl a user-supplied URL into
+  a link card (title/description/canonical/status). The fetch is delegated to
+  [MudFish](https://pypi.org/project/mudfish/), which rejects non-`http(s)`
+  schemes and private/loopback/link-local targets (including the cloud metadata
+  endpoint) and caps response size and time — so a preview request cannot be
+  turned into an SSRF primitive. Opt in with the `prismnote[preview]` extra;
+  the helper raises a clear, actionable error when MudFish is absent.
+
 ## [1.12.2] - 2026-10-18
 
 ### Security
