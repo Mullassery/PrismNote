@@ -84,6 +84,18 @@ Create a notebook, add a SQL cell, and query, e.g., a local DuckDB file — or a
 - [API Reference](docs/reference/API_REFERENCE.md) · [Settings](docs/reference/SETTINGS_REFERENCE.md) · [Security](docs/reference/SECURITY.md)
 - [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — verified list of what's broken, untested, or not built
 
+## Known issues and deferred work
+
+**Blocked / failed:**
+- Publish the Linux/Windows binaries already present in `release-assets/`.
+- Fix frontend lint/e2e gates.
+- Idle kernel eviction.
+
+**Rejected / deferred:**
+- MongoDB, CRDT collaboration, and cloud SaaS.
+
+Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Queue status
 
 Shipped, blocked/failed, and rejected work for this repository is documented in
