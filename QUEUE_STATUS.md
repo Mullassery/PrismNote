@@ -3,7 +3,7 @@
 This file records what was shipped, what is blocked/failed, and what is rejected for this repository. It complements `AUDIT_FINDINGS.md`.
 
 ## Shipped
-- No code changes in this cycle; audit/bundle docs added.
+- Optional nbdime-backed semantic notebook diff/merge adapter (`[nbdime]` extra); audit/bundle docs added.
 
 ## Blocked / failed
 - Publish the Linux/Windows binaries already present in `release-assets/`.

@@ -40,6 +40,20 @@ PrismNote is a data-science notebook served by a single executable: a Rust (Axum
 
 `v1.12.3` (PyPI). Active and CI-green for build/tests; the honest, current set of bugs and gaps is maintained in [ROADMAP_HONEST.md](ROADMAP_HONEST.md). Release history: [CHANGELOG.md](CHANGELOG.md) and GitHub Releases.
 
+## Semantic notebook diff/merge
+
+Reviewing `.ipynb` changes in Git is noisy because outputs and cell ids change.
+The optional nbdime adapter gives semantic diffs and three-way merges:
+
+```bash
+pip install "prismnote[nbdime]"
+python -m prismnote.notebook_diff diff base.ipynb current.ipynb
+python -m prismnote.notebook_diff merge base.ipynb local.ipynb remote.ipynb --out merged.ipynb
+```
+
+It never rewrites a notebook unless `merge` is explicitly called. Output-only
+changes are ignored by nbdime rather than shown as code changes.
+
 ## Installation
 
 ```bash
