@@ -96,11 +96,6 @@ Create a notebook, add a SQL cell, and query, e.g., a local DuckDB file — or a
 
 Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
 
-## Queue status
-
-Shipped, blocked/failed, and rejected work for this repository is documented in
-[`QUEUE_STATUS.md`](QUEUE_STATUS.md).
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) (dev setup, real test/lint commands) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Security issues: report via [SECURITY.md](SECURITY.md), not public issues.
