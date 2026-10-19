@@ -197,8 +197,8 @@ def download_binary(version: str = __version__):
         url = f"https://github.com/{GITHUB_REPO}/releases/download/v{version}/{name}"
         try:
             print(f"Downloading from: {url}")
-            urllib.request.urlretrieve(url, binary_path)
-            os.chmod(binary_path, 0o755)
+            urllib.request.urlretrieve(url, binary_path)  # nosec B310 - hardcoded https://github.com release URL
+            os.chmod(binary_path, 0o755)  # nosec B103 - downloaded launcher must be executable
             print(f"Downloaded to {binary_path}")
             return binary_path
         except Exception as e:  # try the next candidate asset name
