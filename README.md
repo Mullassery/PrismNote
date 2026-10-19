@@ -33,7 +33,7 @@ PrismNote is a data-science notebook served by a single executable: a Rust (Axum
 - **MongoDB is not implemented** (an explicit error, not fake success).
 - **Data-quality scoring is not wired to real execution** — the two scoring code paths are the one integration still without a working implementation.
 - **Idle kernels are never evicted** (resource management improvement, not a correctness gap).
-- **Not without known gaps.** Backend tests pass (170, plus 114 frontend/backend vitest), but frontend lint (435 errors) and Playwright e2e (57/85) currently fail in CI without failing the build — tracked in `ROADMAP_HONEST.md`.
+- **Not without known gaps.** Backend tests pass (120, plus 120 frontend vitest); frontend lint has zero errors (61 advisory React Compiler warnings) and Playwright E2E passes on Chromium, Firefox and WebKit (207 tests). Remaining gaps are tracked in `ROADMAP_HONEST.md`.
 - The PyPI metadata says `Development Status :: 5 - Production/Stable`; the repo's own docs are more honest — this is actively developed single-maintainer software, and `ROADMAP_HONEST.md` is the source of truth for what's broken or unverified.
 
 ## Project status
@@ -102,7 +102,6 @@ Create a notebook, add a SQL cell, and query, e.g., a local DuckDB file — or a
 
 **Blocked / failed:**
 - Publish the Linux/Windows binaries already present in `release-assets/`.
-- Fix frontend lint/e2e gates.
 - Idle kernel eviction.
 
 **Rejected / deferred:**

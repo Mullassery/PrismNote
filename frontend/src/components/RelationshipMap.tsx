@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { X, AlertCircle, Loader2, HelpCircle } from 'lucide-react'
 import cytoscape from 'cytoscape'
-import type { Core, EventObject, EventObjectEdge, StylesheetJson } from 'cytoscape'
+import type { Core, EventObject, EventObjectEdge, LayoutOptions, StylesheetJson } from 'cytoscape'
 import coseLayout from 'cytoscape-cose-bilkent'
 import dagreLayout from 'cytoscape-dagre'
 import { useSchemaCache } from '../hooks/useSchemaCache'
@@ -457,24 +457,15 @@ function getCytoscapeStyle(): StylesheetJson {
  * Apply layout algorithm
  */
 function applyLayout(cy: Core, mode: LayoutMode): void {
-  // NOTE (found while typing, not fixed — see ROADMAP_HONEST.md): 'force-
-  // directed' below passes `name: 'cose'` — cytoscape CORE's built-in cose
-  // layout — but `directed`/`nodeSpacing`/`edgeLengthVal` aren't options
-  // core's `cose` recognizes (they belong to the `cose-bilkent` extension
-  // registered via `cytoscape.use(coseLayout)` above, which self-registers
-  // under the name `'cose-bilkent'`, not `'cose'`). So this almost
-  // certainly runs core cose with those three options silently ignored,
-  // not the intended cose-bilkent layout. Typing this object precisely
-  // against cytoscape's real LayoutOptions union would either force fixing
-  // that mismatch (a behavior change) or produce a type error, so it's
-  // left as `any` rather than doing either mid-typing-pass.
-  const layoutOptions: any = {
+  // Cytoscape's core `cose` and the `dagre` extension accept different
+  // option shapes. `dagre` is not declared in cytoscape's bundled types, so
+  // its object is narrowed once here rather than escaping to `any`.
+  const layoutOptions: Record<LayoutMode, LayoutOptions> = {
     'force-directed': {
       name: 'cose',
-      directed: true,
       avoidOverlap: true,
-      nodeSpacing: 10,
-      edgeLengthVal: 80,
+      nodeRepulsion: 4000,
+      idealEdgeLength: 80,
       animate: true,
       animationDuration: 500,
       randomize: false,
@@ -486,7 +477,7 @@ function applyLayout(cy: Core, mode: LayoutMode): void {
       spacingFactor: 1.5,
       animate: true,
       animationDuration: 500,
-    },
+    } as unknown as LayoutOptions,
     circular: {
       name: 'circle',
       avoidOverlap: true,

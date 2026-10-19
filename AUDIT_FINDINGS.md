@@ -21,7 +21,7 @@ Local-first, Jupyter-compatible data-science notebook with SQL warehouses, AI as
 ## Verified gaps and user-facing risks
 
 - Linux/Windows binaries already exist in `release-assets/` but GitHub releases only ship macOS arm64; ~338 MB of duplicate binaries are committed to git.
-- Frontend lint ~435 errors and Playwright e2e 57/85, non-gating; MongoDB explicit error; data-quality scoring unwired; idle kernels never evicted.
+- Frontend lint is clean (0 errors; 61 advisory React Compiler warnings) and Playwright E2E passes on Chromium/Firefox/WebKit (C28). MongoDB explicit error; data-quality scoring unwired; idle kernels never evicted.
 - No collaboration; PyPI package is a 26 KB wrapper.
 
 ## Direct competitors
@@ -31,7 +31,7 @@ Local-first, Jupyter-compatible data-science notebook with SQL warehouses, AI as
 ## Ranked next actions
 
 - P1: publish the existing Linux/Windows binaries; move assets to Releases/LFS (S).
-- P1: fix lint/e2e gates (M).
+- P1: keep the new lint/E2E gates green and watch for first-run browser-install cost (S).
 - P2: idle kernel eviction/resource limits (M).
 
 ## Do not build

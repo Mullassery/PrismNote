@@ -13,7 +13,8 @@ import {
   type Source, type SchemaResult, type Overview, type ColumnProfile, type ColumnSchema,
   type Sort, type Filter, type FilterOp, type LogicalType, type ColumnStat, type Lineage,
 } from '../api/explore'
-import { getNotebookState } from '../hooks/useNotebookRedux'
+import { getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
+import { addCell, createNotebook, updateCell } from '../store/notebookSlice'
 import { listVariables } from '../api/kernel'
 import { useAIContext } from '../hooks/useAIContext'
 import { apiErrorMessage } from '../lib/errors'
@@ -395,28 +396,18 @@ export default function DataExplorer({
   }, [onClose])
 
   // ── actions ──
-  // NOTE (found while typing, not fixed — see ROADMAP_HONEST.md): this calls
-  // `.createNotebook()`/`.addCell()`/`.updateCell()` on `getNotebookState()`'s
-  // return value, but that function returns the plain Redux state slice
-  // (NotebookState — data only), not the action dispatchers `useNotebookStore()`
-  // provides. Those methods don't exist on the real return type, so at
-  // runtime this throws `TypeError: store.createNotebook is not a function`
-  // the first time it's reached (this file never calls `useNotebookStore()`,
-  // which is why it's also flagged as an unused import). `as any` here
-  // preserves the exact pre-existing (broken) behavior rather than either
-  // silently rewiring this to call the hook (an actual behavior change,
-  // and hooks can't be called from inside an event handler like this
-  // anyway — it would need to be called at the component's top level) or
-  // inventing a fake type that lies about what exists.
+  // Insert-as-cell runs from an event handler, so dispatch the store actions
+  // directly instead of trying to call hook methods on the state slice.
   const insertAsCell = async () => {
     try {
       const code = await exploreExportCode(target, { sort, filters })
-      const store = getNotebookState() as any
-      if (!store.currentNotebook) await store.createNotebook('Explore')
-      store.addCell('code')
-      const s2 = getNotebookState() as any
-      const idx = s2.currentNotebook.cells.length - 1
-      s2.updateCell(idx, { source: code.split(/(?<=\n)/) })
+      const dispatch = getReduxDispatch()
+      if (!getNotebookState().currentNotebook) {
+        await dispatch(createNotebook('Explore'))
+      }
+      dispatch(addCell({ type: 'code' }))
+      const cells = getNotebookState().currentNotebook?.cells ?? []
+      dispatch(updateCell({ index: cells.length - 1, updates: { source: code.split(/(?<=\n)/) } }))
       onClose()
     } catch (e: unknown) {
       setError(apiErrorMessage(e, 'could not generate code'))

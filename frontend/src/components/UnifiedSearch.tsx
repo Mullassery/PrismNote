@@ -177,7 +177,12 @@ export default function UnifiedSearch({ onClose }: { onClose: () => void }) {
 
       {/* Search dialog */}
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
-        <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Search"
+          className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden"
+        >
           {/* Search input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />

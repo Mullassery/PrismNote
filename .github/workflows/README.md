@@ -32,11 +32,12 @@ This directory contains all CI/CD workflow configurations for PrismNote.
 **Jobs:**
 - **Frontend E2E Tests** - Validates React UI
   - Runs on Ubuntu
-  - Node 18 environment
-  - ESLint linting
+  - Node 22 environment (`npm ci` with npm cache)
+  - ESLint linting (errors fail the job)
   - TypeScript compilation
   - Vite build
-  - Playwright E2E tests
+  - Playwright browser install (Chromium, Firefox, WebKit)
+  - Playwright E2E tests (all three browsers)
 
 **Path Filters:**
 ```
@@ -89,12 +90,13 @@ frontend/**         # Only run on frontend changes
 ### Frontend Tests
 
 ```yaml
-# Node.js 18 environment
+# Node.js 22 environment
 # Steps:
-#   1. npm install
+#   1. npm ci
 #   2. npm run lint (ESLint)
 #   3. npm run build (TypeScript + Vite)
-#   4. npm run test:e2e (Playwright)
+#   4. npx playwright install --with-deps chromium firefox webkit
+#   5. npm run test:e2e (Playwright, all three browsers)
 ```
 
 **Requirements:**
@@ -130,7 +132,7 @@ frontend/**         # Only run on frontend changes
 ### Frontend Tests Fail
 
 **Error:** `npm: command not found`
-- **Fix:** Node 18 setup may have failed
+- **Fix:** Node 22 setup may have failed
 - **Check:** GitHub Actions runner logs
 
 **Error:** ESLint errors
@@ -163,9 +165,10 @@ pytest tests/ -v
 ### Frontend Tests
 ```bash
 cd frontend
-npm install
+npm ci
 npm run lint
 npm run build
+npx playwright install --with-deps chromium firefox webkit
 npm run test:e2e
 ```
 

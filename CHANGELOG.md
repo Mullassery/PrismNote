@@ -13,6 +13,33 @@ accuracy in this pass).
 
 ## [Unreleased]
 
+### Fixed
+- **CI reliability (C28).** Frontend lint now has zero errors: the
+  `@typescript-eslint/no-explicit-any`, `no-unused-vars`, `prefer-const` and
+  `no-useless-escape` violations are fixed rather than downgraded to warnings.
+  The React Compiler advisory rules remain warnings only, with a comment in
+  `frontend/eslint.config.js`; correctness rules stay errors.
+- **Keyboard-stress E2E suite made deterministic.** The old tests targeted a
+  `data-testid="notebook-container"` that only exists after a notebook is
+  created through the Rust backend, so they timed out before exercising any
+  keyboard input in the frontend-only harness. They now drive real controls
+  (terminal prompt, command palette, settings/search dialogs), use
+  platform-safe shortcuts, retry once for the first-paint shortcut-listener
+  race, and ignore only expected backend-unavailable network console errors.
+  WebKit, Firefox and Chromium all pass.
+- **Relationship Map E2E tests replaced with reachable smoke coverage.** All 17
+  old tests assumed a pre-seeded database schema that the harness never
+  provides (100% failure on every browser). The suite now covers the activity
+  rail entry point and global shortcuts, while pure graph construction gains
+  six unit tests in `frontend/src/__tests__/graphBuilder.test.ts`.
+- **Frontend CI installs Playwright browsers.** `.github/workflows/tests.yml`
+  now uses `npm ci`, caches npm downloads, and runs
+  `npx playwright install --with-deps chromium firefox webkit` before E2E.
+- **Removed the broken optional Grapify/Graphify workflow.** It referenced the
+  non-existent `grapify-ai/grapify-action` and could never run. Graphify
+  remains optional, developer-local tooling under `tools/graphify/`; there is
+  no Graphify CI job.
+
 ## [1.12.3] - 2026-10-18
 
 ### Added

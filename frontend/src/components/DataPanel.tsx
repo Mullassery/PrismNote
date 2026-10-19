@@ -8,7 +8,8 @@ import {
   type DbConnection, type QueryResult, type DatabaseSchema,
 } from '../api/data'
 import DataFrameView from './DataFrameView'
-import { getNotebookState } from '../hooks/useNotebookRedux'
+import { getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
+import { addCell, createNotebook, updateCell } from '../store/notebookSlice'
 import { useFontSize } from '../hooks/useFontSize'
 import { apiErrorMessage } from '../lib/errors'
 
@@ -162,25 +163,19 @@ export default function DataPanel({ onClose }: { onClose: () => void }) {
     }
   }
 
-  // NOTE (found while typing, not fixed — see ROADMAP_HONEST.md): same
-  // pre-existing bug as DataExplorer.tsx's insertAsCell — `getNotebookState()`
-  // returns the plain Redux state slice, not action dispatchers, so
-  // `.createNotebook()`/`.addCell()`/`.updateCell()` don't exist on it and
-  // this throws a TypeError at runtime (this file never calls the
-  // `useNotebookStore()` hook that actually provides those actions). Left
-  // as `as any` rather than silently rewiring behavior mid-typing-pass.
+  // Insert-as-cell runs from an event handler, so dispatch the store actions
+  // directly instead of trying to call hook methods on the state slice.
   const insertAsCell = async () => {
     if (!sel) return
     try {
       const code = await queryCode(sel.kind, sel.id, sql)
-      const store = getNotebookState() as any
-      if (!store.currentNotebook) {
-        await store.createNotebook('SQL')
+      const dispatch = getReduxDispatch()
+      if (!getNotebookState().currentNotebook) {
+        await dispatch(createNotebook('SQL'))
       }
-      store.addCell('code')
-      const s2 = getNotebookState() as any
-      const idx = s2.currentNotebook.cells.length - 1
-      s2.updateCell(idx, { source: code.split(/(?<=\n)/) })
+      dispatch(addCell({ type: 'code' }))
+      const cells = getNotebookState().currentNotebook?.cells ?? []
+      dispatch(updateCell({ index: cells.length - 1, updates: { source: code.split(/(?<=\n)/) } }))
       onClose() // jump back to the notebook with the new cell
     } catch (e: unknown) {
       setError(apiErrorMessage(e, 'could not generate cell'))

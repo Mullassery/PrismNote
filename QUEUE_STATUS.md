@@ -4,10 +4,10 @@ This file records what was shipped, what is blocked/failed, and what is rejected
 
 ## Shipped
 - Optional nbdime-backed semantic notebook diff/merge adapter (`[nbdime]` extra); audit/bundle docs added.
+- C28: frontend lint is clean (0 errors), Playwright E2E passes on Chromium/Firefox/WebKit, the stale Relationship Map tests were replaced, and the broken Grapify/Graphify CI workflow was removed.
 
 ## Blocked / failed
 - Publish the Linux/Windows binaries already present in `release-assets/`.
-- Fix frontend lint/e2e gates.
 - Idle kernel eviction.
 
 ## Rejected / deferred

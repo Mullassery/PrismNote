@@ -31,7 +31,7 @@ export interface ExecutionRequest {
   sessionId: string
   timeout?: number
   environment?: Record<string, string>
-  inputs?: Record<string, any>
+  inputs?: Record<string, unknown>
 }
 
 export interface ExecutionResult {
@@ -40,11 +40,11 @@ export interface ExecutionResult {
   errors?: string
   stdout?: string
   stderr?: string
-  result?: any
+  result?: unknown
   visualizations?: {
     type: 'plot' | 'table' | 'html' | 'image'
-    data: any
-    metadata?: Record<string, any>
+    data: unknown
+    metadata?: Record<string, unknown>
   }[]
   executionTime?: number
   memoryUsed?: number
@@ -311,7 +311,12 @@ export async function executeCode(request: ExecutionRequest): Promise<ExecutionR
 /**
  * Session management for stateful execution
  */
-const sessionKernels = new Map<string, any>()
+interface KernelSession {
+  kernelId: string
+  wsUrl?: string
+}
+
+const sessionKernels = new Map<string, KernelSession>()
 
 /**
  * Python executor - IPython kernel via REST API
@@ -721,7 +726,7 @@ async function executeQuery(
   connInfo: ConnectionInfo,
   _timeout: number
 ): Promise<{
-  rows: Record<string, any>[]
+  rows: Record<string, unknown>[]
   rowCount: number
   affectedRows?: number
   columns: string[]

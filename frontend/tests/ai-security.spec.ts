@@ -27,9 +27,9 @@ token = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
 `
       // This mimics what sanitizeForAI does
       return code
-        .replace(/(['"]?(?:api[_-]?)?key['"]?\s*[:=]\s*)([a-zA-Z0-9_\-\.]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
+        .replace(/(['"]?(?:api[_-]?)?key['"]?\s*[:=]\s*)([a-zA-Z0-9_.-]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
         .replace(/(['"]?(?:password|passwd|pwd|token|secret)['"]?\s*[:=]\s*)([^\s,;}\]]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
-        .replace(/bearer\s+[a-zA-Z0-9_\-\.]+/gi, 'bearer [REDACTED]')
+        .replace(/bearer\s+[a-zA-Z0-9_.-]+/gi, 'bearer [REDACTED]')
     })
 
     expect(sanitizedCode).toContain('[REDACTED]')
@@ -59,7 +59,7 @@ print(result)
 `
       // Apply sanitizer (shouldn't change non-sensitive code)
       return code
-        .replace(/(['"]?(?:api[_-]?)?key['"]?\s*[:=]\s*)([a-zA-Z0-9_\-\.]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
+        .replace(/(['"]?(?:api[_-]?)?key['"]?\s*[:=]\s*)([a-zA-Z0-9_.-]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
         .replace(/(['"]?(?:password|passwd|pwd|token|secret)['"]?\s*[:=]\s*)([^\s,;}\]]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
     })
 
@@ -270,13 +270,13 @@ test.describe('AI Context Boundary Tests', () => {
     ]
 
     for (const testCase of testCases) {
-      const result = await page.evaluate(({ input, pattern }) => {
+      const result = await page.evaluate(({ input }) => {
         return input
-          .replace(/(['"]?(?:api[_-]?)?key['"]?\s*[:=]\s*)([a-zA-Z0-9_\-\.]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
+          .replace(/(['"]?(?:api[_-]?)?key['"]?\s*[:=]\s*)([a-zA-Z0-9_.-]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
           .replace(/(['"]?(?:password|passwd|pwd|token|secret)['"]?\s*[:=]\s*)([^\s,;}\]]+|'[^']*'|"[^"]*")/gi, '$1[REDACTED]')
-          .replace(/bearer\s+[a-zA-Z0-9_\-\.]+/gi, 'bearer [REDACTED]')
+          .replace(/bearer\s+[a-zA-Z0-9_.-]+/gi, 'bearer [REDACTED]')
           .replace(/([a-z]+:\/\/[^:]+:)[^@]+(@)/gi, '$1[REDACTED]$2')
-      }, { input: testCase.input, pattern: '' })
+      }, { input: testCase.input })
 
       expect(result).not.toContain(testCase.shouldNotContain)
       expect(result).toContain(testCase.shouldContain)

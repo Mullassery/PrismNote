@@ -1,87 +1,152 @@
-import { Page, expect } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+
+/** A console error or page error captured during a stress run. */
+export interface StressError {
+  message: string
+  location?: unknown
+  stack?: string
+}
+
+export interface FocusInfo {
+  tag: string
+  id: string
+  class: string
+  text: string
+  ariaLabel: string
+}
+
+interface PerformanceMemory {
+  usedJSHeapSize: number
+  totalJSHeapSize: number
+  jsHeapSizeLimit: number
+}
 
 /**
  * Keyboard Stress Testing Helpers
- * Test real keyboard input at extremes to find breaking points
+ * Test real keyboard input at extremes to find breaking points.
+ *
+ * Inputs are real controls from the running app (the terminal prompt, the
+ * command palette, and modal fields) so the suite never waits on a notebook
+ * backend that is not part of the frontend E2E harness.
  */
-
 export class KeyboardStressTester {
   constructor(private page: Page) {}
 
-  /**
-   * Rapid key presses (mimic typing at 200+ WPM)
-   * Find: input lag, race conditions, dropped keypresses
-   */
-  async rapidKeyPresses(targetSelector: string, keys: string[], delayMs = 10) {
-    const element = await this.page.$(targetSelector)
-    if (!element) throw new Error(`Element not found: ${targetSelector}`)
+  /** Platform modifier that maps to Cmd on macOS and Ctrl elsewhere. */
+  get modifier(): 'Meta' | 'Control' {
+    return process.platform === 'darwin' ? 'Meta' : 'Control'
+  }
 
-    for (const key of keys) {
-      await this.page.keyboard.press(key, { delay: delayMs })
-      // Don't wait between presses — simulate real rapid typing
-    }
+  /** Make a Playwright key combo using the platform's primary modifier. */
+  combo(key: string): string {
+    return `${this.modifier}+${key}`
   }
 
   /**
-   * Sustained key hold (mimic holding down a key)
-   * Find: stuck focus, infinite loops, memory leaks
+   * App-level shortcut combo. Always uses Control: the app accepts
+   * metaKey || ctrlKey, and Control avoids OS/browser interception of
+   * Cmd+K / Cmd+, on headless macOS WebKit/Chromium.
    */
+  appCombo(key: string): string {
+    return `Control+${key}`
+  }
+
+  /**
+   * Open Settings, retrying once if the keydown lands before React has
+   * attached the app-level shortcut listener (a real first-paint race in
+   * headless browsers). Opening is idempotent, so a second press is safe.
+   */
+  async openSettings() {
+    const dialog = this.page.getByRole('dialog', { name: 'Settings' })
+    await this.page.keyboard.press(this.appCombo('Comma'))
+    try {
+      await expect(dialog).toBeVisible({ timeout: 2000 })
+    } catch {
+      await this.page.keyboard.press(this.appCombo('Comma'))
+      await expect(dialog).toBeVisible()
+    }
+  }
+
+  /** Open the command palette with the same first-paint retry. */
+  async openCommandPalette() {
+    const search = this.page.getByRole('textbox', { name: 'Search commands' })
+    await this.page.keyboard.press(this.appCombo('Shift+p'))
+    try {
+      await expect(search).toBeVisible({ timeout: 2000 })
+    } catch {
+      await this.page.keyboard.press(this.appCombo('Shift+p'))
+      await expect(search).toBeVisible()
+    }
+  }
+
+  /** Open global search with the same first-paint retry. */
+  async openSearch() {
+    const dialog = this.page.getByRole('dialog', { name: 'Search' })
+    await this.page.keyboard.press('Control+k')
+    try {
+      await expect(dialog).toBeVisible({ timeout: 2000 })
+    } catch {
+      await this.page.keyboard.press('Control+k')
+      await expect(dialog).toBeVisible()
+    }
+  }
+
+  /** Open the bottom Terminal tab and focus its prompt input. */
+  async openTerminal() {
+    await this.page.getByTestId('bottom-tab-terminal').click()
+    const input = this.page.getByTestId('terminal-input').first()
+    await expect(input).toBeVisible()
+    await input.click()
+    return input
+  }
+
+  /** Rapid key presses (mimic typing at 200+ WPM). */
+  async rapidKeyPresses(targetSelector: string, keys: string[], delayMs = 10) {
+    const element = this.page.locator(targetSelector).first()
+    await expect(element).toBeVisible()
+    for (const key of keys) {
+      await this.page.keyboard.press(key, { delay: delayMs })
+    }
+  }
+
+  /** Sustained key hold (mimic holding down a key). */
   async sustainedKeyHold(key: string, durationMs = 1000) {
     const startTime = Date.now()
-    const pressInterval = 50 // Re-press key every 50ms to simulate hold
-
+    const pressInterval = 50
     while (Date.now() - startTime < durationMs) {
       await this.page.keyboard.press(key, { delay: pressInterval })
     }
   }
 
-  /**
-   * Rapid tab cycling (forward/backward)
-   * Find: focus traps, focus loss, focus position corruption
-   */
+  /** Rapid tab cycling (forward/backward). */
   async rapidTabCycles(cycles: number, delayMs = 30) {
     for (let i = 0; i < cycles; i++) {
       await this.page.keyboard.press('Tab', { delay: delayMs })
-      await this.page.waitForTimeout(10) // minimal wait
     }
   }
 
-  /**
-   * Reverse tab cycling with Shift+Tab
-   * Find: backward navigation issues, focus order reversal problems
-   */
+  /** Reverse tab cycling with Shift+Tab. */
   async reverseTabCycles(cycles: number, delayMs = 30) {
     for (let i = 0; i < cycles; i++) {
       await this.page.keyboard.press('Shift+Tab', { delay: delayMs })
-      await this.page.waitForTimeout(10)
     }
   }
 
-  /**
-   * Tab cycling at extreme speed (no delay)
-   * Find: race conditions, missed focus updates
-   */
+  /** Tab cycling at extreme speed (no delay). */
   async extremeSpeedTabCycles(cycles: number) {
     for (let i = 0; i < cycles; i++) {
       await this.page.keyboard.press('Tab')
     }
   }
 
-  /**
-   * Alternating Tab/Shift+Tab (forward/backward rapidly)
-   * Find: focus state corruption, navigation order issues
-   */
+  /** Alternating Tab/Shift+Tab (forward/backward rapidly). */
   async alternatingTabDirection(cycles: number, delayMs = 20) {
     for (let i = 0; i < cycles; i++) {
       await this.page.keyboard.press(i % 2 === 0 ? 'Tab' : 'Shift+Tab', { delay: delayMs })
-      await this.page.waitForTimeout(5)
     }
   }
 
-  /**
-   * Arrow key mashing (all directions, random order)
-   * Find: scroll position issues, selection corruption, navigation edge cases
-   */
+  /** Arrow key mashing (all directions, random order). */
   async arrowKeyMashing(iterations: number, delayMs = 15) {
     const arrows = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
     for (let i = 0; i < iterations; i++) {
@@ -90,219 +155,152 @@ export class KeyboardStressTester {
     }
   }
 
-  /**
-   * Rapid Ctrl/Cmd combinations
-   * Find: keyboard modifier handling issues, shortcut conflicts
-   */
+  /** Rapid Ctrl/Cmd combinations. */
   async rapidCtrlCombos(combos: string[], delayMs = 20) {
     for (const combo of combos) {
       await this.page.keyboard.press(combo, { delay: delayMs })
-      await this.page.waitForTimeout(10)
     }
   }
 
-  /**
-   * Held modifier key stress test (Ctrl, Shift, Alt held while pressing other keys)
-   * Find: modifier key state corruption, unexpected behavior
-   */
-  async heldModifierStress(modifier: 'Control' | 'Shift' | 'Alt', keySequence: string[], holdDurationMs = 500) {
+  /** Held modifier key stress test (Ctrl, Shift, Alt held while pressing keys). */
+  async heldModifierStress(
+    modifier: 'Control' | 'Shift' | 'Alt',
+    keySequence: string[],
+    holdDurationMs = 500,
+  ) {
     await this.page.keyboard.down(modifier)
     const startTime = Date.now()
-
-    // Press keys while modifier is held
     let keyIndex = 0
     while (Date.now() - startTime < holdDurationMs && keyIndex < keySequence.length) {
       await this.page.keyboard.press(keySequence[keyIndex], { delay: 30 })
       keyIndex++
-      await this.page.waitForTimeout(20)
     }
-
     await this.page.keyboard.up(modifier)
   }
 
-  /**
-   * Rapid Enter key presses (create cells, execute, confirm dialogs)
-   * Find: double-creation, race conditions in form submission
-   */
+  /** Rapid Enter key presses. */
   async rapidEnterPresses(count: number, delayMs = 25) {
     for (let i = 0; i < count; i++) {
       await this.page.keyboard.press('Enter', { delay: delayMs })
-      await this.page.waitForTimeout(10)
     }
   }
 
-  /**
-   * Rapid Escape key presses (close modals, cancel operations)
-   * Find: modal stack corruption, focus loss, state inconsistency
-   */
+  /** Rapid Escape key presses. */
   async rapidEscapePresses(count: number, delayMs = 25) {
     for (let i = 0; i < count; i++) {
       await this.page.keyboard.press('Escape', { delay: delayMs })
-      await this.page.waitForTimeout(10)
     }
   }
 
-  /**
-   * Ctrl/Cmd+Z spam (rapid undo)
-   * Find: undo buffer issues, state corruption, memory leaks
-   */
+  /** Ctrl/Cmd+Z spam (rapid undo). */
   async rapidUndoSpam(count: number, delayMs = 20) {
-    const undoKey = process.platform === 'darwin' ? 'Meta+z' : 'Control+z'
     for (let i = 0; i < count; i++) {
-      await this.page.keyboard.press(undoKey, { delay: delayMs })
-      await this.page.waitForTimeout(15)
+      await this.page.keyboard.press(this.combo('z'), { delay: delayMs })
     }
   }
 
-  /**
-   * Ctrl/Cmd+Z then Ctrl/Cmd+Y spam (undo/redo rapid cycling)
-   * Find: undo/redo state divergence, corruption
-   */
+  /** Ctrl/Cmd+Z then Ctrl/Cmd+Y spam (undo/redo rapid cycling). */
   async undoRedoCycling(cycles: number, delayMs = 25) {
-    const undoKey = process.platform === 'darwin' ? 'Meta+z' : 'Control+z'
-    const redoKey = process.platform === 'darwin' ? 'Meta+Shift+z' : 'Control+y'
-
+    const redoKey = this.modifier === 'Meta' ? 'Meta+Shift+z' : 'Control+y'
     for (let i = 0; i < cycles; i++) {
-      await this.page.keyboard.press(undoKey, { delay: delayMs })
-      await this.page.waitForTimeout(20)
+      await this.page.keyboard.press(this.combo('z'), { delay: delayMs })
       await this.page.keyboard.press(redoKey, { delay: delayMs })
-      await this.page.waitForTimeout(20)
     }
   }
 
-  /**
-   * Type a long string very rapidly
-   * Find: input buffer overflow, text corruption, character dropping
-   */
-  async rapidTypeString(targetSelector: string, text: string, charDelayMs = 10) {
-    const element = await this.page.$(targetSelector)
-    if (!element) throw new Error(`Element not found: ${targetSelector}`)
-
+  /** Type a long string very rapidly into the focused control. */
+  async rapidTypeString(_targetSelector: string, text: string, charDelayMs = 10) {
     for (const char of text) {
       await this.page.keyboard.type(char, { delay: charDelayMs })
     }
   }
 
-  /**
-   * Paste large text blocks rapidly
-   * Find: paste handling, memory issues, buffer overflow
-   */
-  async rapidPaste(targetSelector: string, textBlocks: string[], delayMs = 50) {
-    const element = await this.page.$(targetSelector)
-    if (!element) throw new Error(`Element not found: ${targetSelector}`)
-
+  /** Replace a control's contents with large text blocks in quick succession. */
+  async rapidPaste(targetSelector: string, textBlocks: string[]) {
+    const input = this.page.locator(targetSelector).first()
+    await expect(input).toBeVisible()
     for (const text of textBlocks) {
-      // Use clipboard API (works in Playwright)
-      await this.page.evaluate(([selector, content]) => {
-        const el = document.querySelector(selector) as HTMLElement
-        if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
-          el.value = content
-          el.dispatchEvent(new Event('input', { bubbles: true }))
-          el.dispatchEvent(new Event('change', { bubbles: true }))
-        }
-      }, [targetSelector, text])
-      await this.page.waitForTimeout(delayMs)
+      await input.fill(text)
     }
   }
 
-  /**
-   * Get current focused element info
-   * Verify: focus didn't get lost, focus moved to expected element
-   */
-  async getFocusedElement() {
+  /** Get current focused element info. */
+  async getFocusedElement(): Promise<FocusInfo> {
     return this.page.evaluate(() => {
-      const focused = document.activeElement
+      const focused = document.activeElement as HTMLElement | null
+      const className =
+        typeof focused?.className === 'string' ? focused.className : 'none'
       return {
-        tag: focused?.tagName,
-        id: (focused as any)?.id || 'none',
-        class: (focused as any)?.className || 'none',
+        tag: focused?.tagName ?? 'NONE',
+        id: focused?.id || 'none',
+        class: className || 'none',
         text: focused?.textContent?.slice(0, 50) || 'none',
-        ariaLabel: (focused as any)?.getAttribute('aria-label') || 'none',
+        ariaLabel: focused?.getAttribute('aria-label') || 'none',
       }
     })
   }
 
-  /**
-   * Verify focus is inside a specific container
-   */
+  /** Verify focus is inside a specific container. */
   async assertFocusInContainer(containerSelector: string) {
     const focused = await this.getFocusedElement()
     const isInside = await this.page.evaluate((selector) => {
       const container = document.querySelector(selector)
-      const focused = document.activeElement
-      return container?.contains(focused as Node) || false
+      const active = document.activeElement
+      return container !== null && container.contains(active)
     }, containerSelector)
 
     if (!isInside) {
       throw new Error(
-        `Focus escaped container "${containerSelector}". Currently focused: ${JSON.stringify(focused)}`
+        `Focus escaped container "${containerSelector}". Currently focused: ${JSON.stringify(focused)}`,
       )
     }
   }
 
-  /**
-   * Monitor focus changes during stress test
-   * Track: focus path, unexpected shifts, traps
-   */
-  async monitorFocusChanges(durationMs: number, callback: (changes: any[]) => void) {
-    const changes: any[] = []
-    let lastFocused = await this.getFocusedElement()
-
-    const checkInterval = setInterval(async () => {
-      const current = await this.getFocusedElement()
-      if (JSON.stringify(current) !== JSON.stringify(lastFocused)) {
-        changes.push({ from: lastFocused, to: current, timestamp: Date.now() })
-        lastFocused = current
-      }
-    }, 50)
-
-    await this.page.waitForTimeout(durationMs)
-    clearInterval(checkInterval)
-    callback(changes)
-  }
-
-  /**
-   * Check for console errors during stress test
-   */
-  async captureConsoleErrors(callback: (error: any) => void) {
+  /** Check for console errors during stress test. */
+  captureConsoleErrors(callback: (error: StressError) => void) {
     this.page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        callback({ message: msg.text(), location: msg.location() })
+      if (msg.type() !== 'error') return
+      const text = msg.text()
+      // The frontend E2E harness intentionally runs without the Rust API or
+      // Ollama. Failed resource loads from those services are expected and are
+      // not JavaScript defects, so ignore only those network-level messages.
+      if (
+        text.includes('Failed to load resource') ||
+        text.includes('Cross-Origin Request Blocked') ||
+        text.includes('CORS request did not succeed') ||
+        /ERR_CONNECTION_REFUSED|ECONNREFUSED|Bad Gateway/.test(text)
+      ) {
+        return
       }
+      const location = msg.location()
+      callback({ message: text, location })
     })
   }
 
-  /**
-   * Check for unhandled promise rejections
-   */
-  async captureUnhandledRejections(callback: (error: any) => void) {
+  /** Check for unhandled promise rejections / page errors. */
+  captureUnhandledRejections(callback: (error: StressError) => void) {
     this.page.on('pageerror', (err) => {
       callback({ message: err.message, stack: err.stack })
     })
   }
 
-  /**
-   * Stress test with memory monitoring
-   */
+  /** Heap usage where the browser exposes it (Chromium), otherwise null. */
   async getMemoryUsage() {
     return this.page.evaluate(() => {
-      if ((performance as any).memory) {
-        return {
-          usedJSHeapSize: (performance as any).memory.usedJSHeapSize,
-          totalJSHeapSize: (performance as any).memory.totalJSHeapSize,
-          jsHeapSizeLimit: (performance as any).memory.jsHeapSizeLimit,
-        }
+      const perf = performance as Performance & { memory?: PerformanceMemory }
+      if (!perf.memory) return null
+      return {
+        usedJSHeapSize: perf.memory.usedJSHeapSize,
+        totalJSHeapSize: perf.memory.totalJSHeapSize,
+        jsHeapSizeLimit: perf.memory.jsHeapSizeLimit,
       }
-      return null
     })
   }
 
-  /**
-   * Run stress test and collect all metrics
-   */
+  /** Run stress test and collect all metrics. */
   async runStressTest(testFn: () => Promise<void>) {
-    const errors: any[] = []
-    const rejections: any[] = []
+    const errors: StressError[] = []
+    const rejections: StressError[] = []
 
     this.captureConsoleErrors((err) => errors.push(err))
     this.captureUnhandledRejections((err) => rejections.push(err))
@@ -312,8 +310,8 @@ export class KeyboardStressTester {
 
     try {
       await testFn()
-    } catch (e) {
-      errors.push(e)
+    } catch (error) {
+      errors.push({ message: error instanceof Error ? error.message : String(error) })
     }
 
     const timeEnd = Date.now()
@@ -323,7 +321,8 @@ export class KeyboardStressTester {
       duration: timeEnd - timeStart,
       errors,
       rejections,
-      memoryDelta: memEnd && memStart ? memEnd.usedJSHeapSize - memStart.usedJSHeapSize : null,
+      memoryDelta:
+        memEnd && memStart ? memEnd.usedJSHeapSize - memStart.usedJSHeapSize : null,
       passed: errors.length === 0 && rejections.length === 0,
     }
   }

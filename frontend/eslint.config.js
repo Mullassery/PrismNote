@@ -19,13 +19,15 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // Underscore-prefixed parameters/variables are intentional placeholders.
       '@typescript-eslint/no-unused-vars': [
-        'warn',
+        'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-      'no-useless-escape': 'warn',
-      'prefer-const': 'warn',
+      // The React Compiler rules below are advisory and flag pre-existing
+      // patterns the codebase has not been migrated to. Keep them visible as
+      // warnings; correctness rules (rules-of-hooks, no-explicit-any, unused
+      // vars, prefer-const) remain errors from the shared configs.
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/immutability': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',

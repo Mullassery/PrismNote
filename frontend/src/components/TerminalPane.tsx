@@ -109,6 +109,7 @@ export default function TerminalPane({
           <span className="text-blue-400">prismnote</span> $
           <input
             ref={inputRef}
+            data-testid="terminal-input"
             value={cmd}
             onChange={(e) => setCmd(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && runCmd()}

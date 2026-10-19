@@ -14,7 +14,6 @@ test, or run the project.
 | - | - |
 | `tools/graphify/graphify_adapter.py` | The single, isolated integration point. Shells out to the `graphify` CLI; never imports Graphify internals. |
 | `.graphifyignore` | Limits what Graphify scans (build dirs, caches, vendored code, generated output). |
-| `.github/workflows/graphify.yml` | Optional CI job. Manual (`workflow_dispatch`) and non-blocking by default. |
 | `graphify-out/` | Generated graph + report + HTML. Git-ignored; never committed. |
 
 ## Install (per developer, opt-in)
@@ -59,5 +58,5 @@ is not installed, the adapter reports `"available": false` and exits `0` unless
 
 - Generated graphs go to `graphify-out/` and are **not** committed.
 - The adapter is stdlib-only and Python-version agnostic.
-- The CI job only runs when a repo opts in (`workflow_dispatch`, or by
-  uncommenting the `push`/`pull_request` triggers in the workflow).
+- There is no Graphify CI workflow. A previous optional workflow referenced a
+  non-existent action and was removed; Graphify is developer-local tooling only.

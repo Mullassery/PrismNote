@@ -12,7 +12,8 @@ import { usePlots } from '../hooks/usePlots'
 import { useViz } from '../hooks/useViz'
 import { exploreSchema, exploreAggregate, type ColumnSchema, type Measure } from '../api/explore'
 import { listVariables } from '../api/kernel'
-import { getNotebookState } from '../hooks/useNotebookRedux'
+import { getNotebookState, getReduxDispatch } from '../hooks/useNotebookRedux'
+import { addCell, createNotebook, updateCell } from '../store/notebookSlice'
 import { apiErrorMessage } from '../lib/errors'
 import type { ExplorerTarget } from './DataExplorer'
 
@@ -244,21 +245,17 @@ function Explore() {
 
   const spec = useMemo(() => buildSpec(chart, dim, dim2, measureField, data), [chart, dim, dim2, measureField, data])
 
-  // NOTE (found while typing, not fixed — see ROADMAP_HONEST.md): same
-  // pre-existing bug documented in DataExplorer.tsx/DataPanel.tsx's
-  // insertAsCell — `getNotebookState()` returns the plain Redux state
-  // slice, not action dispatchers, so `.createNotebook()`/`.addCell()`/
-  // `.updateCell()` don't exist on it and this throws a TypeError at
-  // runtime (this file never calls the `useNotebookStore()` hook that
-  // actually provides those actions). Left as `as any`.
+  // Insert-as-cell runs from an event handler, so dispatch the store actions
+  // directly instead of trying to call hook methods on the state slice.
   const insertAltair = async () => {
     const code = altairCode(localTitle || 'df', chart, dim, dim2, measure, agg)
-    const store = getNotebookState() as any
-    if (!store.currentNotebook) await store.createNotebook('Viz')
-    store.addCell('code')
-    const s2 = getNotebookState() as any
-    const idx = s2.currentNotebook.cells.length - 1
-    s2.updateCell(idx, { source: code.split(/(?<=\n)/) })
+    const dispatch = getReduxDispatch()
+    if (!getNotebookState().currentNotebook) {
+      await dispatch(createNotebook('Viz'))
+    }
+    dispatch(addCell({ type: 'code' }))
+    const cells = getNotebookState().currentNotebook?.cells ?? []
+    dispatch(updateCell({ index: cells.length - 1, updates: { source: code.split(/(?<=\n)/) } }))
   }
 
   const exportImg = async (kind: 'png' | 'svg') => {

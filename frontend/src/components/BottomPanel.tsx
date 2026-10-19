@@ -171,6 +171,7 @@ export default function BottomPanel({
             return (
               <button
                 key={t.id}
+                data-testid={`bottom-tab-${t.id}`}
                 onClick={() => {
                   setTab(t.id)
                   setCollapsed(false)
