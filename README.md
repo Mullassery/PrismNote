@@ -38,7 +38,7 @@ PrismNote is a data-science notebook served by a single executable: a Rust (Axum
 
 ## Project status
 
-`v1.12.3` (PyPI). Active and CI-green for build/tests; the honest, current set of bugs and gaps is maintained in [ROADMAP_HONEST.md](ROADMAP_HONEST.md). Release history: [CHANGELOG.md](CHANGELOG.md) and GitHub Releases.
+`v1.12.5` (PyPI). Active and CI-green for build/tests; the honest, current set of bugs and gaps is maintained in [ROADMAP_HONEST.md](ROADMAP_HONEST.md). Release history: [CHANGELOG.md](CHANGELOG.md) and GitHub Releases.
 
 ## Semantic notebook diff/merge
 
