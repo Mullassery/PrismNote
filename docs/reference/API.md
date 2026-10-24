@@ -734,4 +734,4 @@ List endpoints support pagination:
 
 - [Data Governance Guide](./governance.md)
 - [Rill Data Integration](../RILL_DATA_INTEGRATION.md)
-- [Release Notes](../RELEASES.md)
+- [Release Notes](../archive/RELEASES.md)

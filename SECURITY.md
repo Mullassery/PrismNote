@@ -38,7 +38,7 @@ core function, not an attack. 8 unit tests cover the validator
 We have not audited whether every execution path (SQLite/DuckDB/Postgres/
 MySQL/cloud-warehouse connectors) actually uses parameterized queries
 end-to-end versus string interpolation. This needs a dedicated audit — see
-`ROADMAP_HONEST.md`.
+`docs/internal/ROADMAP_HONEST.md`.
 
 ### Sandboxed code execution
 
@@ -48,7 +48,7 @@ memory/CPU/process/wall-clock limits. Verified by passing tests
 (`cargo test docker_executor::tests`) covering no-network-access, memory
 limits, and stdout/stderr/exit-code capture. One test in this area
 (`sandbox_enforces_wall_clock_timeout_and_kills_container`) is flaky under
-concurrent test-suite load — see `ROADMAP_HONEST.md` for detail. This
+concurrent test-suite load — see `docs/internal/ROADMAP_HONEST.md` for detail. This
 requires a working Docker install; if Docker is unavailable, sandboxed
 execution is unavailable (fails, not silently degraded).
 
@@ -93,7 +93,7 @@ Verified: `frontend/package.json` unexpectedly unchanged, `npm test` still
 
 2 vulnerabilities remain (1 low, 1 moderate) — `dompurify`, pulled in
 transitively via `monaco-editor`, has no fix available without an upstream
-`monaco-editor` bump. Not fixed in this pass — see `ROADMAP_HONEST.md`.
+`monaco-editor` bump. Not fixed in this pass — see `docs/internal/ROADMAP_HONEST.md`.
 
 ## Compliance
 

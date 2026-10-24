@@ -33,12 +33,12 @@ PrismNote is a data-science notebook served by a single executable: a Rust (Axum
 - **MongoDB is not implemented** (an explicit error, not fake success).
 - **Data-quality scoring is not wired to real execution** — the two scoring code paths are the one integration still without a working implementation.
 - **Idle kernels are never evicted** (resource management improvement, not a correctness gap).
-- **Not without known gaps.** Backend tests pass (120, plus 120 frontend vitest); frontend lint has zero errors (61 advisory React Compiler warnings) and Playwright E2E passes on Chromium, Firefox and WebKit (207 tests). Remaining gaps are tracked in `ROADMAP_HONEST.md`.
-- The PyPI metadata says `Development Status :: 5 - Production/Stable`; the repo's own docs are more honest — this is actively developed single-maintainer software, and `ROADMAP_HONEST.md` is the source of truth for what's broken or unverified.
+- **Not without known gaps.** Backend tests pass (120, plus 120 frontend vitest); frontend lint has zero errors (61 advisory React Compiler warnings) and Playwright E2E passes on Chromium, Firefox and WebKit (207 tests). Remaining gaps are tracked in `docs/internal/ROADMAP_HONEST.md`.
+- The PyPI metadata says `Development Status :: 5 - Production/Stable`; the repo's own docs are more honest — this is actively developed single-maintainer software, and `docs/internal/ROADMAP_HONEST.md` is the source of truth for what's broken or unverified.
 
 ## Project status
 
-`v1.12.x` (PyPI). Active and CI-green for build/tests; the honest, current set of bugs and gaps is maintained in [ROADMAP_HONEST.md](ROADMAP_HONEST.md). Release history: [CHANGELOG.md](CHANGELOG.md) and GitHub Releases.
+`v1.12.x` (PyPI). Active and CI-green for build/tests; the honest, current set of bugs and gaps is maintained in [docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md). Release history: [CHANGELOG.md](CHANGELOG.md) and GitHub Releases.
 
 ## Semantic notebook diff/merge
 
@@ -95,8 +95,8 @@ Create a notebook, add a SQL cell, and query, e.g., a local DuckDB file — or a
 
 - [docs/README.md](docs/README.md) — documentation index
 - [Getting Started](docs/guides/GETTING_STARTED.md) · [Multi-Language Support](docs/guides/MULTI_LANGUAGE_SUPPORT.md) · [Multi-Terminal](docs/guides/MULTI_TERMINAL_GUIDE.md) · [Execution Backends](docs/guides/EXECUTION_BACKENDS.md)
-- [API Reference](docs/reference/API_REFERENCE.md) · [Settings](docs/reference/SETTINGS_REFERENCE.md) · [Security](docs/reference/SECURITY.md)
-- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — verified list of what's broken, untested, or not built
+- [API Reference](docs/reference/API_REFERENCE.md) · [Settings](docs/reference/SETTINGS_REFERENCE.md) · [Security](SECURITY.md)
+- [docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) — verified list of what's broken, untested, or not built
 
 ## Known issues and deferred work
 
@@ -107,7 +107,7 @@ Create a notebook, add a SQL cell, and query, e.g., a local DuckDB file — or a
 **Rejected / deferred:**
 - MongoDB, CRDT collaboration, and cloud SaaS.
 
-Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+Full shipped/blocked/rejected detail: [`docs/internal/QUEUE_STATUS.md`](docs/internal/QUEUE_STATUS.md).
 
 ## Contributing
 

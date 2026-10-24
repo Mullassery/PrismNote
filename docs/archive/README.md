@@ -3,7 +3,7 @@
 Stale, superseded, duplicate, or fabricated planning/status docs, kept for
 history rather than deleted. Nothing here should be treated as describing
 the current state of the project — see the root `README.md` and
-`ROADMAP_HONEST.md` for that.
+`../internal/ROADMAP_HONEST.md` for that.
 
 ## Archived in the 2026-09 documentation consolidation pass
 
@@ -20,7 +20,7 @@ the current state of the project — see the root `README.md` and
   `docs/development/FEATURES_STATUS.md`) — a "✅ PRODUCTION-READY" feature
   matrix, dated 2026-07-29/v1.7.0, that claimed things later found false —
   e.g. "OAuth2/SSO ✅ PRODUCTION-READY" when `enterprise_auth.rs` explicitly
-  does not implement OAuth/AAD/LDAP login. See `ROADMAP_HONEST.md`.
+  does not implement OAuth/AAD/LDAP login. See `../internal/ROADMAP_HONEST.md`.
 - `SECURITY_STALE_v0.4.5_BETA.md` (was `docs/reference/SECURITY.md`) —
   described a 0.4.5 "beta, no production use" state; the project is at
   1.11.0. Replaced by the root `SECURITY.md`.
@@ -38,7 +38,7 @@ the current state of the project — see the root `README.md` and
   `docs/reference/ROADMAP.md`) — a stale multi-week phased v1.3→v2.0 plan.
   The `reference/` copy had two genuinely valuable dated status-check
   entries (2026-08-24, 2026-08-07); their still-relevant findings were
-  folded into the new root `ROADMAP_HONEST.md` before archiving.
+  folded into the new root `../internal/ROADMAP_HONEST.md` before archiving.
 - `REPOSITORY_ORGANIZATION_STALE_v1.7.md` (was
   `docs/development/REPOSITORY_ORGANIZATION.md`) — describes a directory
   layout and "Proprietary license" from v1.7.0 that no longer matches the
@@ -58,7 +58,7 @@ the current state of the project — see the root `README.md` and
   `.github.bak/workflows/release-binaries.yml`) — a real, seemingly-working
   multi-platform (macOS/Linux/Windows) release-binary workflow, disabled
   since 2026-06-20 and left in an ad hoc `.github.bak/` directory rather
-  than `.github/workflows/`. See `ROADMAP_HONEST.md` for why it's disabled
+  than `.github/workflows/`. See `../internal/ROADMAP_HONEST.md` for why it's disabled
   and what's needed to bring it back.
 
 ## Pre-existing archive (from before this pass)

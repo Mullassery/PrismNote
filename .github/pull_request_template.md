@@ -28,8 +28,8 @@ Fixes #
 ## Checklist
 - [ ] Code follows project style (`make fmt` for Rust/Python, standard TS/React style)
 - [ ] `make lint` run for areas touched (note: `npm run lint` currently fails on
-      `main` with pre-existing errors — see `ROADMAP_HONEST.md`; don't add new ones)
-- [ ] Documentation updated (README.md / ROADMAP_HONEST.md) if this changes what's
+      `main` with pre-existing errors — see `../docs/internal/ROADMAP_HONEST.md`; don't add new ones)
+- [ ] Documentation updated (README.md / ../docs/internal/ROADMAP_HONEST.md) if this changes what's
       built, working, or broken
 - [ ] No breaking changes (or clearly documented if there are)
 - [ ] Self-reviewed the diff before requesting review

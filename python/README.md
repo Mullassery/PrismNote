@@ -6,7 +6,7 @@
 
 No more `df.head()` → Explore data visually · Build charts without coding · Automatic governance & quality checks · Local AI assistant — all in one tool.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/prismnote.svg)](https://pypi.org/project/prismnote/)
 [![Python](https://img.shields.io/pypi/pyversions/prismnote.svg)](https://pypi.org/project/prismnote/)
 [![Built with Rust](https://img.shields.io/badge/engine-Rust-orange.svg)](https://www.rust-lang.org/)
@@ -56,7 +56,7 @@ Automatically detects sensitive data (emails, phone numbers, SSNs). Classify dat
 ### 🤖 Talk to Your Data
 Instead of scrolling through notebooks, ask Chainlit AI about your data. It understands what's in each cell, remembers the conversation, and suggests next steps.
 
-[Full v1.3.0 changelog →](./RELEASES.md)
+[Full v1.3.0 changelog →](../docs/archive/RELEASES.md)
 
 ---
 
@@ -408,7 +408,7 @@ cargo check && cargo test
 cd frontend && npm run build
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
@@ -430,14 +430,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 **📖 Deep dives**
 - [Connectors guide](./CONNECTORS.md) — SQL databases, data warehouses, files
-- [Full API docs](./docs/API.md)
-- [v1.3.0 release notes](./RELEASES.md)
+- [Full API docs](../docs/reference/API.md)
+- [v1.3.0 release notes](../docs/archive/RELEASES.md)
 
 ---
 
 ## License
 
-[MIT](LICENSE) © Georgi Mammen Mullassery
+[MIT](../LICENSE) © Georgi Mammen Mullassery
 
 **TLDR:** Free to use, modify, and distribute. Give credit.
 
@@ -457,6 +457,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 - No telemetry or tracking
 
 **⚠️ Before deploying to the internet:**
-If you're running PrismNote on a shared server or over the internet, enable authentication first. See [CONTRIBUTING.md](CONTRIBUTING.md) for security guidelines.
+If you're running PrismNote on a shared server or over the internet, enable authentication first. See [CONTRIBUTING.md](../CONTRIBUTING.md) for security guidelines.
 
-**Questions?** See [CONTRIBUTING.md](CONTRIBUTING.md) for security reporting.
+**Questions?** See [CONTRIBUTING.md](../CONTRIBUTING.md) for security reporting.

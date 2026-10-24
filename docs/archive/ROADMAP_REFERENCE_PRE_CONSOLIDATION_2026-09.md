@@ -594,7 +594,7 @@ See: [PHASE_2_1_COMPLETION_SUMMARY.md](./PHASE_2_1_COMPLETION_SUMMARY.md)
 - [Data Exploration & Database Intelligence Gap Analysis](DATA_EXPLORATION_GAP_ANALYSIS.md) — Full analysis of competitive gaps
 - [TESTING_PLAN_UI_KEYBOARD.md](./TESTING_PLAN_UI_KEYBOARD.md) — Detailed test plan (149 tests, 26 days)
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — Frontend architecture
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — Development setup
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) — Development setup
 
 ---
 
@@ -602,7 +602,7 @@ See: [PHASE_2_1_COMPLETION_SUMMARY.md](./PHASE_2_1_COMPLETION_SUMMARY.md)
 
 - [TESTING_PLAN_UI_KEYBOARD.md](./TESTING_PLAN_UI_KEYBOARD.md) — Detailed test plan (149 tests, 26 days)
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — Frontend architecture
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — Development setup
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) — Development setup
 
 ---
 

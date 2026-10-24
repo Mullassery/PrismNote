@@ -426,7 +426,7 @@ chmod 755 ~/.prismnote
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+We welcome contributions! See [CONTRIBUTING.md](../../CONTRIBUTING.md) for:
 - How to report bugs
 - How to submit feature requests
 - How to set up development environment
@@ -482,7 +482,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - [GitHub Repository](https://github.com/Mullassery/prismnote)
 - [GitHub Issues](https://github.com/Mullassery/prismnote/issues)
 - [GitHub Discussions](https://github.com/Mullassery/prismnote/discussions)
-- [Contributing Guide](CONTRIBUTING.md)
+- [Contributing Guide](../../CONTRIBUTING.md)
 
 ---
 

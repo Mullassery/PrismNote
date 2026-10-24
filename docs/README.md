@@ -5,7 +5,7 @@ Welcome to the PrismNote documentation. This guide covers everything you need to
 ## Quick Links
 
 - **New to PrismNote?** → Start with [Getting Started](./guides/GETTING_STARTED.md)
-- **Want to contribute?** → See [Contributing Guide](./reference/CONTRIBUTING.md)
+- **Want to contribute?** → See [Contributing Guide](../CONTRIBUTING.md)
 - **Looking for roadmap?** → Check [Roadmap](./reference/ROADMAP.md)
 - **Need deployment help?** → See [Deployment Guides](./guides/)
 
@@ -21,15 +21,15 @@ Comprehensive guides for using PrismNote features:
 ### [Reference](./reference/)
 Technical reference documentation:
 - [API Reference](./reference/API_REFERENCE.md) - REST API endpoints and schema
-- [Security](./reference/SECURITY.md) - Security policies and practices
+- [Security](../SECURITY.md) - Security policies and practices
 - [Settings Reference](./reference/SETTINGS_REFERENCE.md) - Configuration options
-- [Release Information](./reference/RELEASES.md) - Release notes and version history
+- [Release Information](archive/RELEASES.md) - Release notes and version history
 - [Release Sync Verification](./reference/RELEASE_SYNC_VERIFICATION.md) - Release process details
-- [Code of Conduct](./reference/CODE_OF_CONDUCT.md) - Community standards
+- [Code of Conduct](../CODE_OF_CONDUCT.md) - Community standards
 
 ### [Development](./development/)
 For contributors and developers:
-- [Contributing Guide](./development/CONTRIBUTING.md) - How to contribute
+- [Contributing Guide](../CONTRIBUTING.md) - How to contribute
 - [Roadmap](./development/ROADMAP.md) - Feature roadmap and milestones
 - [Homebrew Setup](./development/HOMEBREW_TAP_SETUP.md) - Setting up Homebrew tap
 

@@ -123,7 +123,7 @@ accuracy in this pass).
   touched this pass). Every `any` replaced with a real type or `unknown` +
   a type guard — no blanket `eslint-disable`, no `as any`/`as unknown as X`
   casts used to silence the linter. Roughly 35 production files touched;
-  see `ROADMAP_HONEST.md` section 3 for the full breakdown, what's
+  see `docs/internal/ROADMAP_HONEST.md` section 3 for the full breakdown, what's
   intentionally left (`lib/codeExecutor.ts`'s dead/fake-data module,
   skipped entirely; 7 documented `any`s marking real bugs found but not
   fixed — a `getNotebookState()`-returns-state-not-actions crash in three
@@ -152,7 +152,7 @@ accuracy in this pass).
   `main.tsx`'s inline `AppErrorFallback` component into
   `frontend/src/components/AppErrorFallback.tsx` (`react-refresh/
   only-export-components` requires components to live in a file with
-  exports). See `ROADMAP_HONEST.md` for two real, undocumented gaps found
+  exports). See `docs/internal/ROADMAP_HONEST.md` for two real, undocumented gaps found
   while removing dead state (not fixed — feature gaps, not typing):
   `AgentPanel.tsx`'s Plan/Act mode toggle has no UI, so "Act" mode is
   unreachable; `AgentPanel.tsx` is missing the font zoom +/- controls every
@@ -196,7 +196,7 @@ accuracy in this pass).
   injection comment/nested-comment/system-procedure payloads, credential/
   stack-trace leak checks on FastAPI error responses). `python3 -m pytest
   tests/ -v` now runs 109 tests (was 2, both skipped) when the package is
-  installed. See `ROADMAP_HONEST.md` for the two real bugs this testing
+  installed. See `docs/internal/ROADMAP_HONEST.md` for the two real bugs this testing
   pass found (one fixed above, one documented as a known rate-limiter
   availability bug for very-low `requests_per_minute` configurations).
 - Corrected the README's "Other integrations" claim that cloud storage
@@ -208,7 +208,7 @@ accuracy in this pass).
   `file_manager::CloudStorageManager` mount registry — a user submitting
   real cloud credentials through this API gets a fake success response and
   no actual storage integration. **Subsequently wired in 1.12.0 — see the
-  1.12.0 entry above**; README and `ROADMAP_HONEST.md` updated accordingly.
+  1.12.0 entry above**; README and `docs/internal/ROADMAP_HONEST.md` updated accordingly.
 
 ## [1.11.1] - 2026-09-22
 
@@ -251,7 +251,7 @@ accuracy in this pass).
   "PRODUCTION-READY" features matrix, generic template boilerplate) to
   `docs/archive/`. See `docs/archive/README.md` for the full list and
   reasons.
-- Added root `CONTRIBUTING.md`, `SECURITY.md`, `ROADMAP_HONEST.md`; moved
+- Added root `CONTRIBUTING.md`, `SECURITY.md`, `docs/internal/ROADMAP_HONEST.md`; moved
   `CODE_OF_CONDUCT.md` to repo root.
 - Rewrote `.github/ISSUE_TEMPLATE/` (previous templates were copy-pasted
   from an unrelated project, "OpenAnchor") and fixed `pull_request_template.md`
@@ -263,5 +263,5 @@ accuracy in this pass).
   directory into `docs/archive/disabled-workflows/` with an explanation of
   why it's inactive.
 
-See `ROADMAP_HONEST.md` for the full list of known bugs, security gaps, and
+See `docs/internal/ROADMAP_HONEST.md` for the full list of known bugs, security gaps, and
 untested/non-functional features found during this pass.

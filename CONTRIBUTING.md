@@ -88,9 +88,9 @@ ruff check .
 2. Run `cargo fmt --all` and `cargo clippy --all-targets` for Rust changes.
 3. If you touch `frontend/`, run `npm run lint` and fix warnings/errors you
    introduce — the existing 435 errors are pre-existing debt (tracked in
-   `ROADMAP_HONEST.md`), not something you're required to fix, but don't add
+   `docs/internal/ROADMAP_HONEST.md`), not something you're required to fix, but don't add
    to the pile.
-4. Update `README.md` / `ROADMAP_HONEST.md` if your change makes a documented
+4. Update `README.md` / `docs/internal/ROADMAP_HONEST.md` if your change makes a documented
    "not built" / "broken" item work, or breaks something documented as
    working. Do not describe untested code as working.
 5. Squash/organize commits into something reviewable; write a clear PR
