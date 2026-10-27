@@ -229,4 +229,4 @@ With:
 
 ---
 
-**Questions?** Open an issue or discuss in [GitHub Discussions](https://github.com/Mullassery/PrismNote/discussions)
+**Questions?** Open an issue or discuss in [GitHub Discussions](../PrismNote/discussions)

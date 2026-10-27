@@ -220,7 +220,7 @@ jobs:
 
 Add to README.md:
 ```markdown
-[![Tests](https://github.com/Mullassery/prismnote/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/prismnote/actions/workflows/ci.yml)
+[![Tests](../prismnote/actions/workflows/ci.yml/badge.svg)](../prismnote/actions/workflows/ci.yml)
 ```
 
 ---
@@ -228,7 +228,7 @@ Add to README.md:
 ## Monitoring
 
 ### View Workflow Runs
-- GitHub: https://github.com/Mullassery/prismnote/actions
+- GitHub: ../prismnote/actions
 - Filters: Branch, Status, Workflow
 
 ### Failed Workflow Debugging

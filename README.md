@@ -2,7 +2,7 @@
 
 A fast, local-first, Jupyter-compatible data-science notebook with built-in AI.
 
-[![CI](https://github.com/Mullassery/prismnote/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/prismnote/actions/workflows/ci.yml)
+[![CI](../prismnote/actions/workflows/ci.yml/badge.svg)](../prismnote/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![prismnote on PyPI](https://img.shields.io/pypi/v/prismnote.svg?label=prismnote)](https://pypi.org/project/prismnote/)
 
@@ -61,10 +61,10 @@ pip install prismnote
 prismnote
 ```
 
-On first run, the thin Python launcher (`python/prismnote/_cli.py`) downloads the matching prebuilt server binary from [GitHub Releases](https://github.com/Mullassery/PrismNote/releases) and execs it. As of this version the prebuilt binary is published for **macOS (Apple Silicon) only**; other platforms build from source:
+On first run, the thin Python launcher (`python/prismnote/_cli.py`) downloads the matching prebuilt server binary from [GitHub Releases](../PrismNote/releases) and execs it. As of this version the prebuilt binary is published for **macOS (Apple Silicon) only**; other platforms build from source:
 
 ```bash
-git clone https://github.com/Mullassery/PrismNote.git
+git clone ../PrismNote
 cd PrismNote
 make build          # builds the frontend first and embeds it into the binary
 ```
@@ -115,13 +115,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) (dev setup, real test/lint commands) and 
 
 ## Related projects
 
-- [MudFish](https://github.com/Mullassery/MudFish) — Rust-native web crawling and intelligence engine; feed crawl results into notebooks and RAG pipelines
-- [ClusterAudienceKit](https://github.com/Mullassery/ClusterAudienceKit) — RFM analysis, K-Means clustering, CLV, churn detection, and lookalikes for data science work
-- [PyReverseETL](https://github.com/Mullassery/PyReverseETL) — quality-validated data activation with audit trail and lineage, a natural step after analysis
-- [PyInferenceManager](https://github.com/Mullassery/PyInferenceManager) — multi-provider LLM inference executor, complements PrismNote's AI integration
-- [MessageBirds](https://github.com/Mullassery/MessageBirds) — open-source, event-driven Customer Data & Engagement Platform (Rust + TypeScript)
+- [MudFish](../MudFish) — Rust-native web crawling and intelligence engine; feed crawl results into notebooks and RAG pipelines
+- [ClusterAudienceKit](../ClusterAudienceKit) — RFM analysis, K-Means clustering, CLV, churn detection, and lookalikes for data science work
+- [PyReverseETL](../PyReverseETL) — quality-validated data activation with audit trail and lineage, a natural step after analysis
+- [PyInferenceManager](../PyInferenceManager) — multi-provider LLM inference executor, complements PrismNote's AI integration
+- [MessageBirds](../MessageBirds) — open-source, event-driven Customer Data & Engagement Platform (Rust + TypeScript)
 
-[Browse all projects →](https://github.com/Mullassery?tab=repositories)
+[Browse all projects →](../Mullassery-profile)
 
 ## License
 

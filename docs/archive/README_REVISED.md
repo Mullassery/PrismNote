@@ -101,7 +101,7 @@ PrismNote is a modern alternative to Jupyter with a focus on **simplicity, speed
 
 **Build from Source (Only method in v0.3):**
 ```bash
-git clone https://github.com/Mullassery/prismnote.git
+git clone ../prismnote
 cd prismnote
 
 # Build Rust backend
@@ -437,8 +437,8 @@ We welcome contributions! See [CONTRIBUTING.md](../../CONTRIBUTING.md) for:
 ## Support
 
 **Free Community Support:**
-- 🐛 Report bugs on [GitHub Issues](https://github.com/Mullassery/prismnote/issues)
-- 💬 Ask questions on [GitHub Discussions](https://github.com/Mullassery/prismnote/discussions)
+- 🐛 Report bugs on [GitHub Issues](../prismnote/issues)
+- 💬 Ask questions on [GitHub Discussions](../prismnote/discussions)
 - 📚 Check [documentation files](./docs/)
 
 **Commercial Support:**
@@ -473,15 +473,15 @@ We welcome contributions! See [CONTRIBUTING.md](../../CONTRIBUTING.md) for:
 
 **Made with Rust + React | Open Source | Proprietary Licensed**
 
-⭐ **If you find PrismNote useful, please star us on [GitHub](https://github.com/Mullassery/prismnote)!**
+⭐ **If you find PrismNote useful, please star us on [GitHub](../prismnote)!**
 
 ---
 
 ## Quick Links
 
-- [GitHub Repository](https://github.com/Mullassery/prismnote)
-- [GitHub Issues](https://github.com/Mullassery/prismnote/issues)
-- [GitHub Discussions](https://github.com/Mullassery/prismnote/discussions)
+- [GitHub Repository](../prismnote)
+- [GitHub Issues](../prismnote/issues)
+- [GitHub Discussions](../prismnote/discussions)
 - [Contributing Guide](../../CONTRIBUTING.md)
 
 ---

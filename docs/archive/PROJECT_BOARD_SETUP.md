@@ -36,7 +36,7 @@
 ## Initial Setup (Manual Steps)
 
 1. **Create Project**
-   - Go to: https://github.com/Mullassery/PrismNote/projects
+   - Go to: ../PrismNote/projects
    - Click "New project"
    - Title: "PrismNote v2.0 Development"
    - Description: "Track 6-phase development roadmap (73+ tasks, 20-26 weeks)"

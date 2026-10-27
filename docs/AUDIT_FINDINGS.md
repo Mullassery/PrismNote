@@ -1,6 +1,6 @@
 # Audit Report: prismnote
 Date: 2026-10-26 | Type: Read-only systems design audit  
-Repo: https://github.com/Mullassery/prismnote.git (local: /Users/georgimullassery/Desktop/Projects/prismnote) | Branch: main | Status: clean
+Repo: ../prismnote (local: /Users/georgimullassery/Desktop/Projects/prismnote) | Branch: main | Status: clean
 
 ## Overview
 Local-first Jupyter-compatible notebook with Rust Axum backend + React/Vite frontend embedded in binary, 15+ languages, SQL/warehouses, Docker sandboxing, AI integration. Single maintainer, honest about gaps in docs.

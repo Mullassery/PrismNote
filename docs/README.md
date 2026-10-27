@@ -87,8 +87,8 @@ prismnote/
 
 ## Getting Help
 
-- **Issues** - Report bugs or request features on [GitHub Issues](https://github.com/Mullassery/prismnote/issues)
-- **Discussions** - Ask questions or share ideas on [GitHub Discussions](https://github.com/Mullassery/prismnote/discussions)
+- **Issues** - Report bugs or request features on [GitHub Issues](../prismnote/issues)
+- **Discussions** - Ask questions or share ideas on [GitHub Discussions](../prismnote/discussions)
 - **Documentation** - Browse guides and reference docs in this folder
 
 ## License
@@ -97,6 +97,6 @@ PrismNote is proprietary software. See LICENSE for details.
 
 ## Community
 
-- GitHub Repository: https://github.com/Mullassery/prismnote
+- GitHub Repository: ../prismnote
 - PyPI Package: https://pypi.org/project/prismnote/
-- Homebrew Tap: https://github.com/Mullassery/homebrew-prismnote
+- Homebrew Tap: ../homebrew-prismnote

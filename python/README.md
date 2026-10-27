@@ -10,11 +10,11 @@ No more `df.head()` → Explore data visually · Build charts without coding · 
 [![PyPI](https://img.shields.io/pypi/v/prismnote.svg)](https://pypi.org/project/prismnote/)
 [![Python](https://img.shields.io/pypi/pyversions/prismnote.svg)](https://pypi.org/project/prismnote/)
 [![Built with Rust](https://img.shields.io/badge/engine-Rust-orange.svg)](https://www.rust-lang.org/)
-[![GitHub stars](https://img.shields.io/github/stars/Mullassery/prismnote?style=social)](https://github.com/Mullassery/prismnote/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/Mullassery/prismnote?style=social)](../prismnote/stargazers)
 ![Version: v1.3.0](https://img.shields.io/badge/Version-v1.3.0-blue)
 ![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 
-### ⭐ If PrismNote saves you time, please [**star the repo**](https://github.com/Mullassery/prismnote) — it genuinely helps others discover it.
+### ⭐ If PrismNote saves you time, please [**star the repo**](../prismnote) — it genuinely helps others discover it.
 
 <img src="docs/screenshots/02_notebook_dark.png" alt="PrismNote" width="820">
 
@@ -99,7 +99,7 @@ If you want to modify PrismNote or a binary isn't available for your platform:
 
 ```bash
 # Clone the repo
-git clone https://github.com/Mullassery/prismnote.git
+git clone ../prismnote
 cd prismnote
 
 # Install Python deps
@@ -382,17 +382,17 @@ Further reading: [CONNECTORS.md](CONNECTORS.md) ·
 
 **1. Star the repo** — The easiest way to help. It boosts visibility and tells GitHub this project matters.
 
-**2. Report bugs** — Found something broken? [Open an issue](https://github.com/Mullassery/prismnote/issues) with:
+**2. Report bugs** — Found something broken? [Open an issue](../prismnote/issues) with:
 - What you were doing
 - What you expected
 - What happened instead
 
 **3. Code contributions** — Want to add a feature or fix a bug?
 
-First, [open an issue](https://github.com/Mullassery/prismnote/issues) to discuss your idea. Then:
+First, [open an issue](../prismnote/issues) to discuss your idea. Then:
 
 ```bash
-git clone https://github.com/Mullassery/prismnote.git
+git clone ../prismnote
 cd prismnote
 
 # Backend
@@ -417,16 +417,16 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed guidelines.
 **🤔 How do I...?**
 - [README](./README.md) — You're reading it
 - [CONNECTORS.md](./CONNECTORS.md) — Connect to databases
-- [Command palette](https://github.com/Mullassery/prismnote) (⇧⌘P) — search for features
+- [Command palette](../prismnote) (⇧⌘P) — search for features
 
 **🐛 Something's broken**
-- [Report an issue](https://github.com/Mullassery/prismnote/issues) with details
+- [Report an issue](../prismnote/issues) with details
 - Include your OS, PrismNote version (`prismnote --version`)
 - Paste error messages and steps to reproduce
 
 **💬 Chat with the community**
-- [GitHub Discussions](https://github.com/Mullassery/prismnote/discussions) — ask questions, share ideas
-- [Issues](https://github.com/Mullassery/prismnote/issues) — bugs and features
+- [GitHub Discussions](../prismnote/discussions) — ask questions, share ideas
+- [Issues](../prismnote/issues) — bugs and features
 
 **📖 Deep dives**
 - [Connectors guide](./CONNECTORS.md) — SQL databases, data warehouses, files

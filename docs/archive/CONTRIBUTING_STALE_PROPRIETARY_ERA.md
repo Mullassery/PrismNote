@@ -9,7 +9,7 @@ This project adheres to the Contributor Covenant Code of Conduct. All contributo
 ## Ways to Contribute
 
 ### 1. Report Bugs
-Found a bug? Please [open an issue](https://github.com/Mullassery/prismnote/issues) with:
+Found a bug? Please [open an issue](../prismnote/issues) with:
 - Clear description of the problem
 - Steps to reproduce
 - Expected behavior vs actual behavior
@@ -17,7 +17,7 @@ Found a bug? Please [open an issue](https://github.com/Mullassery/prismnote/issu
 - System info (OS, Python version, Rust version)
 
 ### 2. Suggest Features
-Have an idea? [Open a discussion](https://github.com/Mullassery/prismnote/discussions) or issue with:
+Have an idea? [Open a discussion](../prismnote/discussions) or issue with:
 - Clear description of the feature
 - Why it's needed (use case)
 - How it would work (proposed implementation)
@@ -50,7 +50,7 @@ See [Pull Request Process](#pull-request-process) below.
 
 ```bash
 # Clone the repo
-git clone https://github.com/Mullassery/prismnote.git
+git clone ../prismnote
 cd prismnote
 
 # Setup git hooks (recommended)
@@ -282,7 +282,7 @@ By contributing, you agree that your contributions will be licensed under the Pr
 
 ## Questions?
 
-Open a [GitHub Discussion](https://github.com/Mullassery/prismnote/discussions) or ask in an issue. We're here to help!
+Open a [GitHub Discussion](../prismnote/discussions) or ask in an issue. We're here to help!
 
 ---
 

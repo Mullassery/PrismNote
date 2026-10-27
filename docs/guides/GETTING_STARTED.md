@@ -32,7 +32,7 @@ A modern data science notebook with **15+ programming languages**, **AI-assisted
 
 ```bash
 # Clone repository
-git clone https://github.com/Mullassery/prismnote.git
+git clone ../prismnote
 cd prismnote
 
 # Install dependencies

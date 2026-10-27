@@ -465,8 +465,8 @@ None currently in production release.
 
 ## CONTACT & SUPPORT
 
-- **GitHub Issues:** [Mullassery/prismnote/issues](https://github.com/Mullassery/prismnote/issues)
-- **Documentation:** [PrismNote Docs](https://github.com/Mullassery/prismnote/tree/main/docs)
+- **GitHub Issues:** [Mullassery/prismnote/issues](../prismnote/issues)
+- **Documentation:** [PrismNote Docs](../prismnote/tree/main/docs)
 - **Email:** mullassery@gmail.com
 
 ---

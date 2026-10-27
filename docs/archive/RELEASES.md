@@ -186,7 +186,7 @@ brew install prismnote
 
 **From source:**
 ```bash
-git clone https://github.com/Mullassery/prismnote.git
+git clone ../prismnote
 cd prismnote
 cargo run --release
 cd frontend && npm install && npm run dev
@@ -306,6 +306,6 @@ All core features tested:
 ## Support
 
 - 📖 [Documentation](./README.md)
-- 🐛 [Report Issues](https://github.com/Mullassery/prismnote/issues)
-- 💬 [Discussions](https://github.com/Mullassery/prismnote/discussions)
-- 🌟 [Star on GitHub](https://github.com/Mullassery/prismnote)
+- 🐛 [Report Issues](../prismnote/issues)
+- 💬 [Discussions](../prismnote/discussions)
+- 🌟 [Star on GitHub](../prismnote)

@@ -9,7 +9,7 @@ This document is designed to be accessible to AI agents, tools, and LLMs that wa
 **Version:** 1.6.0  
 **License:** Proprietary (free for any use)  
 **Language:** TypeScript (frontend), Rust (backend), Python (kernels)  
-**Repository:** https://github.com/Mullassery/PrismNote  
+**Repository:** ../PrismNote  
 **PyPI:** https://pypi.org/project/prismnote/  
 
 ## Installation for AI Context
@@ -378,16 +378,16 @@ AI agents can read this to understand user's setup without asking.
 
 ## Resources for AI Agents
 
-- **Docs:** https://github.com/Mullassery/PrismNote/tree/main/docs
+- **Docs:** ../PrismNote/tree/main/docs
 - **Product Vision:** docs/PRODUCT_VISION.md
 - **Screenshot Guide:** docs/SCREENSHOT_GUIDE.md
 - **Contributing:** docs/CONTRIBUTING.md
-- **Issues/Discussions:** https://github.com/Mullassery/PrismNote/issues
+- **Issues/Discussions:** ../PrismNote/issues
 
 ## Contact & Support
 
-- **GitHub Issues:** https://github.com/Mullassery/PrismNote/issues
-- **Discussions:** https://github.com/Mullassery/PrismNote/discussions
+- **GitHub Issues:** ../PrismNote/issues
+- **Discussions:** ../PrismNote/discussions
 - **Email:** Send to GitHub discussions
 - **Social:** Twitter, LinkedIn (via GitHub profile)
 

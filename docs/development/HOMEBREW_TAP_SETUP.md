@@ -30,7 +30,7 @@ homebrew-prismnote/
 ```bash
 # Create new repository on GitHub: homebrew-prismnote
 # Clone locally
-git clone https://github.com/Mullassery/homebrew-prismnote.git
+git clone ../homebrew-prismnote
 cd homebrew-prismnote
 
 # Copy the formula
@@ -73,7 +73,7 @@ brew untap Mullassery/prismnote
 
 ## Documentation
 
-See [PrismNote GitHub](https://github.com/Mullassery/prismnote)
+See [PrismNote GitHub](../prismnote)
 EOF
 
 git add Formula/ README.md
@@ -111,7 +111,7 @@ Calculate SHA256 for each binary:
 
 ```bash
 # After uploading binaries to GitHub Releases
-curl -L https://github.com/Mullassery/prismnote/releases/download/v1.0.0/prismnote-aarch64-apple-darwin.tar.gz | shasum -a 256
+curl -L ../prismnote/releases/download/v1.0.0/prismnote-aarch64-apple-darwin.tar.gz | shasum -a 256
 
 # Update these values in Formula/prismnote.rb:
 # - PLACEHOLDER_ARM64_SHA256
@@ -197,7 +197,7 @@ When releasing a new version:
 
 on_macos do
   on_arm do
-    url "https://github.com/Mullassery/prismnote/releases/download/v1.1.0/prismnote-aarch64-apple-darwin.tar.gz"
+    url "../prismnote/releases/download/v1.1.0/prismnote-aarch64-apple-darwin.tar.gz"
     sha256 "NEW_SHA256_HERE"
   end
   # ... etc
@@ -227,7 +227,7 @@ brew audit Formula/prismnote.rb # Validate syntax
 ### Wrong binary downloaded
 ```bash
 # Check available URLs in formula
-curl -I https://github.com/Mullassery/prismnote/releases/download/v1.0.0/prismnote-aarch64-apple-darwin.tar.gz
+curl -I ../prismnote/releases/download/v1.0.0/prismnote-aarch64-apple-darwin.tar.gz
 ```
 
 ### SHA256 mismatch

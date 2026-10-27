@@ -22,7 +22,7 @@ Requirements verified against this repo as of 2026-09-19:
 - Python 3.9+ for the `python/` launcher package and `tests/`
 
 ```bash
-git clone https://github.com/Mullassery/prismnote.git
+git clone ../prismnote
 cd prismnote
 
 # Terminal 1: backend

@@ -37,13 +37,13 @@
 - Repository: `Mullassery/PrismNote`
 - Tag: `v1.7.0`
 - Title: "PrismNote v1.7.0"
-- URL: https://github.com/Mullassery/PrismNote/releases/tag/v1.7.0
+- URL: ../PrismNote/releases/tag/v1.7.0
 - Published: 2026-07-28T12:46:29Z
 
 **Assets Attached:**
 - `prismnote-1.7.0-py3-none-any.whl` (21,740 bytes)
 - SHA256: `f18485945352303a83c70e7f4cf27e13f931ee9398cdf9e4995262c6a4c9d00f`
-- Download URL: https://github.com/Mullassery/PrismNote/releases/download/v1.7.0/prismnote-1.7.0-py3-none-any.whl
+- Download URL: ../PrismNote/releases/download/v1.7.0/prismnote-1.7.0-py3-none-any.whl
 - Upload Status: `uploaded`
 - Download Count: 0 (initial)
 
@@ -70,7 +70,7 @@
 
 ✅ **Homebrew Tap Configured**
 - Repository: `Mullassery/homebrew-prismnote`
-- URL: https://github.com/Mullassery/homebrew-prismnote
+- URL: ../homebrew-prismnote
 - Formula: `Formula/prismnote.rb`
 - Installation: `brew tap Mullassery/prismnote && brew install prismnote`
 
@@ -132,7 +132,7 @@ pip install prismnote
 
 ### Method 2: GitHub Release
 ```bash
-wget https://github.com/Mullassery/PrismNote/releases/download/v1.7.0/prismnote-1.7.0-py3-none-any.whl
+wget ../PrismNote/releases/download/v1.7.0/prismnote-1.7.0-py3-none-any.whl
 pip install prismnote-1.7.0-py3-none-any.whl
 ✅ Manual download and install
 ```
@@ -226,12 +226,12 @@ brew install prismnote
 ```
 
 **Install from GitHub:**
-- Direct download: https://github.com/Mullassery/PrismNote/releases/tag/v1.7.0
+- Direct download: ../PrismNote/releases/tag/v1.7.0
 - Asset: prismnote-1.7.0-py3-none-any.whl
 
 **Install from Source:**
 ```bash
-git clone https://github.com/Mullassery/prismnote.git
+git clone ../prismnote
 cd prismnote
 pip install -e .
 ```
@@ -241,11 +241,11 @@ pip install -e .
 ## Support & Documentation
 
 - **PyPI Page:** https://pypi.org/project/prismnote/1.7.0/
-- **GitHub Release:** https://github.com/Mullassery/PrismNote/releases/tag/v1.7.0
-- **Homebrew Tap:** https://github.com/Mullassery/homebrew-prismnote
-- **GitHub Repository:** https://github.com/Mullassery/prismnote
-- **Issues:** https://github.com/Mullassery/prismnote/issues
-- **Discussions:** https://github.com/Mullassery/prismnote/discussions
+- **GitHub Release:** ../PrismNote/releases/tag/v1.7.0
+- **Homebrew Tap:** ../homebrew-prismnote
+- **GitHub Repository:** ../prismnote
+- **Issues:** ../prismnote/issues
+- **Discussions:** ../prismnote/discussions
 
 ---
 
