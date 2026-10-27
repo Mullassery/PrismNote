@@ -455,10 +455,28 @@ pub struct TerminalRequest {
 
 /// Run a shell command and return combined stdout+stderr. Local dev tool — runs
 /// in the server process's working directory (or `cwd` if provided).
-pub async fn terminal_exec(Json(req): Json<TerminalRequest>) -> Json<serde_json::Value> {
+pub async fn terminal_exec(
+    crate::middleware::auth::CurrentUser { user_id, roles, .. }: crate::middleware::auth::CurrentUser,
+    Json(req): Json<TerminalRequest>,
+) -> Json<serde_json::Value> {
+    // Restrict terminal exec to authenticated admin users only to prevent
+    // arbitrary command execution by unauthenticated/unauthorized callers.
+    let is_admin = roles.iter().any(|r| r == "Admin" || r == "admin");
+    if !is_admin {
+        return Json(serde_json::json!({
+            "output": "prismnote: permission denied (admin required)",
+            "exit_code": 126
+        }));
+    }
+
+    // Avoid invoking a shell with arbitrary user strings where possible.
+    // For safety, we still support shell mode but the endpoint is now
+    // authenticated and admin-gated. Additional validation could be added,
+    // but the critical fix is to require authentication and authorization.
     let mut cmd = tokio::process::Command::new("sh");
     cmd.arg("-c").arg(&req.command);
     if let Some(dir) = req.cwd.as_ref() {
+        // Only allow cwd within safe paths if needed; minimal hardening here
         cmd.current_dir(dir);
     }
     let result = cmd.output().await;

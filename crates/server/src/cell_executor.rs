@@ -59,15 +59,20 @@ impl CellExecutor {
         let dangerous_patterns = vec![
             "os.system",
             "subprocess.call",
+            "subprocess.Popen",
+            "subprocess.run",
             "exec(",
             "eval(",
             "__import__",
+            "compile(",
+            "open(",
         ];
 
         for pattern in dangerous_patterns {
             if code.contains(pattern) {
-                // Don't block, just warn (these are legitimate in notebooks)
+                // Block dangerous operations in notebook cells
                 tracing::warn!("Potentially unsafe operation detected: {}", pattern);
+                anyhow::bail!("Dangerous operation not allowed: {}", pattern);
             }
         }
 
