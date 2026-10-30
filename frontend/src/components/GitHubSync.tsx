@@ -284,7 +284,7 @@ function GitHubSyncPanel({
             type="checkbox"
             checked={config.autoSync}
             onChange={() => {
-              // TODO: Implement auto-sync toggle
+              setConfig({ ...config, autoSync: !config.autoSync })
             }}
             className="rounded"
           />
