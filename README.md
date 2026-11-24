@@ -119,7 +119,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) (dev setup, real test/lint commands) and 
 - [ClusterAudienceKit](../ClusterAudienceKit) — RFM analysis, K-Means clustering, CLV, churn detection, and lookalikes for data science work
 - [PyReverseETL](../PyReverseETL) — quality-validated data activation with audit trail and lineage, a natural step after analysis
 - [PyInferenceManager](../PyInferenceManager) — multi-provider LLM inference executor, complements PrismNote's AI integration
-- [MessageBirds](../MessageBirds) — open-source, event-driven Customer Data & Engagement Platform (Rust + TypeScript)
+- [PyCustomerHub](../PyCustomerHub) — open-source, event-driven Customer Data & Engagement Platform (Rust + TypeScript)
 
 [Browse all projects →](../Mullassery-profile)
 
